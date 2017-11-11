@@ -1,0 +1,32 @@
+<use   name="FWCore/Framework"/>
+<use   name="FWCore/ParameterSet"/>
+<use   name="FWCore/ServiceRegistry"/>
+<use   name="FWCore/Utilities"/>
+<use   name="DataFormats/Candidate"/>
+<use   name="DataFormats/PatCandidates"/>
+<use   name="CommonTools/Utils"/>
+<use   name="RecoEgamma/EgammaTools"/>
+<use   name="PhysicsTools/JetMCUtils"/>
+<use   name="DataFormats/NanoAOD"/>
+<use   name="roothistmatrix"/>
+<use   name="RecoVertex/VertexTools"/>
+<use   name="RecoVertex/VertexPrimitives"/>
+<use   name="DataFormats/L1TGlobal"/>
+<use   name="IOPool/Provenance"/>
+<use   name="DQMServices/Core"/>
+
+<use   name="RecoVertex/KalmanVertexFit"/>
+<use   name="TrackingTools/IPTools"/>
+<use   name="TrackingTools/TransientTrack"/>
+<use   name="SimDataFormats/Track"/>
+<use   name="SimDataFormats/Vertex"/>
+<use   name="SimGeneral/HepPDTRecord"/>
+<use   name="RecoMET/METAlgorithms"/>
+<use   name="RecoEgamma/EgammaTools"/>
+<use   name="CondFormats/JetMETObjects"/>
+<use   name="JetMETCorrections/Objects"/>
+<use   name="JetMETCorrections/Modules"/>
+
+<library   file="*.cc" name="catNanoAODPlugins">
+  <flags   EDM_PLUGIN="1"/>
+</library>
