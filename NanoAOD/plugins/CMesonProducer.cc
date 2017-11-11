@@ -96,7 +96,8 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
 
   auto cmVxCand = std::make_unique<reco::VertexCompositeCandidateCollection>();
   std::vector<float> dca,lxy,l3D,jetDR,legDR,diffMass;
-  std::vector<int> pid;
+  dca.clear();lxy.clear();l3D.clear();jetDR.clear();legDR.clear();diffMass.clear();
+  std::vector<int> pid;pid.clear();
   
   for (const pat::Jet & aPatJet : *jetHandle){
     if (aPatJet.pt()< 30 or abs(aPatJet.eta())>3 ) continue;
@@ -171,19 +172,19 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
       for ( unsigned int kaon_idx = 0 ; kaon_idx< dau_size ; kaon_idx++) {
         if ( pion_idx == kaon_idx ) continue;
         const pat::PackedCandidate * pionCand = jetDaughters[pion_idx];
-	pat::PackedCandidate * kaonCand = new pat::PackedCandidate(*jetDaughters[kaon_idx]);
-        kaonCand->setMass(gKaonMass);
+	pat::PackedCandidate kaonCand(*jetDaughters[kaon_idx]);	
+        kaonCand.setMass(gKaonMass);
 
         if ( abs(pionCand->pdgId()) == 13 or abs(pionCand->pdgId()) == 11) continue;
-        if ( abs(kaonCand->pdgId()) == 13 or abs(kaonCand->pdgId()) == 11) continue;
-        if ( pionCand->charge() * kaonCand->charge() != -1 ) continue;
+        if ( abs(kaonCand.pdgId()) == 13 or abs(kaonCand.pdgId()) == 11) continue;
+        if ( pionCand->charge() * kaonCand.charge() != -1 ) continue;
 
-        auto D0 = pionCand->p4()+ kaonCand->p4();
+        auto D0 = pionCand->p4() + kaonCand.p4();
         if ( abs(D0.M() - gD0Mass) > d0MassCut_) continue;
 
 	vector<const pat::PackedCandidate*> d0Cands;
 	d0Cands.push_back(pionCand);
-	d0Cands.push_back(kaonCand);
+	d0Cands.push_back(&kaonCand);
 	float dca = 0;
 	reco::VertexCompositeCandidate D0Cand = fit(d0Cands, 421, dca);
 	
@@ -192,7 +193,7 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
         if ( abs(bestD0.mass() - gD0Mass)> abs(D0Cand.mass()-gD0Mass) ){
 	  bestD0 = D0Cand;
 	  dca_D0 = dca;
-	  legDR_D0 = reco::deltaR( *pionCand, *kaonCand);
+	  legDR_D0 = reco::deltaR( *pionCand, kaonCand);
 	}
 
         if ( dau_size < 3 ) continue;
@@ -205,7 +206,7 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
 
 	    vector<const pat::PackedCandidate*> dstarCands;
 	    dstarCands.push_back(pionCand);
-	    dstarCands.push_back(kaonCand);
+	    dstarCands.push_back(&kaonCand);
 	    dstarCands.push_back(pion2Cand);
 	    
 	    float dcaDstar = 0;
@@ -222,7 +223,6 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
 	      diffMass_Dstar = diffMass;
 	    }
           }
-	  delete kaonCand;
         }
       }
     }
