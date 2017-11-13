@@ -35,7 +35,7 @@ using namespace reco;
 
 class CMesonProducer : public edm::stream::EDProducer<> {
 
-  typedef ROOT::Math::SMatrix<double, 3, 3, ROOT::Math::MatRepSym<double, 3> > SMatrixSym3D;
+  //typedef ROOT::Math::SMatrix<double, 3, 3, ROOT::Math::MatRepSym<double, 3> > SMatrixSym3D;
   typedef ROOT::Math::SVector<double, 3> SVector3;
     
 public:
@@ -44,9 +44,7 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   
 private:
-  void beginStream(edm::StreamID) override {};
-  void produce(edm::Event&, const edm::EventSetup&) override;
-  void endStream() override {};
+  void produce( edm::Event&, const edm::EventSetup& ) override;
 
   reco::VertexCompositeCandidate fit(vector<const pat::PackedCandidate*> cands, int pdgId, float &dca);
   
@@ -65,26 +63,23 @@ private:
   float d0MassWindow_, maxDeltaR_, d0MassCut_;
   unsigned int maxNumPFCand_;
   bool applyCuts_;
-  
-
 };
-//bool pTComp( const reco::Candidate* a, const reco::Candidate* b) { return a->pt() > b->pt();  }
 
 CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
   vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel")))
 {
-  produces<nanoaod::FlatTable>("cmeson");
-  produces<reco::VertexCompositeCandidateCollection>();
-  
   maxNumPFCand_ = iConfig.getParameter<int>("maxNumPFCand");
   d0MassWindow_ = iConfig.getParameter<double>("d0MassWindow");
   d0MassCut_ = iConfig.getParameter<double>("d0MassCut");
   maxDeltaR_  = iConfig.getParameter<double>("maxDeltaR");
   applyCuts_ = iConfig.getParameter<bool>("applySoftLeptonCut");
+
+  produces<nanoaod::FlatTable>("cmeson");
+  produces<reco::VertexCompositeCandidateCollection>();
 }
 void
-CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
+CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   Handle<reco::VertexCollection> recVtxs;
   iEvent.getByToken(vertexLabel_,recVtxs);
@@ -121,7 +116,8 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
     unsigned int dau_size = jetDaughters.size();
     if ( dau_size < 2 ) continue;
 
-    sort(jetDaughters.begin(), jetDaughters.end(), [](const pat::PackedCandidate * a, const pat::PackedCandidate * b) {return a->pt() > b->pt(); }); 
+    sort(jetDaughters.begin(), jetDaughters.end(), [](const pat::PackedCandidate * a, const pat::PackedCandidate * b)
+	 {return a->pt() > b->pt(); }); 
 
     // if ( dau_size > maxNumPFCand_ ) dau_size = maxNumPFCand_;
     // jetDaughters.resize( dau_size );
@@ -139,7 +135,7 @@ CMesonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup)
 	jpsiCands.push_back(lep2Cand);
 	
 	float dca = 0;
-	reco::VertexCompositeCandidate JpsiCand = fit(jpsiCands, 443, dca);
+	reco::VertexCompositeCandidate JpsiCand = this->fit(jpsiCands, 443, dca);
 	
         // if ( abs(lep1Cand->pdgId() ) == 13 && abs(lep2Cand->pdgId()) == 13 ) {
         //   int lep1ID = (int)lep1Cand->isStandAloneMuon() + (int)lep1Cand->isGlobalMuon()*2;

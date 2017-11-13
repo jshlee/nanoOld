@@ -2,13 +2,13 @@
 import os,json,sys,shutil,time,getopt
 #import CATTools.CatProducer.catDefinitions_cfi as cat
 
-def submitjob(requestName, dataset, globalTag, lumiMask, submit):
+def submitjob(requestName, psetName, dataset, submit):
     print 'v'*80
     print "creating job"
     print dataset
 
     isMC = False
-    if 'MC' in requestName:
+    if 'MC' in psetName:
         isMC = True
     
     dataset = dataset.strip()
@@ -17,39 +17,40 @@ def submitjob(requestName, dataset, globalTag, lumiMask, submit):
     else :
         label = dataset.split("/")[1]+"_"+dataset.split("/")[2]
 
-    if requestName:
-        dataRequestName = '%s_%s'%(requestName,label)
-        outputDatasetTag = '%s_%s'%(requestName,dataset.split("/")[2])
-
+    dataRequestName = '%s_%s'%(requestName,label)
+    outputDatasetTag = dataset.split("/")[2]
+    outLFNDirBase = '/store/group/nanoAOD/%s/'%(requestName)
+    
     if submit:
-        sendjob = "crab submit Data.outputDatasetTag='%s' JobType.psetName='%s.py' General.requestName='%s' Data.inputDataset='%s'"%(outputDatasetTag,requestName,dataRequestName,dataset)
+        sendjob = "crab submit JobType.psetName='%s.py' General.requestName='%s' Data.outLFNDirBase='%s' Data.outputDatasetTag='%s' Data.inputDataset='%s'"%(
+            psetName,dataRequestName,outLFNDirBase,outputDatasetTag,dataset)
     else :
-        sendjob = "crab submit --dryrun Data.outputDatasetTag='%s' JobType.psetName='%s.py' General.requestName='%s' Data.inputDataset='%s'"%(outputDatasetTag,requestName,dataRequestName,dataset)
+        sendjob = sendjob + " --dryrun"
 
     print sendjob
     print "submiting job"
-    os.system(sendjob)
+    #os.system(sendjob)
+    #time.sleep(5)
     print '^'*80
 
-    time.sleep(5)
     
 submitBlock = None
 requestName = ""
 datasets = []
 inputFile =None
 submit = False
-lumiMask =""
+psetName =""
 globalTag =""
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"hsi:n:l:g:b:",["requestName","inputFile","lumiMask","globalTag","submitBlock"])
+    opts, args = getopt.getopt(sys.argv[1:],"hsi:n:p:g:b:",["requestName","inputFile","psetName","globalTag","submitBlock"])
 except getopt.GetoptError:          
-    print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -l <lumiMask> -g <globalTag>'
+    print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -g <globalTag>'
     sys.exit(2)
 
 for opt, arg in opts:
     if opt == '-h':
-        print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -l <lumiMask> -g <globalTag>'
+        print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -g <globalTag>'
         sys.exit()
     elif opt in ("-n", "--requestName"):
         requestName = arg
@@ -62,8 +63,8 @@ for opt, arg in opts:
             datasets = lines.readlines()
         else:
             datasets.append(inputFile)
-    elif opt in ("-l", "--lumiMask"):
-        lumiMask = arg
+    elif opt in ("-p", "--psetName"):
+        psetName = arg
     elif opt in ("-b", "--submitBlock"):
         submitBlock = arg
     elif opt in ("-g", "--globalTag"):
@@ -73,26 +74,29 @@ if requestName == "" :
     print "requestName(-n) is mandantory"
     sys.exit(-1)
 
+if psetName == "" :
+    print "psetName(-n) is mandantory"
+    sys.exit(-1)
+    
 if inputFile is None:
     datasets = json.load(open("%s/src/cat/NanoAOD/data/dataset/dataset.json"%os.environ['CMSSW_BASE']))
     for d in datasets:
         dataset = d['DataSetName']
         if len( dataset ) == 0: continue
 
-        isMC = False
-        if 'MC' in requestName:
+        if 'MC' in psetName:
             isMC = True
             if d['type'] == 'Data':
-                continue            
-        if 'RD' in requestName:
+                continue
+        else :
             if d['type'] != 'Data':
                 continue            
 
-        if os.path.exists('crab_%s_%s' % (requestName, dataset.split('/')[1])): continue
-        if os.path.exists('crab_%s_%s_%s' % (requestName, dataset.split('/')[1], dataset.split('/')[2])): continue
+        #if os.path.exists('crab_%s_%s' % (requestName, dataset.split('/')[1])): continue
+        #if os.path.exists('crab_%s_%s_%s' % (requestName, dataset.split('/')[1], dataset.split('/')[2])): continue
         if len( d['path']) == 0:
             #print d['path'], len( d['path'])
-            submitjob(requestName, dataset, None,None, submit)
+            submitjob(requestName, psetName, dataset, submit)
         
         #if submitBlock == '1' and 'QCD' in dataset:
         #    continue
@@ -105,7 +109,7 @@ else:
             continue
         if dataset.startswith("#"):
             continue
-        submitjob(requestName, dataset, globalTag, lumiMask, submit)
+        submitjob(requestName, psetName, dataset, submit)
 
 if not submit:
     print "Dry run, not submitting job and only printing crab3 command"
