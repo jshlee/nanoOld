@@ -60,24 +60,24 @@ private:
   const float gKaonMass = 0.4937;
   const float gD0Mass   = 1.86480;
   const float gDstarD0DiffMass = 0.145;
-  float d0MassWindow_, maxDeltaR_, d0MassCut_;
-  unsigned int maxNumPFCand_;
+  float maxDeltaR_, d0MassWindow_, d0MassCut_;
+  //unsigned int maxNumPFCand_;
   bool applyCuts_;
 };
 
 CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
-  vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel")))
+  vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel"))),
+  //maxNumPFCand_(iConfig.getParameter<int>("maxNumPFCand")),
+  maxDeltaR_(iConfig.getParameter<double>("maxDeltaR")),
+  d0MassWindow_(iConfig.getParameter<double>("d0MassWindow")),
+  d0MassCut_(iConfig.getParameter<double>("d0MassCut")),
+  applyCuts_(iConfig.getParameter<bool>("applySoftLeptonCut"))  
 {
-  maxNumPFCand_ = iConfig.getParameter<int>("maxNumPFCand");
-  d0MassWindow_ = iConfig.getParameter<double>("d0MassWindow");
-  d0MassCut_ = iConfig.getParameter<double>("d0MassCut");
-  maxDeltaR_  = iConfig.getParameter<double>("maxDeltaR");
-  applyCuts_ = iConfig.getParameter<bool>("applySoftLeptonCut");
-
   produces<nanoaod::FlatTable>("cmeson");
   produces<reco::VertexCompositeCandidateCollection>();
 }
+
 void
 CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
@@ -110,8 +110,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       const pat::PackedCandidate * dauCand ( dynamic_cast<const pat::PackedCandidate*>(aPatJet.daughter(idx)));
       if ( dauCand->charge() ==0 ) continue;
       //if ( dauCand->pt() <1 ) continue;
-      jetDaughters.push_back( dauCand );
-      if ( abs(dauCand->pdgId()) == 11  || abs(dauCand->pdgId())==13) softlepCands.push_back(dauCand);
+      jetDaughters.emplace_back( dauCand );
+      if ( abs(dauCand->pdgId()) == 11  || abs(dauCand->pdgId())==13) softlepCands.emplace_back(dauCand);
     }
     unsigned int dau_size = jetDaughters.size();
     if ( dau_size < 2 ) continue;
@@ -131,8 +131,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         if ( pdgMul != -121 && pdgMul != -169 ) continue; 
 
 	vector<const pat::PackedCandidate*> jpsiCands;
-	jpsiCands.push_back(lep1Cand);
-	jpsiCands.push_back(lep2Cand);
+	jpsiCands.emplace_back(lep1Cand);
+	jpsiCands.emplace_back(lep2Cand);
 	
 	float dca = 0;
 	reco::VertexCompositeCandidate JpsiCand = this->fit(jpsiCands, 443, dca);
@@ -153,14 +153,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
     if ( dca_Jpsi > -1 ){
-      cmVxCand->push_back(bestD0);      
-      dca.push_back(dca_Jpsi);
-      lxy.push_back(get2Ddistance(bestJpsi,pv));
-      l3D.push_back(get3Ddistance(bestJpsi,pv));
-      jetDR.push_back(reco::deltaR( bestJpsi, aPatJet));
-      legDR.push_back(legDR_Jpsi);
-      diffMass.push_back(0);
-      pid.push_back(443);
+      cmVxCand->emplace_back(bestD0);      
+      dca.emplace_back(dca_Jpsi);
+      lxy.emplace_back(get2Ddistance(bestJpsi,pv));
+      l3D.emplace_back(get3Ddistance(bestJpsi,pv));
+      jetDR.emplace_back(reco::deltaR( bestJpsi, aPatJet));
+      legDR.emplace_back(legDR_Jpsi);
+      diffMass.emplace_back(0);
+      pid.emplace_back(443);
     }
     if ( applyCuts_ && softlepCands.size()==0  ) continue;
     
@@ -179,8 +179,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         if ( abs(D0.M() - gD0Mass) > d0MassCut_) continue;
 
 	vector<const pat::PackedCandidate*> d0Cands;
-	d0Cands.push_back(pionCand);
-	d0Cands.push_back(&kaonCand);
+	d0Cands.emplace_back(pionCand);
+	d0Cands.emplace_back(&kaonCand);
 	float dca = 0;
 	reco::VertexCompositeCandidate D0Cand = fit(d0Cands, 421, dca);
 	
@@ -201,9 +201,9 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
             if ( abs(pion2Cand->pdgId()) != 211) continue;
 
 	    vector<const pat::PackedCandidate*> dstarCands;
-	    dstarCands.push_back(pionCand);
-	    dstarCands.push_back(&kaonCand);
-	    dstarCands.push_back(pion2Cand);
+	    dstarCands.emplace_back(pionCand);
+	    dstarCands.emplace_back(&kaonCand);
+	    dstarCands.emplace_back(pion2Cand);
 	    
 	    float dcaDstar = 0;
 	    reco::VertexCompositeCandidate DstarCand = fit(dstarCands, pion2Cand->charge()*413, dcaDstar);
@@ -223,24 +223,24 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
     if ( dca_D0 > -1 ){
-      cmVxCand->push_back(bestD0);
-      dca.push_back(dca_D0);
-      lxy.push_back(get2Ddistance(bestD0,pv));
-      l3D.push_back(get3Ddistance(bestD0,pv));
-      jetDR.push_back(reco::deltaR( bestD0, aPatJet));
-      legDR.push_back(legDR_D0);
-      diffMass.push_back(0);
-      pid.push_back(421);
+      cmVxCand->emplace_back(bestD0);
+      dca.emplace_back(dca_D0);
+      lxy.emplace_back(get2Ddistance(bestD0,pv));
+      l3D.emplace_back(get3Ddistance(bestD0,pv));
+      jetDR.emplace_back(reco::deltaR( bestD0, aPatJet));
+      legDR.emplace_back(legDR_D0);
+      diffMass.emplace_back(0);
+      pid.emplace_back(421);
     }
     if ( dca_Dstar > -1 ){
-      cmVxCand->push_back(bestDstar);
-      dca.push_back(dca_Dstar);
-      lxy.push_back(get2Ddistance(bestDstar,pv));
-      l3D.push_back(get3Ddistance(bestDstar,pv));
-      jetDR.push_back(reco::deltaR( bestDstar, aPatJet));
-      legDR.push_back(legDR_Dstar);      
-      diffMass.push_back(diffMass_Dstar);
-      pid.push_back(413);
+      cmVxCand->emplace_back(bestDstar);
+      dca.emplace_back(dca_Dstar);
+      lxy.emplace_back(get2Ddistance(bestDstar,pv));
+      l3D.emplace_back(get3Ddistance(bestDstar,pv));
+      jetDR.emplace_back(reco::deltaR( bestDstar, aPatJet));
+      legDR.emplace_back(legDR_Dstar);      
+      diffMass.emplace_back(diffMass_Dstar);
+      pid.emplace_back(413);
     }
   }
   
@@ -267,7 +267,7 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   for (auto trk : cands){
     if (trk->bestTrack() == nullptr) continue;
     const TransientTrack transientTrack = trackBuilder_->build(trk->bestTrack());
-    transientTracks.push_back(transientTrack);
+    transientTracks.emplace_back(transientTrack);
     charge += trk->charge();
     lv += trk->p4();    
   }
