@@ -131,10 +131,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         int pdgMul = lep1Cand->pdgId() * lep2Cand->pdgId();
         if ( pdgMul != -121 and pdgMul != -169 ) continue; 
 
-	vector<const pat::PackedCandidate*> jpsiCands{lep1Cand, lep2Cand};
-	
 	float dca = 0;
-	reco::VertexCompositeCandidate JpsiCand = this->fit(jpsiCands, 443, dca);
+	reco::VertexCompositeCandidate JpsiCand = this->fit({lep1Cand, lep2Cand}, 443, dca);
 	
         // if ( abs(lep1Cand->pdgId() ) == 13 && abs(lep2Cand->pdgId()) == 13 ) {
         //   int lep1ID = (int)lep1Cand->isStandAloneMuon() + (int)lep1Cand->isGlobalMuon()*2;
@@ -178,9 +176,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         auto D0 = pionCand->p4() + kaonCand.p4();
         if ( abs(D0.M() - gD0Mass) > d0MassCut_) continue;
 
-	vector<const pat::PackedCandidate*> d0Cands{pionCand, &kaonCand};
 	float dca = 0;
-	reco::VertexCompositeCandidate D0Cand = fit(d0Cands, 421, dca);
+	reco::VertexCompositeCandidate D0Cand = fit({pionCand, &kaonCand}, 421, dca);
 	
         if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
 
@@ -197,11 +194,9 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
             if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
             const pat::PackedCandidate * pion2Cand = jetDaughters[extra_pion_idx];
             if ( abs(pion2Cand->pdgId()) != 211) continue;
-
-	    vector<const pat::PackedCandidate*> dstarCands{pionCand,&kaonCand,pion2Cand};
 	    
 	    float dcaDstar = 0;
-	    reco::VertexCompositeCandidate DstarCand = fit(dstarCands, pion2Cand->charge()*413, dcaDstar);
+	    reco::VertexCompositeCandidate DstarCand = fit({pionCand,&kaonCand,pion2Cand}, pion2Cand->charge()*413, dcaDstar);
 
             if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
 	    
