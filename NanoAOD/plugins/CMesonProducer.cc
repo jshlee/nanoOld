@@ -98,7 +98,6 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (aPatJet.pt()< 30 or abs(aPatJet.eta())>3 ) continue;
 
     vector< const pat::PackedCandidate * > jetDaughters, softlepCands;
-    vector<TransientTrack> tracks;
 
     reco::VertexCompositeCandidate bestJpsi, bestD0, bestDstar;
     
@@ -106,7 +105,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     float dca_D0=-9, legDR_D0;
     float dca_Dstar=-9, legDR_Dstar, diffMass_Dstar;
     
-    for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; idx++) {
+    for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
       const pat::PackedCandidate * dauCand ( dynamic_cast<const pat::PackedCandidate*>(aPatJet.daughter(idx)));
       if ( dauCand->charge() ==0 ) continue;
       //if ( dauCand->pt() <1 ) continue;
@@ -116,23 +115,23 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     unsigned int dau_size = jetDaughters.size();
     if ( dau_size < 2 ) continue;
 
-    sort(jetDaughters.begin(), jetDaughters.end(), [](const pat::PackedCandidate * a, const pat::PackedCandidate * b)
-	 {return a->pt() > b->pt(); }); 
+    // dont need to sort since all combinations are done.
+    //sort(jetDaughters.begin(), jetDaughters.end(), [](const pat::PackedCandidate * a, const pat::PackedCandidate * b) {return a->pt() > b->pt(); }); 
 
     // if ( dau_size > maxNumPFCand_ ) dau_size = maxNumPFCand_;
     // jetDaughters.resize( dau_size );
-    for ( unsigned int lep1_idx = 0 ; lep1_idx< dau_size-1 ; lep1_idx++) {
-      for ( unsigned int lep2_idx = lep1_idx+1 ; lep2_idx< dau_size ; lep2_idx++) {
-	
-        const pat::PackedCandidate* lep1Cand = jetDaughters[lep1_idx];
+    for ( unsigned int lep1_idx = 0 ; lep1_idx< dau_size-1 ; ++lep1_idx) {
+      const pat::PackedCandidate* lep1Cand = jetDaughters[lep1_idx];
+      if ( abs(lep1Cand->pdgId()) != 13 and abs(lep1Cand->pdgId()) != 11) continue;
+      
+      for ( unsigned int lep2_idx = lep1_idx+1 ; lep2_idx< dau_size ; ++lep2_idx) {
         const pat::PackedCandidate* lep2Cand = jetDaughters[lep2_idx];
+	if ( abs(lep2Cand->pdgId()) != 13 and abs(lep2Cand->pdgId()) != 11) continue;
 
         int pdgMul = lep1Cand->pdgId() * lep2Cand->pdgId();
-        if ( pdgMul != -121 && pdgMul != -169 ) continue; 
+        if ( pdgMul != -121 and pdgMul != -169 ) continue; 
 
-	vector<const pat::PackedCandidate*> jpsiCands;
-	jpsiCands.emplace_back(lep1Cand);
-	jpsiCands.emplace_back(lep2Cand);
+	vector<const pat::PackedCandidate*> jpsiCands{lep1Cand, lep2Cand};
 	
 	float dca = 0;
 	reco::VertexCompositeCandidate JpsiCand = this->fit(jpsiCands, 443, dca);
@@ -164,23 +163,22 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     if ( applyCuts_ && softlepCands.size()==0  ) continue;
     
-    for ( unsigned int pion_idx = 0 ; pion_idx< dau_size ; pion_idx++) {
-      for ( unsigned int kaon_idx = 0 ; kaon_idx< dau_size ; kaon_idx++) {
+    for ( unsigned int pion_idx = 0 ; pion_idx< dau_size ; ++pion_idx) {
+      const pat::PackedCandidate * pionCand = jetDaughters[pion_idx];
+      if ( abs(pionCand->pdgId()) == 13 or abs(pionCand->pdgId()) == 11) continue;
+      
+      for ( unsigned int kaon_idx = 0 ; kaon_idx< dau_size ; ++kaon_idx) {
         if ( pion_idx == kaon_idx ) continue;
-        const pat::PackedCandidate * pionCand = jetDaughters[pion_idx];
 	pat::PackedCandidate kaonCand(*jetDaughters[kaon_idx]);	
-        kaonCand.setMass(gKaonMass);
-
-        if ( abs(pionCand->pdgId()) == 13 or abs(pionCand->pdgId()) == 11) continue;
         if ( abs(kaonCand.pdgId()) == 13 or abs(kaonCand.pdgId()) == 11) continue;
         if ( pionCand->charge() * kaonCand.charge() != -1 ) continue;
+	
+        kaonCand.setMass(gKaonMass);
 
         auto D0 = pionCand->p4() + kaonCand.p4();
         if ( abs(D0.M() - gD0Mass) > d0MassCut_) continue;
 
-	vector<const pat::PackedCandidate*> d0Cands;
-	d0Cands.emplace_back(pionCand);
-	d0Cands.emplace_back(&kaonCand);
+	vector<const pat::PackedCandidate*> d0Cands{pionCand, &kaonCand};
 	float dca = 0;
 	reco::VertexCompositeCandidate D0Cand = fit(d0Cands, 421, dca);
 	
@@ -195,15 +193,12 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         if ( dau_size < 3 ) continue;
 
         if ( abs( D0.M() - gD0Mass) < d0MassWindow_ ) {
-          for( unsigned int extra_pion_idx = 0 ;  extra_pion_idx < dau_size ; extra_pion_idx++) {
+          for( unsigned int extra_pion_idx = 0 ;  extra_pion_idx < dau_size ; ++extra_pion_idx) {
             if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
             const pat::PackedCandidate * pion2Cand = jetDaughters[extra_pion_idx];
             if ( abs(pion2Cand->pdgId()) != 211) continue;
 
-	    vector<const pat::PackedCandidate*> dstarCands;
-	    dstarCands.emplace_back(pionCand);
-	    dstarCands.emplace_back(&kaonCand);
-	    dstarCands.emplace_back(pion2Cand);
+	    vector<const pat::PackedCandidate*> dstarCands{pionCand,&kaonCand,pion2Cand};
 	    
 	    float dcaDstar = 0;
 	    reco::VertexCompositeCandidate DstarCand = fit(dstarCands, pion2Cand->charge()*413, dcaDstar);
@@ -290,7 +285,7 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   for (auto trk : cands){
     if (trk->bestTrack() == nullptr) continue;
     secVert.addDaughter( *trk );    
-  }  
+  }
   
   // impactPointTSCP DCA
   dca = -1;
@@ -306,7 +301,8 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
 float CMesonProducer::get2Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv)
 {
   SVector3 distanceVectorXY(vertex.vx() - pv.position().x(),
-			    vertex.vy() - pv.position().y(), 0.);
+			    vertex.vy() - pv.position().y(),
+			    0.);
   return ROOT::Math::Mag(distanceVectorXY);
 }
 float CMesonProducer::get3Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv)
