@@ -150,7 +150,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
     if ( dca_Jpsi > -1 ){
-      cmVxCand->emplace_back(bestD0);      
+      cmVxCand->emplace_back(bestJpsi);      
       dca.emplace_back(dca_Jpsi);
       lxy.emplace_back(get2Ddistance(bestJpsi,pv));
       l3D.emplace_back(get3Ddistance(bestJpsi,pv));
