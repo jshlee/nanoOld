@@ -127,7 +127,7 @@ if "sdfarm" in hostname:
 if not "sdfarm" in hostname:    
     sys.exit()
 
-storageprefix = "/store/group/CAT"
+storageprefix = "/store/group/nanoAOD"
 unmatching = []
 emptydirectory = []
 print "Listing dataset location"

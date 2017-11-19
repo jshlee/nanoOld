@@ -79,7 +79,8 @@ def pickD0(event):
         if event.cmeson_lxy[i] < 0.1: continue
         if event.cmeson_l3D[i] < 0.2: continue
 
-        d0 = ROOT.TLorentzVector(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
+        d0 = ROOT.TLorentzVector()
+        d0.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
         d0s.append(d0)
     return d0s
 
