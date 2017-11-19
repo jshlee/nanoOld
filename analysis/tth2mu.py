@@ -255,11 +255,12 @@ FileArg = sys.argv
 
 for i,Nfile in enumerate(FileArg[1:]):
 #for i,Nfile in enumerate(NanoFiles):
-    CurFile = TFile(Nfile)
+    #print i,Nfile
+    CurFile = TNetXNGFile(Nfile)
     Tree = CurFile.Get("Events")
     
     for ive, event in enumerate(Tree):
-        print ive 
+        #print ive 
     ### Clear Vectors ### 
         Mu_Pt.clear()
         Mu_Eta.clear()
