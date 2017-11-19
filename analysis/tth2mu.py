@@ -3,7 +3,7 @@ from ROOT import *
 from array import array
 
 ### Make TTREE ### 
-f = ROOT.TFile("SingleD.root", "recreate")
+f = ROOT.TFile("cattree.root", "recreate")
 ALL = ROOT.TTree("nEvent", "nEvent")
 Cat1 = ROOT.TTree("Cat1", "Cat1")
 Cat2 = ROOT.TTree("Cat2", "Cat2")
@@ -233,28 +233,33 @@ def BtaggedSelection (Jet_Pt, Jet_Eta, Jet_CSVV2):
     if Jet_CSVV2 < 0.848: return False 
     return True 
 
-
+FileArg = sys.argv
+#if type(arg)==String:
+#if type(arg)==array.array:
 ### Open Root File ###
-filelist = [#"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0000/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0001/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016C-18Apr2017-v1/171112_161105/0000/run2_2016RD_NANO*",
-            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016D-18Apr2017-v1/171112_161322/0000/run2_2016RD_NANO*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016E-18Apr2017-v1/171112_161612/0000/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016F-18Apr2017-v2/171112_161842/0000/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0000/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0001/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0000/run2_2016RD_NANO_*",
-            #"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0001/run2_2016RD_NANO_*"
-            ]
-NanoFiles = []       
-for i, Nfile in enumerate(filelist):            
-    NanoFiles = NanoFiles + glob.glob(Nfile)
+#filelist = [#"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0000/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0001/run2_2016RD_NANO_*",
+#            "root://cms-xrdr.sdfarm.kr:1094///xrd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016C-18Apr2017-v1/171112_161105/0000/run2_2016RD_NANO*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016D-18Apr2017-v1/171112_161322/0000/run2_2016RD_NANO*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016E-18Apr2017-v1/171112_161612/0000/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016F-18Apr2017-v2/171112_161842/0000/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0000/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0001/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0000/run2_2016RD_NANO_*",
+#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0001/run2_2016RD_NANO_*"
+#            ]
+#NanoFiles = []       
+#for i, Nfile in enumerate(filelist):            
+#    NanoFiles = NanoFiles + glob.glob(Nfile)
+#    print NanoFiles
 
-for i,Nfile in enumerate(NanoFiles):
+for i,Nfile in enumerate(FileArg[1:]):
+#for i,Nfile in enumerate(NanoFiles):
     CurFile = TFile(Nfile)
     Tree = CurFile.Get("Events")
-    print "File number: " , i
+    
     for ive, event in enumerate(Tree):
+        print ive 
     ### Clear Vectors ### 
         Mu_Pt.clear()
         Mu_Eta.clear()
@@ -410,4 +415,35 @@ for i,Nfile in enumerate(NanoFiles):
 
 f.Write()
 f.Close()
+"""        
 
+
+
+def ElecSelection
+def JetSelection 
+
+    if NANOTree.nMuon >= 2:
+        if MuonSelection(NANOTree.Muon_pt, NANOTree.Muon_eta) == false:
+            continue
+        else:
+            Mu_Pt = NANOTree.Muon_pt
+            Mu_Eta = NANOTree.Muon_eta
+    else:
+        continue 
+    nMuon = NANOTree.nMuona
+for ive, event in enumerate(NANOTree):
+    NumberMu = 0
+    if NANOTree.nMuon >= 2:
+        maxMu = NANOTree.nMuon 
+        Mu_Pt = array("d", maxMu*[0.0])
+        Mu_Eta= array("d", maxMu*[0.0])
+        for nMu in range(0,NANOTree.nMuon):
+            if MuonSelection(NANOTree.Muon_pt[nMu], NANOTree.Muon_eta[nMu]) == True:
+                Mu_Pt[nMu] = NANOTree.Muon_pt[nMu]
+                Mu_Eta[nMu] = NANOTree.Muon_eta[nMu]
+        NumberMu = len(Mu_Eta)
+    nMuon[0] = NumberMu 
+    if NANOTree.nMuon >= 2:
+        print Mu_Pt
+        print Mu_Eta
+"""      
