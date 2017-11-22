@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os,json,sys,shutil,time,getopt
-#import CATTools.CatProducer.catDefinitions_cfi as cat
 
 def submitjob(requestName, psetName, dataset, submit):
     print 'v'*80
@@ -79,7 +78,7 @@ if psetName == "" :
     sys.exit(-1)
     
 if inputFile is None:
-    datasets = json.load(open("%s/src/cat/NanoAOD/data/dataset/dataset.json"%os.environ['CMSSW_BASE']))
+    datasets = json.load(open("%s/src/nano/nanoAOD/data/dataset/dataset.json"%os.environ['CMSSW_BASE']))
     for d in datasets:
         dataset = d['DataSetName']
         if len( dataset ) == 0: continue

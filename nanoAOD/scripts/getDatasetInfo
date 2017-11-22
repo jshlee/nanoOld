@@ -103,7 +103,7 @@ for l in content[1:]:
     ds.append(item)
 
 ## Save results
-outDir = os.environ["CMSSW_BASE"]+"/src/cat/NanoAOD/data"
+outDir = os.environ["CMSSW_BASE"]+"/src/nano/nanoAOD/data"
 if not os.path.exists(outDir+"/dataset"): os.makedirs(outDir+"/dataset")
 
 import json
