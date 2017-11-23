@@ -1,3 +1,7 @@
+/*
+From cmssw RecoVertex/V0Producer/src/V0Fitter.cc
+*/
+
 #include<memory>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -34,8 +38,7 @@ using namespace std;
 using namespace reco;
 
 class CMesonProducer : public edm::stream::EDProducer<> {
-
-  //typedef ROOT::Math::SMatrix<double, 3, 3, ROOT::Math::MatRepSym<double, 3> > SMatrixSym3D;
+  typedef ROOT::Math::SMatrix<double, 3, 3, ROOT::Math::MatRepSym<double, 3> > SMatrixSym3D;
   typedef ROOT::Math::SVector<double, 3> SVector3;
     
 public:
@@ -48,32 +51,62 @@ private:
 
   reco::VertexCompositeCandidate fit(vector<const pat::PackedCandidate*> cands, int pdgId, float &dca);
   
-  float get2Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv);
-  float get3Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv);
-  
+  float getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv);
+  float getDistanceSig(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv);
+  SVector3 getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv);
+
   edm::EDGetTokenT<edm::View<pat::Jet> > jetSrc_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
   edm::ESHandle<TransientTrackBuilder> trackBuilder_;
 
-  const float gJpsiMass = 3.096;
   const float gPionMass = 0.1396;
-  const float gKaonMass = 0.4937;
-  const float gD0Mass   = 1.86480;
-  const float gDstarD0DiffMass = 0.145;
-  float maxDeltaR_, d0MassWindow_, d0MassCut_;
+  const float gKaonMass = 0.4937;  
+  const float jpsiMin_ = 2.5;
+  const float jpsiMax_ = 3.4;
+  const float D0Min_   = 1.7;
+  const float D0Max_   = 2.0;
+  const float DstarDiffMin_   = 0.14;
+  const float DstarDiffMax_   = 0.16;
   //unsigned int maxNumPFCand_;
   bool applyCuts_;
+  // cuts on initial track selection
+  float tkChi2Cut_;
+  int tkNHitsCut_;
+  float tkPtCut_;
+  float tkIPSigXYCut_;
+  float tkIPSigZCut_;
+  // cuts on the vertex
+  float vtxChi2Cut_;
+  float vtxDecaySigXYCut_;
+  float vtxDecaySigXYZCut_;
+  // miscellaneous cuts
+  float tkDCACut_;
+  float innerHitPosCut_;
+  float cosThetaXYCut_;
+  float cosThetaXYZCut_;  
 };
 
 CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
   vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel"))),
-  //maxNumPFCand_(iConfig.getParameter<int>("maxNumPFCand")),
-  maxDeltaR_(iConfig.getParameter<double>("maxDeltaR")),
-  d0MassWindow_(iConfig.getParameter<double>("d0MassWindow")),
-  d0MassCut_(iConfig.getParameter<double>("d0MassCut")),
   applyCuts_(iConfig.getParameter<bool>("applySoftLeptonCut"))  
 {
+  // cuts on initial track selection
+  tkChi2Cut_ = iConfig.getParameter<double>("tkChi2Cut");
+  tkNHitsCut_ = iConfig.getParameter<int>("tkNHitsCut");
+  tkPtCut_ = iConfig.getParameter<double>("tkPtCut");
+  tkIPSigXYCut_ = iConfig.getParameter<double>("tkIPSigXYCut");
+  tkIPSigZCut_ = iConfig.getParameter<double>("tkIPSigZCut");   
+  // cuts on vertex
+  vtxChi2Cut_ = iConfig.getParameter<double>("vtxChi2Cut");
+  vtxDecaySigXYZCut_ = iConfig.getParameter<double>("vtxDecaySigXYZCut");
+  vtxDecaySigXYCut_ = iConfig.getParameter<double>("vtxDecaySigXYCut");
+  // miscellaneous cuts
+  tkDCACut_ = iConfig.getParameter<double>("tkDCACut");
+  innerHitPosCut_ = iConfig.getParameter<double>("innerHitPosCut");
+  cosThetaXYCut_ = iConfig.getParameter<double>("cosThetaXYCut");
+  cosThetaXYZCut_ = iConfig.getParameter<double>("cosThetaXYZCut");
+  
   produces<nanoaod::FlatTable>("cmeson");
   produces<reco::VertexCompositeCandidateCollection>();
 }
@@ -98,16 +131,10 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (aPatJet.pt()< 30 or abs(aPatJet.eta())>3 ) continue;
 
     vector< const pat::PackedCandidate * > jetDaughters, softlepCands;
-
-    reco::VertexCompositeCandidate bestJpsi, bestD0, bestDstar;
-    
-    float dca_Jpsi=-9, legDR_Jpsi;
-    float dca_D0=-9, legDR_D0;
-    float dca_Dstar=-9, legDR_Dstar, diffMass_Dstar;
-    
+        
     for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
       const pat::PackedCandidate * dauCand ( dynamic_cast<const pat::PackedCandidate*>(aPatJet.daughter(idx)));
-      if ( dauCand->charge() ==0 ) continue;
+      if ( dauCand->charge() == 0 ) continue;
       //if ( dauCand->pt() <1 ) continue;
       jetDaughters.emplace_back( dauCand );
       if ( abs(dauCand->pdgId()) == 11  || abs(dauCand->pdgId())==13) softlepCands.emplace_back(dauCand);
@@ -131,8 +158,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         int pdgMul = lep1Cand->pdgId() * lep2Cand->pdgId();
         if ( pdgMul != -121 and pdgMul != -169 ) continue; 
 
-	float dca = 0;
-	reco::VertexCompositeCandidate JpsiCand = this->fit({lep1Cand, lep2Cand}, 443, dca);
+	float dca_Jpsi = -9;
+	reco::VertexCompositeCandidate JpsiCand = this->fit({lep1Cand, lep2Cand}, 443, dca_Jpsi);
 	
         // if ( abs(lep1Cand->pdgId() ) == 13 && abs(lep2Cand->pdgId()) == 13 ) {
         //   int lep1ID = (int)lep1Cand->isStandAloneMuon() + (int)lep1Cand->isGlobalMuon()*2;
@@ -141,24 +168,20 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         // }
         // else JpsiCand.setLeptonID( -1, -1 );
   
-        if ( JpsiCand.mass() < 2 || JpsiCand.mass() > 4 ) continue;
-        if ( abs(bestJpsi.mass() - gJpsiMass) > abs(JpsiCand.mass()-gJpsiMass) ){
-	  bestJpsi = JpsiCand;
-	  dca_Jpsi = dca;
-	  legDR_Jpsi = reco::deltaR( *lep1Cand, *lep2Cand);
-	}
+        if ( JpsiCand.mass() < jpsiMin_ || JpsiCand.mass() > jpsiMax_ ) continue;
+
+	cmVxCand->emplace_back(JpsiCand);      
+	dca.emplace_back(dca_Jpsi);
+	lxy.emplace_back(getDistance(2,JpsiCand,pv));
+	l3D.emplace_back(getDistance(3,JpsiCand,pv));
+	jetDR.emplace_back(reco::deltaR( JpsiCand, aPatJet));
+	legDR.emplace_back(reco::deltaR( *lep1Cand, *lep2Cand));
+	diffMass.emplace_back(0);
+	pid.emplace_back(443);
+	
       }
     }
-    if ( dca_Jpsi > -1 ){
-      cmVxCand->emplace_back(bestJpsi);      
-      dca.emplace_back(dca_Jpsi);
-      lxy.emplace_back(get2Ddistance(bestJpsi,pv));
-      l3D.emplace_back(get3Ddistance(bestJpsi,pv));
-      jetDR.emplace_back(reco::deltaR( bestJpsi, aPatJet));
-      legDR.emplace_back(legDR_Jpsi);
-      diffMass.emplace_back(0);
-      pid.emplace_back(443);
-    }
+
     if ( applyCuts_ && softlepCands.size()==0  ) continue;
     
     for ( unsigned int pion_idx = 0 ; pion_idx< dau_size ; ++pion_idx) {
@@ -172,65 +195,49 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
         if ( pionCand->charge() * kaonCand.charge() != -1 ) continue;
 	
         kaonCand.setMass(gKaonMass);
-
-        auto D0 = pionCand->p4() + kaonCand.p4();
-        if ( abs(D0.M() - gD0Mass) > d0MassCut_) continue;
-
-	float dca = 0;
-	reco::VertexCompositeCandidate D0Cand = fit({pionCand, &kaonCand}, 421, dca);
+	
+	float dca_D0 = -9;
+	reco::VertexCompositeCandidate D0Cand = fit({pionCand, &kaonCand}, 421, dca_D0);
 	
         if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
 
-        if ( abs(bestD0.mass() - gD0Mass)> abs(D0Cand.mass()-gD0Mass) ){
-	  bestD0 = D0Cand;
-	  dca_D0 = dca;
-	  legDR_D0 = reco::deltaR( *pionCand, kaonCand);
-	}
+        if ( D0Cand.mass() < D0Min_ || D0Cand.mass() > D0Max_ ) continue;
 
+	cmVxCand->emplace_back(D0Cand);
+	dca.emplace_back(dca_D0);
+	lxy.emplace_back(getDistance(2,D0Cand,pv));
+	l3D.emplace_back(getDistance(3,D0Cand,pv));
+	jetDR.emplace_back(reco::deltaR( D0Cand, aPatJet));
+	legDR.emplace_back(reco::deltaR( *pionCand, kaonCand));
+	diffMass.emplace_back(0);
+	pid.emplace_back(421);
+	
         if ( dau_size < 3 ) continue;
 
-        if ( abs( D0.M() - gD0Mass) < d0MassWindow_ ) {
-          for( unsigned int extra_pion_idx = 0 ;  extra_pion_idx < dau_size ; ++extra_pion_idx) {
-            if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
-            const pat::PackedCandidate * pion2Cand = jetDaughters[extra_pion_idx];
-            if ( abs(pion2Cand->pdgId()) != 211) continue;
+	for( unsigned int extra_pion_idx = 0 ;  extra_pion_idx < dau_size ; ++extra_pion_idx) {
+	  if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
+	  const pat::PackedCandidate * pion2Cand = jetDaughters[extra_pion_idx];
+	  if ( abs(pion2Cand->pdgId()) != 211) continue;
 	    
-	    float dcaDstar = 0;
-	    reco::VertexCompositeCandidate DstarCand = fit({pionCand,&kaonCand,pion2Cand}, pion2Cand->charge()*413, dcaDstar);
+	  float dca_Dstar = -9;
+	  reco::VertexCompositeCandidate DstarCand = fit({pionCand,&kaonCand,pion2Cand}, pion2Cand->charge()*413, dca_Dstar);
 
-            if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
+	  if ( applyCuts_ ) DstarCand.addDaughter( *softlepCands[0] );
 	    
-            float diffMass = DstarCand.mass() - D0.M();
-            if ( diffMass > 0.2) continue;
-            if ( abs( diffMass_Dstar - gDstarD0DiffMass) > abs( diffMass - gDstarD0DiffMass) ){
-	      bestDstar = DstarCand;
-	      dca_Dstar = dcaDstar;
-	      legDR_Dstar = reco::deltaR( D0Cand, *pion2Cand);
-	      diffMass_Dstar = diffMass;
-	    }
-          }
-        }
+	  float diffMass_Dstar = DstarCand.mass() - D0Cand.mass();
+	  if ( diffMass_Dstar < DstarDiffMin_ || diffMass_Dstar > DstarDiffMax_ ) continue;
+	    
+	  cmVxCand->emplace_back(DstarCand);
+	  dca.emplace_back(dca_Dstar);
+	  lxy.emplace_back(getDistance(2,DstarCand,pv));
+	  l3D.emplace_back(getDistance(3,DstarCand,pv));
+	  jetDR.emplace_back(reco::deltaR( DstarCand, aPatJet));
+	  legDR.emplace_back(reco::deltaR( D0Cand, *pion2Cand));      
+	  diffMass.emplace_back(diffMass_Dstar);
+	  pid.emplace_back(413);
+	      
+	}
       }
-    }
-    if ( dca_D0 > -1 ){
-      cmVxCand->emplace_back(bestD0);
-      dca.emplace_back(dca_D0);
-      lxy.emplace_back(get2Ddistance(bestD0,pv));
-      l3D.emplace_back(get3Ddistance(bestD0,pv));
-      jetDR.emplace_back(reco::deltaR( bestD0, aPatJet));
-      legDR.emplace_back(legDR_D0);
-      diffMass.emplace_back(0);
-      pid.emplace_back(421);
-    }
-    if ( dca_Dstar > -1 ){
-      cmVxCand->emplace_back(bestDstar);
-      dca.emplace_back(dca_Dstar);
-      lxy.emplace_back(get2Ddistance(bestDstar,pv));
-      l3D.emplace_back(get3Ddistance(bestDstar,pv));
-      jetDR.emplace_back(reco::deltaR( bestDstar, aPatJet));
-      legDR.emplace_back(legDR_Dstar);      
-      diffMass.emplace_back(diffMass_Dstar);
-      pid.emplace_back(413);
     }
   }
   
@@ -270,42 +277,69 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   if (!tv.isValid()) return reco::VertexCompositeCandidate();
   
   reco::Vertex theVtx = tv;
+  // loose cut on chi2
+  if (theVtx.normalizedChi2() > 10.) return reco::VertexCompositeCandidate();
+  
   reco::Particle::Point vtx(theVtx.x(), theVtx.y(), theVtx.z());  
   const reco::Vertex::CovarianceMatrix vtxCov(theVtx.covariance());
+    
+  // impactPointTSCP DCA
+  dca = -1;
+  ClosestApproachInRPhi cApp;
+  reco::TransientTrack tt1 = tv.refittedTracks()[0], tt2 = tv.refittedTracks()[1];
+  cApp.calculate(tt1.impactPointTSCP().theState(), tt2.impactPointTSCP().theState());  
+  if (!cApp.status()) return reco::VertexCompositeCandidate();
   
-  // for (auto refittedTrk : tv.refittedTracks()) {
-  //   lv += refittedTrk.track().p4();
-  // }
+  dca = cApp.distance();
+
+  // the POCA should at least be in the sensitive volume
+  GlobalPoint cxPt = cApp.crossingPoint();
+  if (sqrt(cxPt.x()*cxPt.x() + cxPt.y()*cxPt.y()) > 120. || std::abs(cxPt.z()) > 300.)
+    return reco::VertexCompositeCandidate();
+
+  // the tracks should at least point in the same quadrant
+  TrajectoryStateClosestToPoint const & posTSCP = tt1.trajectoryStateClosestToPoint(cxPt);
+  TrajectoryStateClosestToPoint const & negTSCP = tt2.trajectoryStateClosestToPoint(cxPt);
+  if (!posTSCP.isValid() || !negTSCP.isValid()) return reco::VertexCompositeCandidate();
+  if (posTSCP.momentum().dot(negTSCP.momentum()) < 0) return reco::VertexCompositeCandidate();
+  
+  
+
+  
   reco::VertexCompositeCandidate secVert(charge, lv, vtx, vtxCov, theVtx.chi2(), theVtx.ndof(), pdgId);
   for (auto trk : cands){
     if (trk->bestTrack() == nullptr) continue;
     secVert.addDaughter( *trk );    
   }
   
-  // impactPointTSCP DCA
-  dca = -1;
-  ClosestApproachInRPhi cApp_impactPointTSCP;
-  reco::TransientTrack tt1 = tv.refittedTracks()[0], tt2 = tv.refittedTracks()[1];
-  cApp_impactPointTSCP.calculate(tt1.impactPointTSCP().theState(), tt2.impactPointTSCP().theState());  
-  if ( cApp_impactPointTSCP.status() )
-    dca = cApp_impactPointTSCP.distance();
-  
   return secVert;
 }
 
-float CMesonProducer::get2Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+CMesonProducer::SVector3
+CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
 {
-  SVector3 distanceVectorXY(vertex.vx() - pv.position().x(),
-			    vertex.vy() - pv.position().y(),
-			    0.);
-  return ROOT::Math::Mag(distanceVectorXY);
+  float z = 0.;
+  if (dim == 3) z = vertex.vz() - pv.position().z();
+  SVector3 distanceVector(vertex.vx() - pv.position().x(),
+			  vertex.vy() - pv.position().y(),
+			  z);
+  return distanceVector;
 }
-float CMesonProducer::get3Ddistance(reco::VertexCompositeCandidate vertex,reco::Vertex pv)
-{ 
-  SVector3 distanceVector3D(vertex.vx() - pv.position().x(),
-			    vertex.vy() - pv.position().y(),
-			    vertex.vz() - pv.position().z());
-  return ROOT::Math::Mag(distanceVector3D);
+
+float CMesonProducer::getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+{
+  SVector3 distanceVec = getDistanceVector(dim, vertex, pv);
+  return ROOT::Math::Mag(distanceVec);
+}
+
+float CMesonProducer::getDistanceSig(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+{
+  SMatrixSym3D totalCov = vertex.vertexCovariance() + pv.covariance();
+  SVector3 distVecXYZ = getDistanceVector(dim, vertex, pv);
+  float distMagXYZ = ROOT::Math::Mag(distVecXYZ);
+  float sigmaDistMagXYZ = sqrt(ROOT::Math::Similarity(totalCov, distVecXYZ)) / distMagXYZ;
+
+  return sigmaDistMagXYZ;
 }
 
 void

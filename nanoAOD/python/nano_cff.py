@@ -10,6 +10,14 @@ def customiseMuons(process):
         precision = cms.int32(-1),
         type = cms.string('bool')
     )
+    process.muonTable.variables.trackerMu = cms.PSet(
+        compression = cms.string('none'),
+        doc = cms.string('isTrackerMuon'),
+        expr = cms.string("isTrackerMuon()"),
+        mcOnly = cms.bool(False),
+        precision = cms.int32(-1),
+        type = cms.string('bool')
+    )
     
     return(process)
     
