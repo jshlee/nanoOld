@@ -2,23 +2,14 @@ import FWCore.ParameterSet.Config as cms
 
 def customiseMuons(process):
     # additional variables needed for h2mu
-    process.muonTable.variables.globalMu = cms.PSet(
-        compression = cms.string('none'),
-        doc = cms.string('isGlobalMuon'),
-        expr = cms.string("isGlobalMuon()"),
-        mcOnly = cms.bool(False),
-        precision = cms.int32(-1),
-        type = cms.string('bool')
-    )
-    process.muonTable.variables.trackerMu = cms.PSet(
-        compression = cms.string('none'),
-        doc = cms.string('isTrackerMuon'),
-        expr = cms.string("isTrackerMuon()"),
-        mcOnly = cms.bool(False),
-        precision = cms.int32(-1),
-        type = cms.string('bool')
-    )
-    
+    process.muonTable.variables.globalMu = process.muonTable.variables.isPFcand
+    process.muonTable.variables.globalMu.expr = cms.string('isGlobalMuon')
+    process.muonTable.variables.globalMu.doc = process.muonTable.variables.globalMu.expr
+
+    process.muonTable.variables.trackerMu = process.muonTable.variables.isPFcand
+    process.muonTable.variables.trackerMu.expr = cms.string('isTrackerMuon')
+    process.muonTable.variables.trackerMu.doc = process.muonTable.variables.trackerMu.expr
+
     return(process)
     
 def customise(process):
@@ -28,8 +19,8 @@ def customise(process):
     process.load('nano.nanoAOD.cmesons_cff')
     process.nanoAOD_step += process.cmesonTables
     
-    process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
-    process.MessageLogger.cerr.FwkSummary.reportEvery = cms.untracked.int32(1000)
+    #process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
+    #process.MessageLogger.cerr.FwkSummary.reportEvery = cms.untracked.int32(1000)
     fileName = cms.untracked.string('nanoAOD.root')
     if hasattr(process, 'NANOAODSIMoutput'):          
         process.NANOAODSIMoutput.fileName = fileName

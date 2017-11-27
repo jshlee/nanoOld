@@ -20,10 +20,8 @@ def submitjob(requestName, psetName, dataset, submit):
     outputDatasetTag = dataset.split("/")[2]
     outLFNDirBase = '/store/group/nanoAOD/%s/'%(requestName)
     
-    if submit:
-        sendjob = "crab submit JobType.psetName='%s.py' General.requestName='%s' Data.outLFNDirBase='%s' Data.outputDatasetTag='%s' Data.inputDataset='%s'"%(
-            psetName,dataRequestName,outLFNDirBase,outputDatasetTag,dataset)
-    else :
+    sendjob = "crab submit JobType.psetName='%s' General.requestName='%s' Data.outLFNDirBase='%s' Data.outputDatasetTag='%s' Data.inputDataset='%s'"%(psetName,dataRequestName,outLFNDirBase,outputDatasetTag,dataset)
+    if not submit :
         sendjob = sendjob + " --dryrun"
 
     print sendjob
@@ -93,9 +91,9 @@ if inputFile is None:
 
         #if os.path.exists('crab_%s_%s' % (requestName, dataset.split('/')[1])): continue
         #if os.path.exists('crab_%s_%s_%s' % (requestName, dataset.split('/')[1], dataset.split('/')[2])): continue
-        if len( d['path']) == 0:
+        #if len( d['path']) == 0:
             #print d['path'], len( d['path'])
-            submitjob(requestName, psetName, dataset, submit)
+        submitjob(requestName, psetName, dataset, submit)
         
         #if submitBlock == '1' and 'QCD' in dataset:
         #    continue
