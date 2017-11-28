@@ -293,6 +293,7 @@ def BtaggedSelection (Jet_Pt, Jet_Eta, Jet_CSVV2):
 
 for i,Nfile in enumerate(FileArg[2:]):
 #for i,Nfile in enumerate(NanoFiles):
+    #print i,Nfile
     CurFile = TNetXNGFile(Nfile)
     Tree = CurFile.Get("Events")
     

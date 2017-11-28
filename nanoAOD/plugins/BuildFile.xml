@@ -22,11 +22,10 @@
 <use   name="SimDataFormats/Vertex"/>
 <use   name="SimGeneral/HepPDTRecord"/>
 <use   name="RecoMET/METAlgorithms"/>
-<use   name="RecoEgamma/EgammaTools"/>
 <use   name="CondFormats/JetMETObjects"/>
 <use   name="JetMETCorrections/Objects"/>
 <use   name="JetMETCorrections/Modules"/>
 
-<library   file="*.cc" name="catNanoAODPlugins">
+<library   file="*.cc" name="nanoAODPlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>
