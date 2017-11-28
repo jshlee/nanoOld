@@ -2,16 +2,37 @@ import FWCore.ParameterSet.Config as cms
 from  PhysicsTools.NanoAOD.common_cff import *
 
 ##################### Tables for final output and docs ##########################
-
 cmesonTable = cms.EDProducer("CMesonProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
-  #mcLabel  = cms.InputTag("prunedGenParticles"),
-  maxNumPFCand = cms.int32(9999),
-  maxDeltaR = cms.double(0.2),
-  d0MassCut = cms.double(0.5),
-  d0MassWindow = cms.double(0.05),
-  applySoftLeptonCut = cms.bool(True)
+  mcLabel  = cms.InputTag("prunedGenParticles"),
+  applySoftLeptonCut = cms.bool(True),
+  # -- cuts on initial track collection --
+  # Track normalized Chi2 <
+  tkChi2Cut = cms.double(100),
+  # Number of valid hits on track >=
+  tkNHitsCut = cms.int32(0),
+  # Pt of track >
+  tkPtCut = cms.double(0.),
+  # Track impact parameter significance >
+  tkIPSigXYCut = cms.double(100),
+  tkIPSigZCut = cms.double(100),
+  
+  # -- cuts on the vertex --
+  # Vertex chi2 <
+  vtxChi2Cut = cms.double(10),
+  # XY decay distance significance >
+  vtxDecaySigXYCut = cms.double(-1),
+  # XYZ decay distance significance >
+  vtxDecaySigXYZCut = cms.double(-1.),
+  
+  # -- miscellaneous cuts --
+  # POCA distance between tracks <
+  tkDCACut = cms.double(100),
+  # cos(angleXY) between x and p of V0 candidate >
+  cosThetaXYCut = cms.double(100),
+  # cos(angleXYZ) between x and p of V0 candidate >
+  cosThetaXYZCut = cms.double(100),
 )
 
 cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -24,8 +45,9 @@ cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
         x   = Var("vx()", float, doc = "secondary vertex X position, in cm",precision=10),
         y   = Var("vy()", float, doc = "secondary vertex Y position, in cm",precision=10),
         z   = Var("vz()", float, doc = "secondary vertex Z position, in cm",precision=14),
-        ndof   = Var("vertexNdof()", float, doc = "number of degrees of freedom",precision=8),
-        chi2   = Var("vertexNormalizedChi2()", float, doc = "reduced chi2, i.e. chi/ndof",precision=8),
+        chi2= Var("vertexChi2()", float, doc = "chi2",precision=10),
+        ndof= Var("vertexNdof()", int, doc = "number of degrees of freedom",precision=8),
+        pdgId=Var("pdgId()", int, doc = "pdgId",precision=8),
     ),
 )
 cmesonCandidateTable.variables.pt.precision=10
