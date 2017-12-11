@@ -21,13 +21,12 @@ def submitjob(requestName, psetName, dataset, submit):
     outLFNDirBase = '/store/group/nanoAOD/%s/'%(requestName)
     
     sendjob = "crab submit JobType.psetName='%s' General.requestName='%s' Data.outLFNDirBase='%s' Data.outputDatasetTag='%s' Data.inputDataset='%s'"%(psetName,dataRequestName,outLFNDirBase,outputDatasetTag,dataset)
-    if not submit :
-        sendjob = sendjob + " --dryrun"
-
     print sendjob
-    print "submiting job"
-    #os.system(sendjob)
-    #time.sleep(5)
+
+    if submit:
+        print "submiting job"
+        os.system(sendjob)
+        time.sleep(5)
     print '^'*80
 
     

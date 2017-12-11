@@ -19,8 +19,8 @@ def customise(process):
     process.load('nano.nanoAOD.cmesons_cff')
     process.nanoAOD_step += process.cmesonTables
     
-    #process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
-    #process.MessageLogger.cerr.FwkSummary.reportEvery = cms.untracked.int32(1000)
+    process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
+    process.MessageLogger.cerr.FwkSummary.reportEvery = cms.untracked.int32(1000)
     fileName = cms.untracked.string('nanoAOD.root')
     if hasattr(process, 'NANOAODSIMoutput'):          
         process.NANOAODSIMoutput.fileName = fileName
