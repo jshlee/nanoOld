@@ -2,6 +2,11 @@ import ROOT, os, getopt, sys, array, math, glob
 from ROOT import * 
 from array import array
 
+### Rochester ###
+ROOT.gROOT.LoadMacro("/cms/scratch/daniel/CMSSW_8_0_26_patch1/src/CATTools/CatAnalyzer/src/RoccoR.cc+")
+roc = ROOT.std.string("/cms/scratch/daniel/CMSSW_8_0_26_patch1/src/CATTools/CatAnalyzer/data/rcdata.2016.v3/")
+rocCor = ROOT.RoccoR(roc)
+
 ### Make TTREE ### 
 FileArg = sys.argv
 print FileArg
@@ -12,6 +17,7 @@ if not os.path.isdir(Dirname):
 
 temp = FileArg[2].split('/').pop()
 cattree = Dirname+temp
+
 #print cattree
 f = ROOT.TFile(cattree, "recreate")
 ALL = ROOT.TTree("nEvent", "nEvent")
@@ -30,6 +36,9 @@ Cat10 = ROOT.TTree("Cat10", "Cat10")
 Dilep = ROOT.TLorentzVector()
 Mu1 = ROOT.TLorentzVector()
 Mu2 = ROOT.TLorentzVector()
+GenLep1 = ROOT.TLorentzVector()
+GenLep2 = ROOT.TLorentzVector()
+
 
 Mu_Pt = ROOT.std.vector('float')()
 Mu_Eta = ROOT.std.vector('float')()
@@ -53,6 +62,7 @@ Nu_El = array("i",[0])
 Nu_Jet = array("i",[0])
 Nu_BJet = array("i",[0])
 Nu_NonBJet = array("i",[0])
+genweight = array("f",[0])
 
 Event_Tot = ROOT.TH1D("Event_total", "Event_total" ,1,0,1)
 
@@ -71,6 +81,7 @@ ALL.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 ALL.Branch("Jet_Pt", Jet_Pt)
 ALL.Branch("Jet_Eta", Jet_Eta)
 ALL.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+ALL.Branch("genweight", genweight, "genweight/F")
 
 Cat1.Branch("Event_No", Event_No, "Event_No/I")
 Cat1.Branch("Dilep", "TLorentzVector", Dilep)
@@ -86,6 +97,7 @@ Cat1.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat1.Branch("Jet_Pt", Jet_Pt)
 Cat1.Branch("Jet_Eta", Jet_Eta)
 Cat1.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat1.Branch("genweight", genweight, "genweight/F")
 
 Cat2.Branch("Event_No", Event_No, "Event_No/I")
 Cat2.Branch("Dilep", "TLorentzVector", Dilep)
@@ -101,6 +113,7 @@ Cat2.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat2.Branch("Jet_Pt", Jet_Pt)
 Cat2.Branch("Jet_Eta", Jet_Eta)
 Cat2.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat2.Branch("genweight", genweight, "genweight/F")
 
 Cat3.Branch("Event_No", Event_No, "Event_No/I")
 Cat3.Branch("Dilep", "TLorentzVector", Dilep)
@@ -116,6 +129,7 @@ Cat3.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat3.Branch("Jet_Pt", Jet_Pt)
 Cat3.Branch("Jet_Eta", Jet_Eta)
 Cat3.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat3.Branch("genweight", genweight, "genweight/F")
 
 Cat4.Branch("Event_No", Event_No, "Event_No/I")
 Cat4.Branch("Dilep", "TLorentzVector", Dilep)
@@ -131,6 +145,7 @@ Cat4.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat4.Branch("Jet_Pt", Jet_Pt)
 Cat4.Branch("Jet_Eta", Jet_Eta)
 Cat4.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat4.Branch("genweight", genweight, "genweight/F")
 
 Cat5.Branch("Event_No", Event_No, "Event_No/I")
 Cat5.Branch("Dilep", "TLorentzVector", Dilep)
@@ -146,6 +161,7 @@ Cat5.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat5.Branch("Jet_Pt", Jet_Pt)
 Cat5.Branch("Jet_Eta", Jet_Eta)
 Cat5.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat5.Branch("genweight", genweight, "genweight/F")
 
 Cat6.Branch("Event_No", Event_No, "Event_No/I")
 Cat6.Branch("Dilep", "TLorentzVector", Dilep)
@@ -161,6 +177,7 @@ Cat6.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat6.Branch("Jet_Pt", Jet_Pt)
 Cat6.Branch("Jet_Eta", Jet_Eta)
 Cat6.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat6.Branch("genweight", genweight, "genweight/F")
 
 Cat7.Branch("Event_No", Event_No, "Event_No/I")
 Cat7.Branch("Dilep", "TLorentzVector", Dilep)
@@ -176,6 +193,7 @@ Cat7.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat7.Branch("Jet_Pt", Jet_Pt)
 Cat7.Branch("Jet_Eta", Jet_Eta)
 Cat7.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat7.Branch("genweight", genweight, "genweight/F")
 
 Cat8.Branch("Event_No", Event_No, "Event_No/I")
 Cat8.Branch("Dilep", "TLorentzVector", Dilep)
@@ -191,6 +209,7 @@ Cat8.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat8.Branch("Jet_Pt", Jet_Pt)
 Cat8.Branch("Jet_Eta", Jet_Eta)
 Cat8.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat8.Branch("genweight", genweight, "genweight/F")
 
 Cat9.Branch("Event_No", Event_No, "Event_No/I")
 Cat9.Branch("Dilep", "TLorentzVector", Dilep)
@@ -206,6 +225,7 @@ Cat9.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat9.Branch("Jet_Pt", Jet_Pt)
 Cat9.Branch("Jet_Eta", Jet_Eta)
 Cat9.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat9.Branch("genweight", genweight, "genweight/F")
 
 Cat10.Branch("Event_No", Event_No, "Event_No/I")
 Cat10.Branch("Dilep", "TLorentzVector", Dilep)
@@ -221,17 +241,39 @@ Cat10.Branch("Nu_Jet", Nu_Jet, "Nu_Jet/I")
 Cat10.Branch("Jet_Pt", Jet_Pt)
 Cat10.Branch("Jet_Eta", Jet_Eta)
 Cat10.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
+Cat10.Branch("genweight", genweight, "genweight/F")
 
-def MuonSelection (mu_pt , mu_eta, mu_phi, mu_m, mu_iso, mu_charge, mu_id):
-    if mu_pt < 20: return False 
-    if abs(mu_eta) > 2.4: return False 
+def MuScaleFactor (mu_charge, mu_pt, mu_eta, mu_phi, nTrack):
+    scaleFactor = 1.0
+    u1 = ROOT.gRandom.Rndm()
+    u2 = ROOT.gRandom.Rndm()
+    if "Run" in FileArg[1]:
+        scaleFactor = rocCor.kScaleDT(mu_charge, mu_pt, mu_eta, mu_phi, 0, 0)
+    else: 
+        if mu_pt == GenLep1.Pt():
+            scaleFactor = rocCor.kScaleFromGenMC(mu_charge, mu_pt, mu_eta, mu_phi, nTrack, GenLep1.Pt(), u1, 0, 0);
+        if mu_pt == GenLep2.Pt():
+            scaleFactor = rocCor.kScaleFromGenMC(mu_charge, mu_pt, mu_eta, mu_phi, nTrack, GenLep2.Pt(), u1, 0, 0);
+        else:
+            scaleFactor = rocCor.kScaleAndSmearMC(mu_charge, mu_pt, mu_eta, mu_phi, nTrack, u1, u2, 0, 0);   
+    
+    return scaleFactor 
+
+def MuonSelection (mu_pt , mu_eta, mu_phi, mu_m, mu_iso, mu_charge, mu_id, nTrack):
+    m = ROOT.TLorentzVector()
+    mu = ROOT.TLorentzVector()
+    m.SetPtEtaPhiM(mu_pt, mu_eta, mu_phi, mu_m)
+    mu = m * MuScaleFactor(mu_charge, mu_pt, mu_eta, mu_phi, nTrack)
+
+    if mu.Pt() < 20: return False 
+    if abs(mu.Eta()) > 2.4: return False 
     if mu_iso > 0.25: return False
     if not mu_id: return False 
-    Mu_Pt.push_back(mu_pt)
-    Mu_Eta.push_back(mu_eta)
+    Mu_Pt.push_back(mu.Pt())
+    Mu_Eta.push_back(mu.Eta())
     Mu_Charge.push_back(mu_charge)
-    Mu_Phi.push_back(mu_phi)
-    Mu_M.push_back(mu_m)
+    Mu_Phi.push_back(mu.Phi())
+    Mu_M.push_back(mu.M())
     return True
 
 def ElecSelection (elec_pt, elec_eta, elec_phi, elec_m, elec_iso, elec_id, mu_p):
@@ -264,8 +306,6 @@ def JetSelection (jet_pt, jet_eta, jet_phi, jet_m, jet_id, jet_b, mu_p):
     Jet_CSVV2.push_back(jet_b)
     Jet_M.push_back(jet_m)
     Jet_Phi.push_back(jet_phi)
-    ### OverLap Check ###
-        
     return True 
 
 def BtaggedSelection (Jet_Pt, Jet_Eta, Jet_CSVV2):
@@ -293,7 +333,6 @@ def BtaggedSelection (Jet_Pt, Jet_Eta, Jet_CSVV2):
 
 for i,Nfile in enumerate(FileArg[2:]):
 #for i,Nfile in enumerate(NanoFiles):
-    #print i,Nfile
     CurFile = TNetXNGFile(Nfile)
     Tree = CurFile.Get("Events")
     
@@ -313,9 +352,9 @@ for i,Nfile in enumerate(FileArg[2:]):
         Jet_CSVV2.clear()
         Jet_M.clear()
         Jet_Phi.clear()
-
+        
     ### Start Event Loop ###
-       
+                  
       ### Object Selection ########################################################################################################################
         ### Muon Selection ### 
         Event_Total[0] = 1
@@ -324,13 +363,39 @@ for i,Nfile in enumerate(FileArg[2:]):
         NuEl = 0
         NuJet = 0
         NuBJet = 0
+        
+        ### Weights ###
+        if "Run" not in FileArg[1]:
+            genweight[0] = event.genWeight 
+
+        ### Generated Lepton ###
+            for i in range(event.nGenDressedLepton): 
+                if abs(event.GenDressedLepton_pdgId[i]) != 13 : 
+                    break    
+            
+                bosonSample = False
+                isfromBoson = False 
+                for k in range(event.nGenPart):
+                    if (event.GenPart_genPartIdxMother[k] == 23 or event.GenPart_genPartIdxMother[k] == 25):
+                        bosonSample = True 
+                        isfromBoson = True 
+                
+                if isfromBoson == True:    
+                    if event.GenDressedLepton_pdgId[i] == 13:
+                        GenLep1.SetPtEtaPhiM(event.GenDressedLepton_pt[i], event.GenDressedLepton_eta[i], event.GenDressedLepton_phi[i], event.GenDressedLepton_mass[i])
+                    else: 
+                        GenLep2.SetPtEtaPhiM(event.GenDressedLepton_pt[i], event.GenDressedLepton_eta[i], event.GenDressedLepton_phi[i], event.GenDressedLepton_mass[i])
+        
+        ### Muon Selection ###        
         if event.nMuon > 0:
             for i in range(event.nMuon):
-                if MuonSelection(event.Muon_pt[i], event.Muon_eta[i], event.Muon_phi[i], event.Muon_mass[i], event.Muon_pfRelIso04_all[i], event.Muon_charge[i], event.Muon_mediumId[i]):
+                if MuonSelection(event.Muon_pt[i], event.Muon_eta[i], event.Muon_phi[i], event.Muon_mass[i], event.Muon_pfRelIso04_all[i], event.Muon_charge[i], event.Muon_mediumId[i], event.Muon_nTrackerLayers[i]):
                     NuMu += 1
                 Nu_Mu[0] = NuMu    
         if Nu_Mu < 2:
             continue
+
+        ### Muon TLorentzVector ###    
         Mu_P4 = []            
         for i in range(NuMu):
             MuP4 = ROOT.TLorentzVector()
