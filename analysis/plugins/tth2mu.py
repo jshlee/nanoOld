@@ -24,7 +24,7 @@ puWeight = ROOT.WeightCalculatorFromHistogram(hist_mc, hist_data, True, True, Fa
 ### Make TTREE ### 
 FileArg = sys.argv
 tempdir = FileArg[1]
-Dirname = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/%s/"%tempdir
+Dirname = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_Masked/%s/"%tempdir
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 
