@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import ROOT, CATTools.CatAnalyzer.CMS_lumi, json, os, getopt, sys
-from CATTools.CatAnalyzer.histoHelper import *
-from CATTools.CatAnalyzer.histoHelper_h2mu import *
+import ROOT, nano.analysis.CMS_lumi, json, os, getopt, sys
+from nano.analysis.histoHelper import *
 from ROOT import TLorentzVector
 #import DYestimation
 ROOT.gROOT.SetBatch(True)
@@ -17,23 +16,25 @@ h2muDraw.py -c 'll_m>50&&step>=5&&isTight==1&&filtered==1' -b [100,-3,3] -p lep1
 '''
 
 json_used = 'Golden'
-datalumi = 36814 #35.9fb-1
+#datalumi = 36814 #35.9fb-1
+datalumi =  5975 #35.9fb-1
 
 #datalumi = 8360.481454 #35.9fb-1
 version = os.environ['CMSSW_VERSION']
 
-rootfileDir = "/cms/scratch/daniel/CMSSW_8_0_26_patch1/src/Nano_AOD/Results/Nano_CorLumi/results_merged/tth2mu_"
+rootfileDir = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_NewCut/results_merged/tth2mu_"
+
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
 #rootfileDir = "%s/src/CATTools/CatAnalyzer/test/results_merged/h2muAnalyzer_" % os.environ['CMSSW_BASE']
 #rootfileDir = "%s/cattuples/20160324_163101/results_merged/h2muAnalyzer_" % os.environ['HOME_SCRATCH']
 
 CMS_lumi.lumi_sqrtS = "%.2f fb^{-1}, #sqrt{s} = 13 TeV 25ns "%(float(datalumi)/1000)
 mcfilelist = [
-              'WMinusH_HToMuMu',
-              'WPlusH_HToMuMu',
-              'ZH_HToMuMu',
-              'VBF_HToMuMu',
-              'GG_HToMuMu',
+#              'WMinusH_HToMuMu',
+#              'WPlusH_HToMuMu',
+#              'ZH_HToMuMu',
+#              'VBF_HToMuMu',
+#              'GG_HToMuMu',
              # 'ttH_nonbb',
              # 'GluGluToZZTo2mu2tau',
              # 'GluGluToZZTo2e2mu',
@@ -44,29 +45,29 @@ mcfilelist = [
              # 'ZZ',
              # 'WWTo2L2Nu',
              # 'WW',
-              'WZTo2LQQ',
+#              'WZTo2LQQ',
              # 'WZTo3LNu_powheg',
              # 'WZ',
-              "WWTo2L2Nu",
-              "WZTo3LNu_amcatnlo",
+#              "WWTo2L2Nu",
+#              "WZTo3LNu_amcatnlo",
              # "WZTo2L2Q",
-              "ZZTo2L2Nu",
-              "ZZTo2L2Q",
-              "ZZTo4L",
-              "WWW",
-              "WWZ",
-              "WZZ",
-              "ZZZ",
+#              "ZZTo2L2Nu",
+#              "ZZTo2L2Q",
+#              "ZZTo4L",
+#              "WWW",
+#              "WWZ",
+#              "WZZ",
+#              "ZZZ",
              # "ttZToLLNuNu",
              # "ttWToLNu",
-              "SingleTop_tW_noHadron",
-              "SingleTbar_tW_noHadron",
-             # "SingleTop_tW",
-             # "SingleTbar_tW",
+             # "SingleTop_tW_noHadron",
+             # "SingleTbar_tW_noHadron",
+#              "SingleTop_tW",
+#              "SingleTbar_tW",
              # "TTJets_DiLept",
              # "TTJets_DiLept_Tune4",
                'TTJets_aMC',
-              'DYJets',
+               'DYJets',
              # 'DYJets_MG_10to50',
              # 'DYJets_MG2',
              # 'DYJets_2J',
@@ -77,25 +78,24 @@ mcfilelist = [
 #mcfilelist = ['VBF_HToMuMu','WW','WZ','ZZ','TT_powheg','DYJets','DYJets_10to50']#,'WJets']
 #mcfilelist = [ 'TTJets_aMC']
 rdfilelist = [
-              'SingleMuon_Run2016',#mumu
+              'SingleMuon_Run2016B',#mumu
              # 'SingleMuon_Run2016',#mumu
               #'SingleMuon_Run2015C',
-              #'SingleMuon_Run2015D'
+             #'SingleMuon_Run2015D'
              ]
 
-datasets = json.load(open("/cms/scratch/daniel/CMSSW_8_0_26_patch1/nano/nanoAOD/data/dataset/dataset.json"))
-
+datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.environ['CMSSW_BASE']))
 #cut_step = "(step>=5)"
 #cut = 'lep1.Pt()>60&&lep2.Pt()>60&&dilep.M()>60&&step>=5'
 #cut = 'dilep.M()>60&&step>4&&filtered&&MVA_BDT>-0.0246'
-cut = 'Dilep.M()>60'
+cut = 'Dilep.M()>60&&Step>=6'
 #cut = 'filtered==1&&%s&&%s'%(cut_step,emu_pid)
 #cut = 'channel==2'
 print cut
 #weight = 'genweight*puweight*mueffweight*eleffweight*tri'
 #weight = 'weight*(mueffweight)'
-weight = 'genweight*puweight'
-#weight = 'genweight'
+#weight = 'genweight*puweight'
+weight = 'genweight'
 #plotvar = 'met'
 plotvar = 'Dilep.M()'
 binning = [150, 50, 200]
@@ -103,9 +103,9 @@ binning = [150, 50, 200]
 x_name = 'Invariant Mass'
 y_name = 'Events'
 dolog = True
-f_name = 'Dilep_Pu_Masked22'
-minp = 0.05
-maxp = 1000000000
+f_name = 'Dilep_M_B'
+#minp = 0.05
+#maxp = 1000000000
 try:
     opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:f:j:",["cut","weight","binning","plotvar","x_name","y_name","f_name","json_used","dolog"])
 except getopt.GetoptError:          
@@ -169,7 +169,7 @@ for imc,mcname in enumerate(mcfilelist):
     print rfname
     tfile = ROOT.TFile(rfname)
     #wentries = tfile.Get("genweight").Integral()
-    wentries = tfile.Get("weight").GetBinContent(1)
+    wentries = tfile.Get("genweight").Integral()
     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Wentires: %s"%(wentries)
     #wentries = tfile.Get("cattree/nevents").Integral(0,1)
     #print wentries
@@ -214,8 +214,8 @@ for imc,mcname in enumerate(mcfilelist):
 print "rdfname: %s\n tname: %s\n binning: %s\n plotvar: %s\n cut: %s\n"%(rdfname, tname, binning, plotvar, cut)
 #rdhist = makeTH1(rdfname, tname, 'data', binning, plotvar, tcut+'&&(Dilep.M()<120||Dilep.M()>130)')
 rdhist = makeTH1(rdfname, tname, 'data', binning, plotvar, cut+'&&(Dilep.M()<120||Dilep.M()>130)')
-rdhist.SetMinimum(minp)  
-rdhist.SetMaximum(maxp)
+#rdhist.SetMinimum(minp)  
+#rdhist.SetMaximum(maxp)
 canv = drawTH1(f_name, CMS_lumi, mchistList, rdhist, x_name, y_name,dolog)
 canv.SaveAs(f_name+".png")            
 """
