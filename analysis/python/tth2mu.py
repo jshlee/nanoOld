@@ -24,7 +24,8 @@ puWeight = ROOT.WeightCalculatorFromHistogram(hist_mc, hist_data, True, True, Fa
 ### Make TTREE ### 
 FileArg = sys.argv
 tempdir = FileArg[1]
-Dirname = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_Masked/%s/"%tempdir
+#Dirname = "/cms/scratch/daniellee/nanoAOD/src/nano/analysis/test/Results/Nano_NewCut/%s/"%tempdir
+Dirname = "/root://cms-xrdr.sdfarm.kr:1094//xrd/store/user/daniellee/%s/"%tempdir
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 
@@ -34,6 +35,7 @@ cattree = Dirname+temp
 #print cattree
 f = ROOT.TFile(cattree, "recreate")
 ALL = ROOT.TTree("nEvent", "nEvent")
+"""
 Cat1 = ROOT.TTree("Cat1", "Cat1")
 Cat2 = ROOT.TTree("Cat2", "Cat2")
 Cat3 = ROOT.TTree("Cat3", "Cat3")
@@ -44,6 +46,7 @@ Cat7 = ROOT.TTree("Cat7", "Cat7")
 Cat8 = ROOT.TTree("Cat8", "Cat8")
 Cat9 = ROOT.TTree("Cat9", "Cat9")
 Cat10 = ROOT.TTree("Cat10", "Cat10")
+"""
 
 ### Variables ###
 Dilep = ROOT.TLorentzVector()
@@ -79,13 +82,30 @@ genweight = array("f",[0])
 puweight = array("f",[0])
 b_weight = array("f",[0])
 GJson = array("f",[0])
+Step = array("i",[0])
+NewStep = array("i",[0])
+#Step0 = array("i",[0])
+#Step1 = array("i",[0])
+#Step2 = array("i",[0])
+#Step3 = array("i",[0])
+#Step4 = array("i",[0])
+#Step5 = array("i",[0])
+#Step6 = array("i",[0])
 
 Event_Tot = ROOT.TH1D("Event_total", "Event_total" ,1,0,1)
 genweights = ROOT.TH1D("genweight", "genweight" , 1,0,1)
 weight = ROOT.TH1D("weight", "weight", 1,0,1)
+cutFlow = ROOT.TH1I("cutflow", "cutflow", 11, -0.5, 10.5)
 
 ### Branches ###
 ALL.Branch("Event_No", Event_No, "Event_No/I")
+ALL.Branch("Step", Step, "Step/I")
+#ALL.Branch("Step1", Step1, "Step1/O")
+#ALL.Branch("Step2", Step2, "Step2/O")
+#ALL.Branch("Step3", Step3, "Step3/O")
+#ALL.Branch("Step4", Step4, "Step4/O")
+#ALL.Branch("Step5", Step5, "Step5/O")
+#ALL.Branch("Step6", Step6, "Step6/O")
 ALL.Branch("Dilep", "TLorentzVector", Dilep)
 ALL.Branch("Mu1", "TLorentzVector", Mu1)
 ALL.Branch("Mu2", "TLorentzVector", Mu2)
@@ -101,7 +121,7 @@ ALL.Branch("Jet_Eta", Jet_Eta)
 ALL.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
 ALL.Branch("genweight", genweight, "genweight/F")
 ALL.Branch("puweight", puweight, "puweight/F")
-
+"""
 Cat1.Branch("Event_No", Event_No, "Event_No/I")
 Cat1.Branch("Dilep", "TLorentzVector", Dilep)
 Cat1.Branch("Mu1", "TLorentzVector", Mu1)
@@ -271,16 +291,13 @@ Cat10.Branch("Jet_Eta", Jet_Eta)
 Cat10.Branch("Nu_BJet", Nu_BJet, "Nu_BJet/I")
 Cat10.Branch("genweight", genweight, "genweight/F")
 Cat10.Branch("puweight", puweight, "puweight/F")
-
+"""
 def LumiCheck(event):
     run = str(event.run)
-    if run in json_hold:
-        for i in range(len(Gfile[run])):
-            start = Gfile[run][i][0]
-            end = Gfile[run][i][1]
-            for k in range(start, end+1):
-                if k == event.luminosityBlock:
-                    return True         
+    if run in Gfile:
+        for start, end in Gfile[run]:
+            if start <= event.luminosityBlock <= end:
+                return True         
         return False
     else:
         return False
@@ -359,57 +376,20 @@ def BtaggedSelection (Jet_Pt, Jet_Eta, Jet_CSVV2):
     if Jet_CSVV2 < 0.848: return False 
     return True 
 
-### Open Root File ###
-#filelist = [#"/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0000/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016B-18Apr2017_ver2-v1/171112_160845/0001/run2_2016RD_NANO_*",
-#            "root://cms-xrdr.sdfarm.kr:1094///xrd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016C-18Apr2017-v1/171112_161105/0000/run2_2016RD_NANO*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016D-18Apr2017-v1/171112_161322/0000/run2_2016RD_NANO*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016E-18Apr2017-v1/171112_161612/0000/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016F-18Apr2017-v2/171112_161842/0000/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0000/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016G-18Apr2017-v1/171112_162118/0001/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0000/run2_2016RD_NANO_*",
-#            "/xrootd/store/group/nanoAOD/SingleMuon/run2_2016RD_NANO_Run2016H-18Apr2017-v1/171112_162332/0001/run2_2016RD_NANO_*"
-#            ]
-#NanoFiles = []       
-#for i, Nfile in enumerate(filelist):            
-#    NanoFiles = NanoFiles + glob.glob(Nfile)
-#    print NanoFiles
-GJsonF = open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/GoldenJson.txt")
-Gfile = json.load(GJsonF)
-GJsonF.seek(0)
-json_hold = GJsonF.read()
-
-for i,Nfile in enumerate(FileArg[2:]):
-#for i,Nfile in enumerate(NanoFiles):
-#    print "File name: " , Nfile 
-    CurFile = TNetXNGFile(Nfile)
-    Tree = CurFile.Get("Events")
-#    print Tree.GetEntries()
-    for ive, event in enumerate(Tree):
-    ### Clear Vectors ### 
-        Mu_Pt.clear()
-        Mu_Eta.clear()
-        Mu_Charge.clear()
-        Mu_Phi.clear()
-        Mu_M.clear()
-
-        El_Pt.clear()
-        El_Eta.clear()
-
-        Jet_Pt.clear()
-        Jet_Eta.clear()
-        Jet_CSVV2.clear()
-        Jet_M.clear()
-        Jet_Phi.clear()
-        
+def mainloop (event):
     ### Start Event Loop ###
-      ### Check Lumi ### 
-        if "Run" in FileArg[1]:
+        ### Check Lumi ### 
+        if "SingleMuon" in FileArg[1]:
             if not LumiCheck(event):
-                continue
+            #    Step1[0] = False        
+                return True
+       # if Step0[0] == True:        
+        Step[0]  = 1  
+        cutFlow.Fill(1)
+       #     NewStep[0] = 1
+
       ### Object Selection ########################################################################################################################
-        ### Muon Selection ### 
+        ### Muon Selection ###       
         Event_Total[0] = 1
         Event_Tot.Fill(0.5, Event_Total[0])
         NuMu = 0
@@ -424,11 +404,12 @@ for i,Nfile in enumerate(FileArg[2:]):
         else: puweight[0] = 1
 
         ### Weights ###
-        if "Run" not in FileArg[1]:
+        if "SingleMuon" not in FileArg[1]:
             genweight[0] = event.genWeight 
             genweights.Fill(0.5, genweight[0])
             b_weight[0] = genweight[0] * puweight[0]
             weight.Fill(0.5, b_weight[0])
+
         ### Generated Lepton ###
             for i in range(event.nGenDressedLepton): 
                 if abs(event.GenDressedLepton_pdgId[i]) != 13 : 
@@ -447,14 +428,34 @@ for i,Nfile in enumerate(FileArg[2:]):
                     else: 
                         GenLep2.SetPtEtaPhiM(event.GenDressedLepton_pt[i], event.GenDressedLepton_eta[i], event.GenDressedLepton_phi[i], event.GenDressedLepton_mass[i])
         
+        ### Primary Vertex ###
+        if abs(event.PV_z) >= 24:
+            return True  
+        if event.PV_npvs == 0:
+            return True  
+        if event.PV_ndof < 4:
+     #           Step2[0] = False  
+            return True
+       # if Step1[0] == True:            
+        cutFlow.Fill(2)
+          #  return True 
+        Step[0] = 2        
+    #    NewStep[0] = 2
+
         ### Muon Selection ###        
         if event.nMuon > 0:
             for i in range(event.nMuon):
                 if MuonSelection(event.Muon_pt[i], event.Muon_eta[i], event.Muon_phi[i], event.Muon_mass[i], event.Muon_pfRelIso04_all[i], event.Muon_charge[i], event.Muon_mediumId[i], event.Muon_nTrackerLayers[i], event.Muon_trackerMu[i], event.Muon_globalMu[i]):
                     NuMu += 1
                 Nu_Mu[0] = NuMu    
-        if Nu_Mu < 2:
-            continue
+        if NuMu < 2:
+     #       Step3[0] = False         
+            return True   
+    #    if Step2[0] == True:            
+        Step[0] = 3        
+    #    if Step2[0] == True and Step1[0] == True:
+    #    NewStep[0] = 3
+        cutFlow.Fill(3)
 
         ### Muon TLorentzVector ###    
         Mu_P4 = []            
@@ -484,19 +485,8 @@ for i,Nfile in enumerate(FileArg[2:]):
                 Nu_BJet[0] = NuBJet    
 
       ### Event Selection ############################################################################################################################
-        ### Muon Triggers ###
-        if not event.HLT_IsoMu24 and not event.HLT_IsoTkMu24:
-            continue   
-        
-        ### Primary Vertex ###
-        if abs(event.PV_z) >= 24:
-            continue 
-        if event.PV_npvs == 0:
-            continue 
-        if event.PV_ndof < 4:
-            continue 
-
         ### Muon With Opp Charge ###
+
         Charge = False
         for i in xrange(NuMu):   
             if ((Mu_Pt[0] > 26) or (Mu_Pt[i] > 26)): 
@@ -506,14 +496,38 @@ for i,Nfile in enumerate(FileArg[2:]):
                     Charge = True
                     break
         if Charge == False: 
-            continue
-        
+         #   Step4[0] = False         
+            return True
+      #  if Step3[0] == True:
+        Step[0] = 4        
+      #  if Step3[0] == True and Step2[0] == True and Step1[0] == True:
+      #  NewStep[0] = 4
+        cutFlow.Fill(4)
+
         Dilep_ = Mu1 + Mu2 
         Dilep.SetPtEtaPhiM(Dilep_.Pt(),Dilep_.Eta(),Dilep_.Phi(),Dilep_.M())
+
         if Dilep.M() < 12:
-            continue 
-      ### CATEGORY ####################################################################################################################################  
+    #        Step5[0] = False       
+            return True 
+    #    if Step4[0] == True:    
+        Step[0] = 5        
+    #    if Step4[0] == True and Step3[0] == True and Step2[0] == True and Step1[0] == True:
+    #    NewStep[0] = 5
+        cutFlow.Fill(5)
         
+         ### Muon Triggers ###
+        if not event.HLT_IsoMu24 and not event.HLT_IsoTkMu24:
+           # Step6[0] = False        
+            return True   
+        #if Step5[0] == True:  
+        Step[0] = 6    
+
+      #  if Step5[0] == True and Step4[0] == True and Step3[0] == True and Step2[0] == True and Step1[0] == True:
+      #  NewStep[0] = 6
+        cutFlow.Fill(6)
+      ### CATEGORY ####################################################################################################################################  
+        """    
         ### CAT 1 1-BJet ###
         if NuBJet == 1: 
             ### Category 1: 1 Electron ### 
@@ -574,9 +588,66 @@ for i,Nfile in enumerate(FileArg[2:]):
             ### Category 
             if NuJet - NuBJet == 4:
                 Cat10.Fill()
+        """
+        Event_No[0] = 1    
+        return True 
 
-        Event_No[0] = 1             
-        ALL.Fill()    
+def reset_all():
+    ### Clear Everything ### 
+      #  Step0[0] = 1   
+      #  Step1[0] = 1
+      #  Step2[0] = 1
+      #  Step3[0] = 1
+      #  Step4[0] = 1
+      #  Step5[0] = 1
+      #  Step6[0] = 1
+        Event_No[0] = 0
+        Event_Total[0] = 0
+        Nu_Mu[0] = 0
+        Nu_El[0] = 0
+        Nu_Jet[0] = 0
+        Nu_BJet[0] = 0
+        Nu_NonBJet[0] = 0
+        genweight[0] = 0
+        puweight[0] = 0
+        b_weight[0] = 0
+        Step[0] = 0
+        NewStep[0] = 0
+
+        Mu_Pt.clear()
+        Mu_Eta.clear()
+        Mu_Charge.clear()
+        Mu_Phi.clear()
+        Mu_M.clear()
+
+        El_Pt.clear()
+        El_Eta.clear()
+
+        Jet_Pt.clear()
+        Jet_Eta.clear()
+        Jet_CSVV2.clear()
+        Jet_M.clear()
+        Jet_Phi.clear()
+        
+        Dilep.SetPtEtaPhiM(0.,0.,0.,0.)
+        Mu1.SetPtEtaPhiM(0.,0.,0.,0.)
+        Mu2.SetPtEtaPhiM(0.,0.,0.,0.)
+        GenLep1.SetPtEtaPhiM(0.,0.,0.,0.)
+        GenLep2.SetPtEtaPhiM(0.,0.,0.,0.)
+
+GJsonF = open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/GoldenJson.txt")
+Gfile = json.load(GJsonF)
+
+for i,Nfile in enumerate(FileArg[2:]):
+    CurFile = TNetXNGFile(Nfile)
+    Tree = CurFile.Get("Events")
+    
+    for ive, event in enumerate(Tree):
+       reset_all() 
+       Step[0] = 0
+       cutFlow.Fill(0)
+       if mainloop(event):  
+            ALL.Fill()    
 
 f.Write()
 f.Close()
