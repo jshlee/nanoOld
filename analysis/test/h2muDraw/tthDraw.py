@@ -88,7 +88,7 @@ datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.
 #cut_step = "(step>=5)"
 #cut = 'lep1.Pt()>60&&lep2.Pt()>60&&dilep.M()>60&&step>=5'
 #cut = 'dilep.M()>60&&step>4&&filtered&&MVA_BDT>-0.0246'
-cut = 'Dilep.M()>60&&Step>=6'
+cut = 'Dilep.M()>60&&Step>=5'
 #cut = 'filtered==1&&%s&&%s'%(cut_step,emu_pid)
 #cut = 'channel==2'
 print cut
@@ -98,7 +98,7 @@ print cut
 weight = 'genweight'
 #plotvar = 'met'
 plotvar = 'Dilep.M()'
-binning = [150, 50, 200]
+binning = [150, 50, 200]#[150, 50, 200]
 #x_name = 'Invariant Mass[GeV]'
 x_name = 'Invariant Mass'
 y_name = 'Events'

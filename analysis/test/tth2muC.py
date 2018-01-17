@@ -7,14 +7,14 @@ from array import array
 FileArg = sys.argv
 print FileArg
 tempdir = FileArg[1]
-Dirname = "/cms/scratch/yckang/nanoAOD/src/nano/analysis/test/Results/Nano_C_Test/%s/"%tempdir
+Dirname = "/%s/src/nano/analysis/test/Results/Nano_C_Test/%s/"%(os.environ['CMSSW_BASE'], tempdir)
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 
 temp = FileArg[2].split('/').pop()
 cattree = Dirname+temp
 
-GJsonF = open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/GoldenJson.txt")
+GJsonF = open("/%s/src/nano/analysis/data/GoldenJson.txt"%os.environ['CMSSW_BASE'])
 Gfile = json.load(GJsonF)
 GJsonF.seek(0)
 json_hold = GJsonF.read()
@@ -30,7 +30,7 @@ for i in Gfile :
         lumiVector.push_back(lumiArray)
     lumiMap[int(i)] = lumiVector
 
-ROOT.gROOT.LoadMacro("/cms/scratch/yckang/nanoAOD/src/nano/analysis/plugins/tth2mu.cc+")
+ROOT.gROOT.LoadMacro("/%s/src/nano/analysis/plugins/tth2mu.cc+" %os.environ['CMSSW_BASE'])
 analyzer = ROOT.TTH2MuAnalyzer(cattree);
 
 for i,Nfile in enumerate(FileArg[2:]):
