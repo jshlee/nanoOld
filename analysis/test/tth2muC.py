@@ -7,14 +7,15 @@ from array import array
 FileArg = sys.argv
 print FileArg
 tempdir = FileArg[1]
-Dirname = "/%s/src/nano/analysis/test/Results/Nano_C_Test/%s/"%(os.environ['CMSSW_BASE'], tempdir)
+Dirname = "%s/src/nano/analysis/test/Results/Nano_C_Test/%s/"%(os.environ['CMSSW_BASE'],tempdir)
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 
 temp = FileArg[2].split('/').pop()
 cattree = Dirname+temp
+envName = "%s" %os.environ['CMSSW_BASE']
 
-GJsonF = open("/%s/src/nano/analysis/data/GoldenJson.txt"%os.environ['CMSSW_BASE'])
+GJsonF = open("%s/src/nano/analysis/data/GoldenJson.txt"%os.environ['CMSSW_BASE'])
 Gfile = json.load(GJsonF)
 GJsonF.seek(0)
 json_hold = GJsonF.read()
@@ -30,8 +31,9 @@ for i in Gfile :
         lumiVector.push_back(lumiArray)
     lumiMap[int(i)] = lumiVector
 
-ROOT.gROOT.LoadMacro("/%s/src/nano/analysis/plugins/tth2mu.cc+" %os.environ['CMSSW_BASE'])
-analyzer = ROOT.TTH2MuAnalyzer(cattree);
+ROOT.gROOT.LoadMacro("%s/src/nano/analysis/plugins/tth2mu.cc+"%os.environ['CMSSW_BASE'])
+analyzer = ROOT.TTH2MuAnalyzer(cattree, envName)
+analyzer.LoadLumiMap(lumiMap)
 
 for i,Nfile in enumerate(FileArg[2:]):
     if "Run" not in FileArg[1]:
