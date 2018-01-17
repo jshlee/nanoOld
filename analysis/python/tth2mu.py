@@ -3,15 +3,15 @@ from ROOT import *
 from array import array
 
 ### Rochester ###
-ROOT.gROOT.LoadMacro("/cms/scratch/daniel/nanoAOD/src/nano/analysis/src/RoccoR.cc+")
-roc = ROOT.std.string("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/rcdata.2016.v3/")
+ROOT.gROOT.LoadMacro("/%s/src/nano/analysis/src/RoccoR.cc+" %sos.environ['CMSSW_BASE'])
+roc = ROOT.std.string("/%s//src/nano/analysis/data/rcdata.2016.v3/"%os.environ['CMSSW_BASE'])
 rocCor = ROOT.RoccoR(roc)
 
 ### Pileup Weight ###
-ROOT.gROOT.LoadMacro("/cms/scratch/daniel/nanoAOD/src/nano/analysis/scripts/WeightCalculatorFromHistogram.cc+")
-pufile_mc="/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root"
+ROOT.gROOT.LoadMacro("/%s/src/nano/analysis/scripts/WeightCalculatorFromHistogram.cc+" %os.environ['CMSSW_BASE'])
+pufile_mc="/%s/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root" %os.environ["CMSSW_BASE"]
 fmc = ROOT.TFile(pufile_mc)
-pufile_data="/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root"
+pufile_data="/%s/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root" %os.environ['CMSSW_BASE']
 fmcrd = ROOT.TFile(pufile_data)
 
 hist_mc = fmc.Get("pu_mc")

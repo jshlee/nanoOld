@@ -173,7 +173,7 @@ void TTH2MuAnalyzer::MakeBranch(TTree* t)
 
 void TTH2MuAnalyzer::LoadModule(){
   //Load Rochester and puWeightCalculator
-  hist_mc = (TH1D*)TFile::Open("/cms/scratch/yckang/nanoAOD/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root")->Get("pu_mc");
+  hist_mc = (TH1D*)TFile::Open(TString::Format("/%s/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root", gSystem->Getenv())->Get("pu_mc");
   hist_mc->SetDirectory(0);
   hist_data = (TH1D*)TFile::Open("/cms/scratch/yckang/nanoAOD/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root")->Get("pileup");
   hist_data->SetDirectory(0);
