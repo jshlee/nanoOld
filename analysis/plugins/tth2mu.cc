@@ -15,7 +15,7 @@
 class TTH2MuAnalyzer {
   
   public:
-    TTH2MuAnalyzer(std::string outputFile);
+    TTH2MuAnalyzer(std::string outputFile, std::string evnName);
     ~TTH2MuAnalyzer();
 
     void LoadLumiMap(std::map<unsigned int, std::vector<std::array<unsigned int, 2>>> rMap);
@@ -27,6 +27,7 @@ class TTH2MuAnalyzer {
     TFile* f;
 
     std::map<unsigned int, std::vector<std::array<unsigned int, 2>>> lumiMap;
+    std::string env;
 
     //Trees
     TTree* ALL;
@@ -56,7 +57,7 @@ class TTH2MuAnalyzer {
     std::vector<float> Jet_Pt;
     std::vector<float> Jet_Eta;
     std::vector<float> Jet_CSVV2;
-    std::vector<float> Jet_M;7
+    std::vector<float> Jet_M;
     std::vector<float> Jet_Phi;
 
     int Event_No;
@@ -120,7 +121,8 @@ class TTH2MuAnalyzer {
     inline double MuScaleFactor(int mu_charge, float mu_pt, float mu_eta, float mu_phi, int nTrack);
 };
 
-TTH2MuAnalyzer::TTH2MuAnalyzer(std::string output){
+TTH2MuAnalyzer::TTH2MuAnalyzer(std::string output, std::string envName){
+  env = envName;
   LoadModule();
   f = TFile::Open(output.c_str(), "recreate");
   ALL = new TTree("nEvent", "nEvent");
@@ -173,12 +175,15 @@ void TTH2MuAnalyzer::MakeBranch(TTree* t)
 
 void TTH2MuAnalyzer::LoadModule(){
   //Load Rochester and puWeightCalculator
-  hist_mc = (TH1D*)TFile::Open("/cms/scratch/yckang/nanoAOD/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root")->Get("pu_mc");
+  std::string temp = env+"/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root";
+  hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
   hist_mc->SetDirectory(0);
-  hist_data = (TH1D*)TFile::Open("/cms/scratch/yckang/nanoAOD/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root")->Get("pileup");
+  temp = env+"/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root";
+  hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
   hist_data->SetDirectory(0);
   puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, true, false);
-  rocCor = new RoccoR(std::string("/cms/scratch/yckang/nanoAOD/src/nano/analysis/data/rcdata.2016.v3/"));
+  temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
+  rocCor = new RoccoR(temp);
 }
 
 inline double TTH2MuAnalyzer::MuScaleFactor(int mu_charge, float mu_pt, float mu_eta, float mu_phi, int nTrack)
@@ -296,7 +301,7 @@ inline bool TTH2MuAnalyzer::LumiCheck(unsigned int run, unsigned int lumiBlock)
   if ( lumiMap.find(run) == lumiMap.end() ) {
     return false;
   } else {
-    for (int i = 0; i < lumiMap[run].size(); i++){
+    for (unsigned int i = 0; i < lumiMap[run].size(); i++){
       if(lumiMap[run][i][0] <= lumiBlock && lumiMap[run][i][1] >= lumiBlock) return true;
     }
     return false;
@@ -657,9 +662,10 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
 
     if ( !(*rHLT_IsoMu24 || *rHLT_IsoTkMu24) ) continue;
 
-    if ( std::abs(*rPV_Z) >= 24. ) continue;
-    if ( *rPV_npvs == 0 ) continue;
-    if ( *rPV_ndof < 4 ) continue;
+    if (std::abs(*rPV_Z) >= 24.) continue;
+    if (*rPV_npvs == 0) continue;
+    if (*rPV_ndof < 4) continue;
+
 
     bool Charge = false;
     for (int i = 0; i < Nu_Mu; i++)
@@ -676,12 +682,6 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
       }
     }
     if (!Charge) continue;
-
-    if (!(*rHLT_IsoMu24) && !(*rHLT_IsoTkMu24)) continue;
-
-    if (std::abs(*rPV_Z) >= 24.) continue;
-    if (*rPV_npvs == 0) continue;
-    if (*rPV_ndof < 4) continue;
 
     TLorentzVector Dilep_ = Mu1 + Mu2;
     Dilep.SetPtEtaPhiM(Dilep_.Pt(), Dilep_.Eta(), Dilep_.Phi(), Dilep_.M());
