@@ -453,6 +453,9 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
     Nu_Jet = 0;
     Nu_BJet = 0;
 
+    Step = 0;
+    cutFlow->Fill(0);
+
     if(isMC)
     {
       int nvtx = int(nTrueInt);
@@ -486,14 +489,14 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
     {
       puweight = 1;
       genweight = 0;
-      if(!LumiCheck(run, lumiBlock)) continue;
+      if(!LumiCheck(run, lumiBlock)) {ALL->Fill(); continue;}
     }
     Step = 1;
     cutFlow->Fill(1);
     
-    if (std::abs(pv_z) >= 24.) continue;
-    if (pv_npvs == 0) continue;
-    if (pv_ndof < 4) continue;
+    if (std::abs(pv_z) >= 24.) {ALL->Fill(); continue;}
+    if (pv_npvs == 0) {ALL->Fill(); continue;}
+    if (pv_ndof < 4) {ALL->Fill(); continue;}
 
     Step = 2;
     cutFlow->Fill(2);
@@ -505,7 +508,7 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
         Nu_Mu++;
       }
     }
-    if (Nu_Mu < 2) continue;
+    if (Nu_Mu < 2) {ALL->Fill(); continue;}
     Step = 3;
     cutFlow->Fill(3);
 
@@ -554,68 +557,68 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
         }
       }
     }
-    if (!Charge) continue;
+    if (!Charge) {ALL->Fill(); continue;}
     Step = 4;
     cutFlow->Fill(4);
 
     TLorentzVector Dilep_ = Mu1 + Mu2;
     Dilep.SetPtEtaPhiM(Dilep_.Pt(), Dilep_.Eta(), Dilep_.Phi(), Dilep_.M());
-    if (Dilep.M() < 12.) continue;
+    if (Dilep.M() < 12.) {ALL->Fill(); continue;}
     Step = 5;
     cutFlow->Fill(5);
- 
-    if ( !(HLT_IsoMu24 || HLT_IsoTkMu24) ) continue;
+
+    if ( !(HLT_IsoMu24 || HLT_IsoTkMu24) ) {ALL->Fill(); continue;}
     Step = 6;
     cutFlow->Fill(6);
 
-    if( Nu_BJet == 1 )
-    {
-      if ( Nu_El == 1 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[0]->Fill();
-      }
-      if( Nu_El == 2 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[1]->Fill();
-      }
-      if( Nu_Mu == 3 )
-      {
-        if( Nu_El > 0 ) continue;
-        else Cat[2]->Fill();
-      }
-      if( Nu_Mu == 4 )
-      {
-        if( Nu_El > 0 )continue;
-        else Cat[3]->Fill();
-      }
-      if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[4]->Fill();
-    }
-    else if( Nu_BJet == 2 )
-    {
-      if ( Nu_El == 1 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[5]->Fill();
-      }
-      if( Nu_El == 2 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[6]->Fill();
-      }
-      if( Nu_Mu == 3 )
-      {
-        if( Nu_El > 0 ) continue;
-        else Cat[7]->Fill();
-      }
-      if( Nu_Mu == 4 )
-      {
-        if( Nu_El > 0 )continue;
-        else Cat[8]->Fill();
-      }
-      if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[9]->Fill();
-    }
+    // if( Nu_BJet == 1 )
+    // {
+    //   if ( Nu_El == 1 )
+    //   {
+    //     if( Nu_Mu > 2 ) continue;
+    //     else Cat[0]->Fill();
+    //   }
+    //   if( Nu_El == 2 )
+    //   {
+    //     if( Nu_Mu > 2 ) continue;
+    //     else Cat[1]->Fill();
+    //   }
+    //   if( Nu_Mu == 3 )
+    //   {
+    //     if( Nu_El > 0 ) continue;
+    //     else Cat[2]->Fill();
+    //   }
+    //   if( Nu_Mu == 4 )
+    //   {
+    //     if( Nu_El > 0 )continue;
+    //     else Cat[3]->Fill();
+    //   }
+    //   if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[4]->Fill();
+    // }
+    // else if( Nu_BJet == 2 )
+    // {
+    //   if ( Nu_El == 1 )
+    //   {
+    //     if( Nu_Mu > 2 ) continue;
+    //     else Cat[5]->Fill();
+    //   }
+    //   if( Nu_El == 2 )
+    //   {
+    //     if( Nu_Mu > 2 ) continue;
+    //     else Cat[6]->Fill();
+    //   }
+    //   if( Nu_Mu == 3 )
+    //   {
+    //     if( Nu_El > 0 ) continue;
+    //     else Cat[7]->Fill();
+    //   }
+    //   if( Nu_Mu == 4 )
+    //   {
+    //     if( Nu_El > 0 )continue;
+    //     else Cat[8]->Fill();
+    //   }
+    //   if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[9]->Fill();
+    // }
 
     Event_No = 1;
     ALL->Fill();  
