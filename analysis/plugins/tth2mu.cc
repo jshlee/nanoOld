@@ -69,7 +69,10 @@ class TTH2MuAnalyzer {
     float genweight;
     float puweight;
     float b_weight;
-    // float GJson;
+    
+    //for Checking error
+    TH1D* cutFlow;
+    int Step;
 
     //Calculator
     WeightCalculatorFromHistogram* puWeightCalculator;
@@ -136,6 +139,7 @@ TTH2MuAnalyzer::TTH2MuAnalyzer(std::string output, std::string envName){
   Event_Tot = new TH1D("Event_total", "Event_total" ,1,0,1);
   genweights = new TH1D("genweight", "genweight" , 1,0,1);
   weight = new TH1D("weight", "weight", 1,0,1);
+  cutFlow = new TH1D("cutflow", "cutflow", 11, -0.5, 10.5);
 }
 
 TTH2MuAnalyzer::~TTH2MuAnalyzer(){
@@ -155,6 +159,7 @@ void TTH2MuAnalyzer::LoadLumiMap(std::map<unsigned int, std::vector<std::array<u
 void TTH2MuAnalyzer::MakeBranch(TTree* t)
 {
   t->Branch("Event_No", &Event_No, "Event_No/I");
+  t->Branch("Step", &Step, "Step/I");
   t->Branch("Dilep", "TLorentzVector", &Dilep);
   t->Branch("Mu1", "TLorentzVector", &Mu1);
   t->Branch("Mu2", "TLorentzVector", &Mu2);
@@ -483,7 +488,16 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
       genweight = 0;
       if(!LumiCheck(run, lumiBlock)) continue;
     }
+    Step = 1;
+    cutFlow->Fill(1);
     
+    if (std::abs(pv_z) >= 24.) continue;
+    if (pv_npvs == 0) continue;
+    if (pv_ndof < 4) continue;
+
+    Step = 2;
+    cutFlow->Fill(2);
+
     for(unsigned int i = 0; i < nMuon; i++)
     {
       if( MuonSelection(muon_pt[i], muon_eta[i], muon_phi[i], muon_mass[i], muon_iso[i], muon_charge[i], muon_id[i], muon_trkLayer[i], muon_trkMu[i], muon_glbMu[i]))
@@ -492,6 +506,8 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
       }
     }
     if (Nu_Mu < 2) continue;
+    Step = 3;
+    cutFlow->Fill(3);
 
     std::vector<TLorentzVector> Mu_P4;
     for(int i = 0; i < Nu_Mu; i++)
@@ -524,13 +540,6 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
       }
     }
 
-    if ( !(HLT_IsoMu24 || HLT_IsoTkMu24) ) continue;
-
-    if (std::abs(pv_z) >= 24.) continue;
-    if (pv_npvs == 0) continue;
-    if (pv_ndof < 4) continue;
-
-
     bool Charge = false;
     for (int i = 0; i < Nu_Mu; i++)
     {
@@ -546,10 +555,18 @@ void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
       }
     }
     if (!Charge) continue;
+    Step = 4;
+    cutFlow->Fill(4);
 
     TLorentzVector Dilep_ = Mu1 + Mu2;
     Dilep.SetPtEtaPhiM(Dilep_.Pt(), Dilep_.Eta(), Dilep_.Phi(), Dilep_.M());
     if (Dilep.M() < 12.) continue;
+    Step = 5;
+    cutFlow->Fill(5);
+ 
+    if ( !(HLT_IsoMu24 || HLT_IsoTkMu24) ) continue;
+    Step = 6;
+    cutFlow->Fill(6);
 
     if( Nu_BJet == 1 )
     {
