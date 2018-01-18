@@ -35,10 +35,11 @@ ROOT.gROOT.LoadMacro("%s/src/nano/analysis/plugins/tth2mu.cc+"%os.environ['CMSSW
 analyzer = ROOT.TTH2MuAnalyzer(cattree, envName)
 analyzer.LoadLumiMap(lumiMap)
 
+isMC = False
 for i,Nfile in enumerate(FileArg[2:]):
     if "Run" not in FileArg[1]:
-        analyzer.AnalyzeForMC(Nfile)
+        isMC = True
     else:
-        analyzer.AnalyzeForData(Nfile)
-
+        isMC = False
+    analyer.analyze(Nfile, isMC)
 analyzer.EndOfAnalyze()
