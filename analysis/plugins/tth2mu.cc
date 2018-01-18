@@ -175,13 +175,13 @@ void TTH2MuAnalyzer::MakeBranch(TTree* t)
 
 void TTH2MuAnalyzer::LoadModule(){
   //Load Rochester and puWeightCalculator
-  std::string temp = env+"/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root";
+  std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root"; //from mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi.py
   hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
   hist_mc->SetDirectory(0);
-  temp = env+"/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root";
+  temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
   hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
   hist_data->SetDirectory(0);
-  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, true, false);
+  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
   temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
   rocCor = new RoccoR(temp);
 }
@@ -584,7 +584,7 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
   //Triger Reader
   TTreeReaderValue<bool> rHLT_IsoMu24(event, "HLT_IsoMu24");
   TTreeReaderValue<bool> rHLT_IsoTkMu24(event, "HLT_IsoTkMu24");
-
+  
   while(event.Next())
   {
     Mu_Pt.clear();
