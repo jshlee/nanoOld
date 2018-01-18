@@ -8,9 +8,10 @@ from math import ceil
 username = os.environ['USER']
 
 analysis = 'TT'
-#analysis = 'TtbarDiLeptonAnalyzer'
-pythonCfg = 'tth2mu.py'
-#analysis=analysis+'Silver'
+
+#pythonCfg = 'tth2mu.py'
+pythonCfg = 'tth2muC.py'
+
 RunFiles = [
              # 'WMinusH_HToMuMu',
              # 'WPlusH_HToMuMu',
@@ -53,7 +54,7 @@ RunFiles = [
               'SingleMuon_Run2016H',
              # 'SingleMuon_Run2016H_v3',
               ]
-datadir = '/$s/src/nano/analysis/data/dataset/' %os.environ['CMSSW_BASE']
+datadir = '{}/src/nano/analysis/data/dataset2/'.format(os.environ['CMSSW_BASE'])
 #version = os.environ["CMSSW_VERSION"]
 
 
@@ -62,8 +63,8 @@ for i in RunFiles:
     fileList = datadir + 'dataset_' + datasetName + '.txt'
     jobName = analysis+'_'+datasetName 
 
-    Dirname = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/h2mu_Batch/%s/"%jobName
-    DirnameJDS = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/h2mu_Batch/"
+    Dirname = "{}/src/nano/analysis/test/h2mu_Batch/{}/".format(os.environ['CMSSW_BASE'],jobName)
+    DirnameJDS = "{}/src/nano/analysis/test/h2mu_Batch/".format(os.environ['CMSSW_BASE'])
     if os.path.isdir(Dirname):
         print "ERROR: output directory already existing."
         sys.exit()
@@ -90,7 +91,7 @@ for i in RunFiles:
         jds = "%ssubmit.jds" %Dirname 
         fout = open(jds, "w")
         print>>fout, "# Job description file for condor job"
-        print>>fout, """executable = /cms/scratch/daniel/nanoAOD/src/nano/analysis/test/h2mu_Batch/tth2mu.sh
+        print>>fout, """executable = {0}/src/nano/analysis/test/h2mu_Batch/tth2mu.sh
 universe   = vanilla
 
 log = condor.log
@@ -98,14 +99,14 @@ log = condor.log
 getenv     = True
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-output = %s/job_%d.log
-error = %s/job_%d.err
+output = {1}/job_{2}.log
+error = {1}/job_{2}.err
 transfer_input_files = NanoAOD
-queue""" % (Dirname, count, Dirname, count)
+queue""" .format(os.environ['CMSSW_BASE'],Dirname, count)
         fout.close()
         count += 1 
         #jobName = analysis+'_'+datasetName
-        subBatch = "condor_submit -batch-name %s -append 'arguments=%s %s' %s" %(datasetName ,datasetName,FileNamesStr, jds)
+        subBatch = "condor_submit -batch-name {} -append 'arguments={} {}' {}".format(datasetName ,datasetName,FileNamesStr, jds)
         #print createbatch
         print subBatch 
             
