@@ -19,8 +19,7 @@ class TTH2MuAnalyzer {
     ~TTH2MuAnalyzer();
 
     void LoadLumiMap(std::map<unsigned int, std::vector<std::array<unsigned int, 2>>> rMap);
-    void AnalyzeForMC(std::string inputFile);
-    void AnalyzeForData(std::string inputFile);
+    void Analyze(std::string inputFile, bool flag);
     void EndOfAnalyze();
 
   private:
@@ -175,13 +174,13 @@ void TTH2MuAnalyzer::MakeBranch(TTree* t)
 
 void TTH2MuAnalyzer::LoadModule(){
   //Load Rochester and puWeightCalculator
-  std::string temp = env+"/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root";
+  std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root"; //from mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi.py
   hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
   hist_mc->SetDirectory(0);
-  temp = env+"/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root";
+  temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
   hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
   hist_data->SetDirectory(0);
-  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, true, false);
+  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
   temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
   rocCor = new RoccoR(temp);
 }
@@ -308,285 +307,118 @@ inline bool TTH2MuAnalyzer::LumiCheck(unsigned int run, unsigned int lumiBlock)
   }
 }
 
-void TTH2MuAnalyzer::AnalyzeForMC(std::string inputFile)
+void TTH2MuAnalyzer::Analyze(std::string inputFile, bool flag)
 {
-  isMC = true;
+  isMC = flag;
   TFile* inFile = TFile::Open(inputFile.c_str(), "read");
 
-  TTreeReader event("Events", inFile);
-  TTreeReaderValue<unsigned int> rNMuon(event, "nMuon");
-  TTreeReaderValue<unsigned int> rNElectron(event, "nElectron");
-  TTreeReaderValue<unsigned int> rNJet(event, "nJet");
-  //Muon Reader
-  TTreeReaderArray<float> rMuon_Pt(event, "Muon_pt");
-  TTreeReaderArray<float> rMuon_Eta(event, "Muon_eta");
-  TTreeReaderArray<float> rMuon_Phi(event, "Muon_phi");
-  TTreeReaderArray<float> rMuon_Mass(event, "Muon_mass");
-  TTreeReaderArray<float> rMuon_pfRelIson04_all(event, "Muon_pfRelIso04_all");
-  TTreeReaderArray<int> rMuon_Charge(event, "Muon_charge");
-  TTreeReaderArray<bool> rMuon_MediumId(event, "Muon_mediumId");
-  TTreeReaderArray<int> rMuon_nTrackerLayers(event, "Muon_nTrackerLayers");
-  TTreeReaderArray<bool> rMuon_TrackerMu(event, "Muon_trackerMu");
-  TTreeReaderArray<bool> rMuon_GlobalMu(event, "Muon_globalMu");
-  //Electron Reader
-  TTreeReaderArray<float> rElectron_Pt(event, "Electron_pt");
-  TTreeReaderArray<float> rElectron_Eta(event, "Electron_eta");
-  TTreeReaderArray<float> rElectron_Phi(event, "Electron_phi");
-  TTreeReaderArray<float> rElectron_Mass(event, "Electron_mass");
-  TTreeReaderArray<float> rElectron_pfRelIso03_all(event, "Electron_pfRelIso03_all");
-  TTreeReaderArray<int> rElectron_CutBased(event, "Electron_cutBased");
-  //Jet Reader
-  TTreeReaderArray<float> rJet_Pt(event, "Jet_pt");
-  TTreeReaderArray<float> rJet_Eta(event, "Jet_eta");
-  TTreeReaderArray<float> rJet_Phi(event, "Jet_phi");
-  TTreeReaderArray<float> rJet_Mass(event, "Jet_mass");
-  TTreeReaderArray<int> rJet_JetId(event, "Jet_jetId");
-  TTreeReaderArray<float> rJet_btagCSVV2(event, "Jet_btagCSVV2");
-  //Primary Vertice Reader
-  TTreeReaderValue<float> rPV_Z(event, "PV_z");
-  TTreeReaderValue<int> rPV_npvs(event, "PV_npvs");
-  TTreeReaderValue<float> rPV_ndof(event, "PV_ndof");
-  //Triger Reader
-  TTreeReaderValue<bool> rHLT_IsoMu24(event, "HLT_IsoMu24");
-  TTreeReaderValue<bool> rHLT_IsoTkMu24(event, "HLT_IsoTkMu24");
-  //Only For MC
-  TTreeReaderValue<int> rPileup_nTrueInt(event, "Pileup_nTrueInt");
-  TTreeReaderValue<float> rGenWeight(event, "genWeight");
+  TTree* event = (TTree*) inFile->Get("Events");
   
-  TTreeReaderValue<unsigned int> rNGenDressedLepton(event, "nGenDressedLepton");
-  TTreeReaderArray<int> rGenDerssedLepton_pdgId(event, "GenDressedLepton_pdgId");
-  TTreeReaderArray<int> rGenPart_genPartIdxMother(event, "GenPart_genPartIdxMother");
-  TTreeReaderArray<float> rGenDressedLepton_pt(event, "GenDressedLepton_pt");
-  TTreeReaderArray<float> rGenDerssedLepton_eta(event, "GenDressedLepton_eta");
-  TTreeReaderArray<float> rGenDerssedLepton_phi(event, "GenDressedLepton_phi");
-  TTreeReaderArray<float> rGenDerssedLepton_mass(event, "GenDressedLepton_mass");
+  unsigned int run;
+  unsigned int lumiBlock;
+  event->SetBranchAddress("run", &run);
+  event->SetBranchAddress("luminosityBlock", &lumiBlock);
 
-  while(event.Next())
-  {
-    Mu_Pt.clear();
-    Mu_Eta.clear();
-    Mu_Charge.clear();
-    Mu_Phi.clear();
-    Mu_M.clear();
+  unsigned int nMuon;
+  unsigned int nElectron;
+  unsigned int nJet;
+  event->SetBranchAddress("nMuon", &nMuon);
+  event->SetBranchAddress("nElectron", &nElectron);
+  event->SetBranchAddress("nJet", &nJet);
 
-    El_Pt.clear();
-    El_Eta.clear();
-
-    Jet_Pt.clear();
-    Jet_Eta.clear();
-    Jet_CSVV2.clear();
-    Jet_M.clear();
-    Jet_Phi.clear();
-
-    Dilep.SetPtEtaPhiM(0,0,0,0);
-    GenLep1.SetPtEtaPhiM(0,0,0,0);
-    GenLep2.SetPtEtaPhiM(0,0,0,0);
-    Mu1.SetPtEtaPhiM(0,0,0,0);
-    Mu2.SetPtEtaPhiM(0,0,0,0);
-
-    Event_Total = 1;
-    Event_Tot->Fill(0.5, Event_Total);
-    
-    Nu_Mu = 0;
-    Nu_El = 0;
-    Nu_Jet = 0;
-    Nu_BJet = 0;
-
-    int nvtx = int(*rPileup_nTrueInt);
-    if (nvtx < hist_mc->GetNbinsX()) puweight = puWeightCalculator->getWeight(nvtx);
-    else puweight = 1;
-    
-    genweight = *rGenWeight;
-    genweights->Fill(0.5, genweight);
-    b_weight = genweight * puweight;
-    weight->Fill(0.5, b_weight);
-    for(unsigned int i = 0; i < *rNGenDressedLepton; i++)
-    {
-      if(std::abs(rGenDerssedLepton_pdgId[i]) != 13) break;
-      bool bosonSample = false;
-      bool isFromBoson = false;
-      for(int GenPart_genPartIdxMother : rGenPart_genPartIdxMother)
-      {
-        if(GenPart_genPartIdxMother == 23 || GenPart_genPartIdxMother == 25)
-        {
-          bosonSample = true;
-          isFromBoson = true;
-        }
-      }
-      if (isFromBoson)
-      {
-        if(rGenDerssedLepton_pdgId[i] == 13) GenLep1.SetPtEtaPhiM(rGenDressedLepton_pt[i], rGenDerssedLepton_eta[i], rGenDerssedLepton_phi[i], rGenDerssedLepton_mass[i]);
-        else GenLep2.SetPtEtaPhiM(rGenDressedLepton_pt[i], rGenDerssedLepton_eta[i], rGenDerssedLepton_phi[i], rGenDerssedLepton_mass[i]);
-      }
-    }
-
-    for(unsigned int i = 0; i < *rNMuon; i++)
-    {
-      if( MuonSelection(rMuon_Pt[i], rMuon_Eta[i], rMuon_Phi[i], rMuon_Mass[i], rMuon_pfRelIson04_all[i], rMuon_Charge[i], rMuon_MediumId[i], rMuon_nTrackerLayers[i], rMuon_TrackerMu[i], rMuon_GlobalMu[i]) )
-      {
-        Nu_Mu++;
-      }
-    }
-    if (Nu_Mu < 2) continue;
-
-    std::vector<TLorentzVector> Mu_P4;
-    for(int i = 0; i < Nu_Mu; i++)
-    {
-      TLorentzVector MuP4;
-      MuP4.SetPtEtaPhiM(Mu_Pt[i], Mu_Eta[i], Mu_Phi[i], Mu_M[i]);
-    }
-
-    for(unsigned int i = 0; i < *rNElectron; i++)
-    {
-      if( ElecSelection(rElectron_Pt[i], rElectron_Eta[i], rElectron_Phi[i], rElectron_Mass[i], rElectron_pfRelIso03_all[i], rElectron_CutBased[i], Mu_P4) )
-      {
-        Nu_El++;
-      }
-    }
-
-    for(unsigned int i = 0; i < *rNJet; i++)
-    {
-      if( JetSelection(rJet_Pt[i], rJet_Eta[i], rJet_Phi[i], rJet_Mass[i], rJet_JetId[i], rJet_btagCSVV2[i], Mu_P4) )
-      {
-        Nu_Jet++;
-      }
-    }
-
-    for(int i = 0; i < Nu_Jet; i++)
-    {
-      if ( BtaggedSelection(Jet_Pt[i], Jet_Eta[i], Jet_CSVV2[i]) )
-      {
-        Nu_BJet++;
-      }
-    }
-
-    if ( !(*rHLT_IsoMu24 || *rHLT_IsoTkMu24) ) continue;
-
-    if ( std::abs(*rPV_Z) >= 24. ) continue;
-    if ( *rPV_npvs == 0 ) continue;
-    if ( *rPV_ndof < 4 ) continue;
-
-    bool Charge = false;
-    for (int i = 0; i < Nu_Mu; i++)
-    {
-      if ( (Mu_Pt[0] > 26) || (Mu_Pt[i] > 26) )
-      {
-        if ( Mu_Charge[0] * Mu_Charge[i] < 0 )
-        {
-          Mu1.SetPtEtaPhiM(Mu_Pt[0], Mu_Eta[0], Mu_Phi[0], Mu_M[0]);
-          Mu2.SetPtEtaPhiM(Mu_Pt[i], Mu_Eta[i], Mu_Phi[i], Mu_M[i]);
-          Charge = true;
-          break;
-        }
-      }
-    }
-    if (!Charge) continue;
-
-    TLorentzVector Dilep_ = Mu1 + Mu2;
-    Dilep.SetPtEtaPhiM(Dilep_.Pt(), Dilep_.Eta(), Dilep_.Phi(), Dilep_.M());
-    if (Dilep.M() < 12.) continue;
-
-    if( Nu_BJet == 1 )
-    {
-      if ( Nu_El == 1 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[0]->Fill();
-      }
-      if( Nu_El == 2 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[1]->Fill();
-      }
-      if( Nu_Mu == 3 )
-      {
-        if( Nu_El > 0 ) continue;
-        else Cat[2]->Fill();
-      }
-      if( Nu_Mu == 4 )
-      {
-        if( Nu_El > 0 )continue;
-        else Cat[3]->Fill();
-      }
-      if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[4]->Fill();
-    }
-    else if( Nu_BJet == 2 )
-    {
-      if ( Nu_El == 1 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[5]->Fill();
-      }
-      if( Nu_El == 2 )
-      {
-        if( Nu_Mu > 2 ) continue;
-        else Cat[6]->Fill();
-      }
-      if( Nu_Mu == 3 )
-      {
-        if( Nu_El > 0 ) continue;
-        else Cat[7]->Fill();
-      }
-      if( Nu_Mu == 4 )
-      {
-        if( Nu_El > 0 )continue;
-        else Cat[8]->Fill();
-      }
-      if ( (Nu_Jet - Nu_BJet) == 4 ) Cat[9]->Fill();
-    }
-
-    Event_No = 1;
-    ALL->Fill();
-  }
-}
-
-void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
-{
-  isMC = false;
-  TFile* inFile = TFile::Open(inputFile.c_str(), "read");
-
-  TTreeReader event("Events", inFile);
-  TTreeReaderValue<unsigned int> rRun(event, "run");
-  TTreeReaderValue<unsigned int> rLumiBlock(event, "luminosityBlock");
-
-  TTreeReaderValue<unsigned int> rNMuon(event, "nMuon");
-  TTreeReaderValue<unsigned int> rNElectron(event, "nElectron");
-  TTreeReaderValue<unsigned int> rNJet(event, "nJet");
   //Muon Reader
-  TTreeReaderArray<float> rMuon_Pt(event, "Muon_pt");
-  TTreeReaderArray<float> rMuon_Eta(event, "Muon_eta");
-  TTreeReaderArray<float> rMuon_Phi(event, "Muon_phi");
-  TTreeReaderArray<float> rMuon_Mass(event, "Muon_mass");
-  TTreeReaderArray<float> rMuon_pfRelIson04_all(event, "Muon_pfRelIso04_all");
-  TTreeReaderArray<int> rMuon_Charge(event, "Muon_charge");
-  TTreeReaderArray<bool> rMuon_MediumId(event, "Muon_mediumId");
-  TTreeReaderArray<int> rMuon_nTrackerLayers(event, "Muon_nTrackerLayers");
-  TTreeReaderArray<bool> rMuon_TrackerMu(event, "Muon_trackerMu");
-  TTreeReaderArray<bool> rMuon_GlobalMu(event, "Muon_globalMu");
-  //Electron Reader
-  TTreeReaderArray<float> rElectron_Pt(event, "Electron_pt");
-  TTreeReaderArray<float> rElectron_Eta(event, "Electron_eta");
-  TTreeReaderArray<float> rElectron_Phi(event, "Electron_phi");
-  TTreeReaderArray<float> rElectron_Mass(event, "Electron_mass");
-  TTreeReaderArray<float> rElectron_pfRelIso03_all(event, "Electron_pfRelIso03_all");
-  TTreeReaderArray<int> rElectron_CutBased(event, "Electron_cutBased");
-  //Jet Reader
-  TTreeReaderArray<float> rJet_Pt(event, "Jet_pt");
-  TTreeReaderArray<float> rJet_Eta(event, "Jet_eta");
-  TTreeReaderArray<float> rJet_Phi(event, "Jet_phi");
-  TTreeReaderArray<float> rJet_Mass(event, "Jet_mass");
-  TTreeReaderArray<int> rJet_JetId(event, "Jet_jetId");
-  TTreeReaderArray<float> rJet_btagCSVV2(event, "Jet_btagCSVV2");
-  //Primary Vertice Reader
-  TTreeReaderValue<float> rPV_Z(event, "PV_z");
-  TTreeReaderValue<int> rPV_npvs(event, "PV_npvs");
-  TTreeReaderValue<float> rPV_ndof(event, "PV_ndof");
-  //Triger Reader
-  TTreeReaderValue<bool> rHLT_IsoMu24(event, "HLT_IsoMu24");
-  TTreeReaderValue<bool> rHLT_IsoTkMu24(event, "HLT_IsoTkMu24");
+  float muon_pt[10];
+  float muon_eta[10];
+  float muon_phi[10];
+  float muon_mass[10];
+  float muon_iso[10];
+  int muon_charge[10];
+  bool muon_id[10];
+  int muon_trkLayer[10];
+  bool muon_trkMu[10];
+  bool muon_glbMu[10];
+  event->SetBranchAddress("Muon_pt", &muon_pt[0]);
+  event->SetBranchAddress("Muon_eta", &muon_eta[0]);
+  event->SetBranchAddress("Muon_phi", &muon_phi[0]);
+  event->SetBranchAddress("Muon_mass", &muon_mass[0]);
+  event->SetBranchAddress("Muon_pfRelIso04_all", &muon_iso[0]);
+  event->SetBranchAddress("Muon_charge", &muon_charge[0]);
+  event->SetBranchAddress("Muon_mediumId", &muon_id[0]);
+  event->SetBranchAddress("Muon_nTrackerLayers", &muon_trkLayer[0]);
+  event->SetBranchAddress("Muon_trackerMu", &muon_trkMu[0]);
+  event->SetBranchAddress("Muon_globalMu", &muon_glbMu[0]);
 
-  while(event.Next())
+  //Electron Reader
+  float electron_pt[10];
+  float electron_eta[10];
+  float electron_phi[10];
+  float electron_mass[10];
+  float electron_iso[10];
+  int electron_id[10];
+  event->SetBranchAddress("Electron_pt", &electron_pt[0]);
+  event->SetBranchAddress("Electron_eta", &electron_eta[0]);
+  event->SetBranchAddress("Electron_phi", &electron_phi[0]);
+  event->SetBranchAddress("Electron_mass", &electron_mass[0]);
+  event->SetBranchAddress("Electron_pfRelIso03_all", &electron_iso[0]);
+  event->SetBranchAddress("Electron_cutBased", &electron_id[0]);
+  
+  //Jet Reader
+  float jet_pt[10];
+  float jet_eta[10];
+  float jet_phi[10];
+  float jet_mass[10];
+  int jet_id[10];
+  float jet_csvv2[10];
+  event->SetBranchAddress("Jet_pt", &jet_pt[0]);
+  event->SetBranchAddress("Jet_eta", &jet_eta[0]);
+  event->SetBranchAddress("Jet_phi", &jet_phi[0]);
+  event->SetBranchAddress("Jet_mass", &jet_mass[0]);
+  event->SetBranchAddress("Jet_btagCSVV2", &jet_csvv2[0]);
+
+  //Primary Vertice Reader
+  float pv_z;
+  int pv_npvs;
+  float pv_ndof;
+  event->SetBranchAddress("PV_z", &pv_z);
+  event->SetBranchAddress("PV_npvs", &pv_npvs);
+  event->SetBranchAddress("PV_ndof", &pv_ndof);
+  
+  //Triger Reader
+  bool HLT_IsoMu24;
+  bool HLT_IsoTkMu24;
+  event->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
+  event->SetBranchAddress("HLT_IsoTkMu24", &HLT_IsoTkMu24);
+  
+  //Only For MC
+  int nTrueInt;
+  float genWeight;
+  
+  unsigned int nGenDressedLepton;
+  unsigned int nGenPart;
+  int genDressedLepton_pdgId[10];
+  int genPart_genPartIdxMother[10];
+  float genDressedLepton_pt[10];
+  float genDressedLepton_eta[10];
+  float genDressedLepton_phi[10];
+  float genDressedLepton_mass[10];
+  
+  if (isMC)
   {
+    event->SetBranchAddress("Pileup_nTrueInt", &nTrueInt);
+    event->SetBranchAddress("genWeight", &genWeight);
+    event->SetBranchAddress("nGenDressedLepton", &nGenDressedLepton);
+    event->SetBranchAddress("nGenPart", &nGenPart);
+    event->SetBranchAddress("GenDressedLepton_pdgId", &genDressedLepton_pdgId[0]);
+    event->SetBranchAddress("GenPart_genPartIdxMother", &genPart_genPartIdxMother[0]);
+    event->SetBranchAddress("GenDressedLepton_pt", &genDressedLepton_pt[0]);
+    event->SetBranchAddress("GenDressedLepton_eta", &genDressedLepton_eta[0]);
+    event->SetBranchAddress("GenDressedLepton_phi", &genDressedLepton_phi[0]);
+    event->SetBranchAddress("GenDressedLepton_mass", &genDressedLepton_mass[0]);
+  }
+
+  for(int i = 0; i < event->GetEntries(); i++)
+  {
+    event->GetEntry(i);
     Mu_Pt.clear();
     Mu_Eta.clear();
     Mu_Charge.clear();
@@ -616,13 +448,45 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
     Nu_Jet = 0;
     Nu_BJet = 0;
 
-    puweight = 1;
-
-    if(!LumiCheck(*rRun, *rLumiBlock)) continue;
-    
-    for(unsigned int i = 0; i < *rNMuon; i++)
+    if(isMC)
     {
-      if( MuonSelection(rMuon_Pt[i], rMuon_Eta[i], rMuon_Phi[i], rMuon_Mass[i], rMuon_pfRelIson04_all[i], rMuon_Charge[i], rMuon_MediumId[i], rMuon_nTrackerLayers[i], rMuon_TrackerMu[i], rMuon_GlobalMu[i]))
+      int nvtx = int(nTrueInt);
+      if (nvtx < hist_mc->GetNbinsX()) puweight = puWeightCalculator->getWeight(nvtx);
+      else puweight = 1;
+      
+      genweight = genWeight;
+      genweights->Fill(0.5, genweight);
+      b_weight = genweight * puweight;
+      weight->Fill(0.5, b_weight);
+      for(unsigned int i = 0; i < nGenDressedLepton; i++)
+      {
+        if(std::abs(genDressedLepton_pdgId[i]) != 13) break;
+        bool bosonSample = false;
+        bool isFromBoson = false;
+        for(unsigned int j = 0; j < nGenPart; j++)
+        {
+          if(genPart_genPartIdxMother[j] == 23 || genPart_genPartIdxMother[j] == 25)
+          {
+            bosonSample = true;
+            isFromBoson = true;
+          }
+        }
+        if (isFromBoson)
+        {
+          if(genDressedLepton_pdgId[i] == 13) GenLep1.SetPtEtaPhiM(genDressedLepton_pt[i], genDressedLepton_eta[i], genDressedLepton_phi[i], genDressedLepton_mass[i]);
+          else GenLep2.SetPtEtaPhiM(genDressedLepton_pt[i], genDressedLepton_eta[i], genDressedLepton_phi[i], genDressedLepton_mass[i]);
+        }
+      }
+    } else
+    {
+      puweight = 1;
+      genweight = 0;
+      if(!LumiCheck(run, lumiBlock)) continue;
+    }
+    
+    for(unsigned int i = 0; i < nMuon; i++)
+    {
+      if( MuonSelection(muon_pt[i], muon_eta[i], muon_phi[i], muon_mass[i], muon_iso[i], muon_charge[i], muon_id[i], muon_trkLayer[i], muon_trkMu[i], muon_glbMu[i]))
       {
         Nu_Mu++;
       }
@@ -636,17 +500,17 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
       MuP4.SetPtEtaPhiM(Mu_Pt[i], Mu_Eta[i], Mu_Phi[i], Mu_M[i]);
     }
 
-    for(unsigned int i = 0; i < *rNElectron; i++)
+    for(unsigned int i = 0; i < nElectron; i++)
     {
-      if( ElecSelection(rElectron_Pt[i], rElectron_Eta[i], rElectron_Phi[i], rElectron_Mass[i], rElectron_pfRelIso03_all[i], rElectron_CutBased[i], Mu_P4) )
+      if( ElecSelection(electron_pt[i], electron_eta[i], electron_phi[i], electron_mass[i], electron_iso[i], electron_id[i], Mu_P4) )
       {
         Nu_El++;
       }
     }
 
-    for(unsigned int i = 0; i < *rNJet; i++)
+    for(unsigned int i = 0; i < nJet; i++)
     {
-      if( JetSelection(rJet_Pt[i], rJet_Eta[i], rJet_Phi[i], rJet_Mass[i], rJet_JetId[i], rJet_btagCSVV2[i], Mu_P4) )
+      if( JetSelection(jet_pt[i], jet_eta[i], jet_phi[i], jet_mass[i], jet_id[i], jet_csvv2[i], Mu_P4) )
       {
         Nu_Jet++;
       }
@@ -660,11 +524,11 @@ void TTH2MuAnalyzer::AnalyzeForData(std::string inputFile)
       }
     }
 
-    if ( !(*rHLT_IsoMu24 || *rHLT_IsoTkMu24) ) continue;
+    if ( !(HLT_IsoMu24 || HLT_IsoTkMu24) ) continue;
 
-    if (std::abs(*rPV_Z) >= 24.) continue;
-    if (*rPV_npvs == 0) continue;
-    if (*rPV_ndof < 4) continue;
+    if (std::abs(pv_z) >= 24.) continue;
+    if (pv_npvs == 0) continue;
+    if (pv_ndof < 4) continue;
 
 
     bool Charge = false;
