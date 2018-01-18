@@ -3,15 +3,15 @@ from ROOT import *
 from array import array
 
 ### Rochester ###
-ROOT.gROOT.LoadMacro("/cms/scratch/daniel/nanoAOD/src/nano/analysis/src/RoccoR.cc+")
-roc = ROOT.std.string("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/rcdata.2016.v3/")
+ROOT.gROOT.LoadMacro("%s/src/nano/analysis/src/RoccoR.cc+" %os.environ['CMSSW_BASE'])
+roc = ROOT.std.string("%s/src/nano/analysis/data/rcdata.2016.v3/"%os.environ['CMSSW_BASE'])
 rocCor = ROOT.RoccoR(roc)
 
 ### Pileup Weight ###
-ROOT.gROOT.LoadMacro("/cms/scratch/daniel/nanoAOD/src/nano/analysis/scripts/WeightCalculatorFromHistogram.cc+")
-pufile_mc="/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root"
+ROOT.gROOT.LoadMacro("%s/src/nano/analysis/scripts/WeightCalculatorFromHistogram.cc+" %os.environ['CMSSW_BASE'])
+pufile_mc="%s/src/nano/analysis/data/pu_root/pileup_profile_Spring16.root" %os.environ["CMSSW_BASE"]
 fmc = ROOT.TFile(pufile_mc)
-pufile_data="/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root"
+pufile_data="%s/src/nano/analysis/data/pu_root/PileupData_GoldenJSON_Full2016.root" %os.environ['CMSSW_BASE']
 fmcrd = ROOT.TFile(pufile_data)
 
 hist_mc = fmc.Get("pu_mc")
@@ -24,8 +24,8 @@ puWeight = ROOT.WeightCalculatorFromHistogram(hist_mc, hist_data, True, True, Fa
 ### Make TTREE ### 
 FileArg = sys.argv
 tempdir = FileArg[1]
-#Dirname = "/cms/scratch/daniellee/nanoAOD/src/nano/analysis/test/Results/Nano_NewCut/%s/"%tempdir
-Dirname = "/root://cms-xrdr.sdfarm.kr:1094//xrd/store/user/daniellee/%s/"%tempdir
+Dirname = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_New_3/%s/"%tempdir
+#Dirname = "/root://cms-xrdr.sdfarm.kr:1094//xrd/store/user/daniellee/Test/%s/"%tempdir
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 
@@ -635,7 +635,7 @@ def reset_all():
         GenLep1.SetPtEtaPhiM(0.,0.,0.,0.)
         GenLep2.SetPtEtaPhiM(0.,0.,0.,0.)
 
-GJsonF = open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/GoldenJson.txt")
+GJsonF = open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt")
 Gfile = json.load(GJsonF)
 
 for i,Nfile in enumerate(FileArg[2:]):
