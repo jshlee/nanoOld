@@ -7,7 +7,7 @@ from array import array
 FileArg = sys.argv
 print FileArg
 tempdir = FileArg[1]
-Dirname = "%s/src/nano/analysis/test/Results/Nano_C_Test/%s/"%(os.environ['CMSSW_BASE'],tempdir)
+Dirname = "%s/src/nano/analysis/test/Results/Nano_3_Test/%s/"%(os.environ['CMSSW_BASE'],tempdir)
 if not os.path.isdir(Dirname):
     os.makedirs(Dirname)
 

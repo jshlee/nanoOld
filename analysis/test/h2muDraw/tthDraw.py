@@ -16,13 +16,13 @@ h2muDraw.py -c 'll_m>50&&step>=5&&isTight==1&&filtered==1' -b [100,-3,3] -p lep1
 '''
 
 json_used = 'Golden'
-#datalumi = 36814 #35.9fb-1
-datalumi =  5975 #35.9fb-1
+datalumi = 36814 #35.9fb-1
+#datalumi =  5975 #35.9fb-1
 
 #datalumi = 8360.481454 #35.9fb-1
 version = os.environ['CMSSW_VERSION']
 
-rootfileDir = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_NewCut/results_merged/tth2mu_"
+rootfileDir = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_3_Test/results_merged/tth2mu_"
 
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
 #rootfileDir = "%s/src/CATTools/CatAnalyzer/test/results_merged/h2muAnalyzer_" % os.environ['CMSSW_BASE']
@@ -88,7 +88,7 @@ datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.
 #cut_step = "(step>=5)"
 #cut = 'lep1.Pt()>60&&lep2.Pt()>60&&dilep.M()>60&&step>=5'
 #cut = 'dilep.M()>60&&step>4&&filtered&&MVA_BDT>-0.0246'
-cut = 'Dilep.M()>60&&Step>=5'
+cut = 'Dilep.M()>60'
 #cut = 'filtered==1&&%s&&%s'%(cut_step,emu_pid)
 #cut = 'channel==2'
 print cut
@@ -103,17 +103,17 @@ binning = [150, 50, 200]#[150, 50, 200]
 x_name = 'Invariant Mass'
 y_name = 'Events'
 dolog = True
-f_name = 'Dilep_M_B'
+f_name = 'Dilep_M_3'
 #minp = 0.05
 #maxp = 1000000000
 try:
     opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:f:j:",["cut","weight","binning","plotvar","x_name","y_name","f_name","json_used","dolog"])
 except getopt.GetoptError:          
-    print 'Usage : ./tthDraw.py -c <cut> -w <weight> -b <binning> -p <plotvar> -x <x_name> -y <y_name> -f <f_name> -j <json_used> -d <dolog>'
+    print 'Usage : ./cmesonDraw.py -c <cut> -w <weight> -b <binning> -p <plotvar> -x <x_name> -y <y_name> -f <f_name> -j <json_used> -d <dolog>'
     sys.exit(2)
 for opt, arg in opts:
     if opt == '-h':
-        print 'Usage : ./h2muDraw.py -c <cut> -w <weight> -b <binning> -p <plotvar> -x <x_name> -y <y_name> -f <f_name> -j <json_used> -d <dolog>'
+        print 'Usage : ./cmesonDraw.py -c <cut> -w <weight> -b <binning> -p <plotvar> -x <x_name> -y <y_name> -f <f_name> -j <json_used> -d <dolog>'
         sys.exit()
     elif opt in ("-c", "--cut"):
         cut = arg
@@ -171,7 +171,7 @@ for imc,mcname in enumerate(mcfilelist):
     #wentries = tfile.Get("genweight").Integral()
     wentries = tfile.Get("genweight").Integral()
     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Wentires: %s"%(wentries)
-    #wentries = tfile.Get("cattree/nevents").Integral(0,1)
+    #wentries = tfile.Get("Events").Integral(0,1)
     #print wentries
     scale = scale/wentries
     print"new scale: %s" %(scale)
