@@ -20,7 +20,7 @@ void nanoAnalysis::Loop()
    Long64_t nbytes = 0, nb = 0;
    float nPassTrig = 0;
    float nPassTrig1 = 0;
-   
+
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
       Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
