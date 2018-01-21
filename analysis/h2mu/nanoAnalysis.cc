@@ -19,6 +19,7 @@ void nanoAnalysis::Loop()
 
    Long64_t nbytes = 0, nb = 0;
    float nPassTrig = 0;
+   float nPassTrig1 = 0;
    
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
       Long64_t ientry = LoadTree(jentry);
@@ -27,13 +28,26 @@ void nanoAnalysis::Loop()
 
       if (HLT_IsoMu24 || HLT_IsoTkMu24)
 	nPassTrig++;
-      
+
+      bool IsoMu24 = false;
+      bool IsoTkMu24 = false;
+      for (int i = 0; i < nTrigObj; ++i){
+	if (TrigObj_id[i] != 13) continue;
+	if (TrigObj_pt[i] < 24) continue;
+	int bits = TrigObj_filterBits[i];
+	if (bits & 0x2) IsoMu24 = true;
+	if (bits & 0x8) IsoTkMu24 = true;	
+      }
+      if (IsoMu24 || IsoTkMu24)
+	nPassTrig1++;
       // if (Cut(ientry) < 0) continue;
    }
    
+   cout <<"pass hlt full "<< nPassTrig1 <<endl;
    cout <<"pass hlt      "<< nPassTrig <<endl;
    cout <<"total hlt     "<< nentries <<endl;
    cout <<"pass hlt frac "<< nPassTrig/float(nentries) <<endl;
+   cout <<"pass hlt frac "<< nPassTrig1/float(nentries) <<endl;
 }
 
 int main()
