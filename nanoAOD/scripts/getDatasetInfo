@@ -121,13 +121,17 @@ prefix = ""
 hostname = os.environ["HOSTNAME"]
 if "sdfarm" in hostname:
     prefix = "root://cms-xrdr.sdfarm.kr:1094//"+xrdbase
+    storageprefix = "/store/group/nanoAOD/"+era
+if "sscc" in hostname:
+    prefix = "/home/nanoAOD"
+    storageprefix = "/home/nanoAOD/"+era
 ##
 
 # since all files are at kisti
-if not "sdfarm" in hostname:    
-    sys.exit()
+#if not "sdfarm" in hostname:
+#    sys.exit()
 
-storageprefix = "/store/group/nanoAOD/"+era
+
 unmatching = []
 emptydirectory = []
 print "Listing dataset location"
@@ -147,7 +151,7 @@ for d in ds:
     ## #pathnames = map( lambda x: x, listxrd(path)[0] )
     ## pathnames = listxrd(path)[0]
     ## sorted(pathnames)
-    ## print pathnames
+    print path
     tempVersion = 0
     for ll in listxrd(path)[0]:
         #print ll

@@ -14,6 +14,9 @@ def customiseMuons(process):
     
 def customise(process):
     customiseMuons(process)
+
+    #process.load('nano.nanoAOD.triggerProducer_cfi')
+    #process.nanoAOD_step += process.nanoTrigger
     
     process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
     process.load('nano.nanoAOD.cmesons_cff')
@@ -22,6 +25,7 @@ def customise(process):
     process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
     process.MessageLogger.cerr.FwkSummary.reportEvery = cms.untracked.int32(1000)
     fileName = cms.untracked.string('nanoAOD.root')
+
     if hasattr(process, 'NANOAODSIMoutput'):          
         process.NANOAODSIMoutput.fileName = fileName
     else:
