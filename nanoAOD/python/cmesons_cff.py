@@ -45,13 +45,15 @@ cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
         x   = Var("vx()", float, doc = "secondary vertex X position, in cm",precision=10),
         y   = Var("vy()", float, doc = "secondary vertex Y position, in cm",precision=10),
         z   = Var("vz()", float, doc = "secondary vertex Z position, in cm",precision=14),
-        chi2= Var("vertexChi2()", float, doc = "chi2",precision=10),
-        ndof= Var("vertexNdof()", int, doc = "number of degrees of freedom",precision=8),
-        pdgId=Var("pdgId()", int, doc = "pdgId",precision=8),
+        chi2= Var("vertexChi2()", float, doc = "chi2",precision=14),
+        ndof= Var("vertexNdof()", int, doc = "number of degrees of freedom"),
+        pdgId=Var("pdgId()", int, doc = "pdgId"),
     ),
 )
-cmesonCandidateTable.variables.pt.precision=10
-cmesonCandidateTable.variables.phi.precision=12
+cmesonCandidateTable.variables.pt.precision=14
+cmesonCandidateTable.variables.phi.precision=14
+cmesonCandidateTable.variables.eta.precision=14
+cmesonCandidateTable.variables.mass.precision=14
 
 #before cross linking
 cmesonSequence = cms.Sequence()
