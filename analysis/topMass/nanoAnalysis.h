@@ -80,6 +80,8 @@ class nanoAnalysis {
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
 
+  void analysis();
+  
   //Making output branch
   void MakeBranch(TTree* t);
   void ResetBranch();

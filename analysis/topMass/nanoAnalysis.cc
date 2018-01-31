@@ -44,24 +44,75 @@ vector<TParticle> nanoAnalysis::muonSelection()
   return muons;
 }
 
-Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers)
+void nanoAnalysis::analysis()
 {
-  Float_t u1 = gRandom->Rndm();
-  Float_t u2 = gRandom->Rndm();
-  if (!isMC){
-    return rocCor->kScaleDT(q, m.Pt(), m.Eta(), m.Phi(), 0, 0);
+  ResetBranch();
+  Event_Tot->Fill(0.5, Event_Total);
+  cutFlow->Fill(0);
+
+  //Run for MC
+  if (isMC) {
+    Int_t nvtx = Pileup_nTrueInt;
+    if (nvtx < hist_mc->GetNbinsX()) puweight = puWeightCalculator->getWeight(nvtx);
+    else puweight = 1;
+      
+    genweight = genWeight;
+    genweights->Fill(0.5, genweight);
+    b_weight = genweight * puweight;
+    weight->Fill(0.5, b_weight);
+      
+    fillMcBranch();
   }
   else {
-    if (nGen > -1){
-      return rocCor->kScaleFromGenMC(q, m.Pt(), m.Eta(), m.Phi(),
-				     nTrackerLayers, GenPart_pt[nGen],
-				     u1, 0, 0);
-    }
-    else
-      return rocCor->kScaleAndSmearMC(q, m.Pt(), m.Eta(), m.Phi(),
-				      nTrackerLayers, u1, u2, 0, 0);
+    puweight = 1;
+    genweight = 0;
+    if (!LumiCheck()) return;
   }
-  return 1.0;
+    
+  Step = 1;
+  cutFlow->Fill(1);
+
+  if (std::abs(PV_z) >= 24.) return;
+  if (PV_npvs == 0) return;
+  if (PV_ndof < 4) return;
+
+  Step = 2;
+  cutFlow->Fill(2);
+
+  auto muons = muonSelection();
+    
+  if(muons.size() < 2) return;
+  Step = 3;
+  cutFlow->Fill(3);
+
+  if (muons[0].GetPdgCode()*muons[1].GetPdgCode() > 0 ) return;
+  Step = 4;
+  cutFlow->Fill(4);
+
+  muons[0].Momentum(Mu1);
+  muons[1].Momentum(Mu2);
+    
+  Dilep = Mu1 + Mu2;
+
+  if (Dilep.M() < 12.) return;
+  Step = 5;
+  cutFlow->Fill(5);
+
+  Bool_t IsoMu24 = false;
+  Bool_t IsoTkMu24 = false;
+  for (Int_t i = 0; i < nTrigObj; ++i){
+    if (TrigObj_id[i] != 13) continue;
+    if (TrigObj_pt[i] < 24) continue;
+    Int_t bits = TrigObj_filterBits[i];
+    if (bits & 0x2) IsoMu24 = true;
+    if (bits & 0x8) IsoTkMu24 = true;	
+  }
+  if (!(IsoMu24 || IsoTkMu24)) return;
+  Step = 6;
+  cutFlow->Fill(6);
+
+  Event_No = 1;
+  ALL->Fill();
 }
 
 void nanoAnalysis::Loop()
@@ -75,77 +126,10 @@ void nanoAnalysis::Loop()
   
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     //Prepare for new loop
-    ResetBranch();
-    Event_Tot->Fill(0.5, Event_Total);
-    cutFlow->Fill(0);
-
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
-    nb = fChain->GetEntry(jentry);   nbytes += nb;
-
-    //Run for MC
-    if (isMC) {
-      Int_t nvtx = Pileup_nTrueInt;
-      if (nvtx < hist_mc->GetNbinsX()) puweight = puWeightCalculator->getWeight(nvtx);
-      else puweight = 1;
-      
-      genweight = genWeight;
-      genweights->Fill(0.5, genweight);
-      b_weight = genweight * puweight;
-      weight->Fill(0.5, b_weight);
-      
-      fillMcBranch();
-    }
-    else {
-      puweight = 1;
-      genweight = 0;
-      if (!LumiCheck()) {continue;}
-    }
-    
-    Step = 1;
-    cutFlow->Fill(1);
-
-    if (std::abs(PV_z) >= 24.) {continue;}
-    if (PV_npvs == 0) {continue;}
-    if (PV_ndof < 4) {continue;}
-
-    Step = 2;
-    cutFlow->Fill(2);
-
-    auto muons = muonSelection();
-    
-    if(muons.size() < 2) {continue;}
-    Step = 3;
-    cutFlow->Fill(3);
-
-    if (muons[0].GetPdgCode()*muons[1].GetPdgCode() > 0 ) continue;
-    Step = 4;
-    cutFlow->Fill(4);
-
-    muons[0].Momentum(Mu1);
-    muons[1].Momentum(Mu2);
-    
-    Dilep = Mu1 + Mu2;
-
-    if (Dilep.M() < 12.) {continue;}
-    Step = 5;
-    cutFlow->Fill(5);
-
-    Bool_t IsoMu24 = false;
-    Bool_t IsoTkMu24 = false;
-    for (Int_t i = 0; i < nTrigObj; ++i){
-      if (TrigObj_id[i] != 13) continue;
-      if (TrigObj_pt[i] < 24) continue;
-      Int_t bits = TrigObj_filterBits[i];
-      if (bits & 0x2) IsoMu24 = true;
-      if (bits & 0x8) IsoTkMu24 = true;	
-    }
-    if (!(IsoMu24 || IsoTkMu24)) {continue;}
-    Step = 6;
-    cutFlow->Fill(6);
-
-    Event_No = 1;
-    ALL->Fill();
+    nb = fChain->GetEntry(jentry); nbytes += nb;
+    analysis();
   }
 }
 
@@ -174,7 +158,7 @@ int main(int argc, char* argv[])
 
 
   nanoAnalysis t(chain, true);
-  t.SetOutput("test.root");
+  t.SetOutput("tree.root");
   t.Loop();
 
   return 0;
@@ -269,3 +253,23 @@ void nanoAnalysis::fillMcBranch()
   }
 }
 
+
+Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers)
+{
+  Float_t u1 = gRandom->Rndm();
+  Float_t u2 = gRandom->Rndm();
+  if (!isMC){
+    return rocCor->kScaleDT(q, m.Pt(), m.Eta(), m.Phi(), 0, 0);
+  }
+  else {
+    if (nGen > -1){
+      return rocCor->kScaleFromGenMC(q, m.Pt(), m.Eta(), m.Phi(),
+				     nTrackerLayers, GenPart_pt[nGen],
+				     u1, 0, 0);
+    }
+    else
+      return rocCor->kScaleAndSmearMC(q, m.Pt(), m.Eta(), m.Phi(),
+				      nTrackerLayers, u1, u2, 0, 0);
+  }
+  return 1.0;
+}
