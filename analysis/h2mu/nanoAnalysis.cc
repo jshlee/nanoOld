@@ -4,6 +4,7 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 /*
@@ -11,31 +12,72 @@ To compile:
 g++ `root-config --cflags --glibs` nanoAnalysis.cc -o nanoAnalysis
 */
 
+inline Bool_t nanoAnalysis::MuonSelection(const UInt_t i)
+{
+  if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i]) return false;
+  TLorentzVector m;
+  TLorentzVector mu;
+  m.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
+  mu = m * MuScaleFactor(i);
+
+  if (mu.Pt() < 20) return false;
+  else if (std::abs(mu.Eta()) > 2.4) return false;
+  else if (Muon_pfRelIso04_all[i] > 0.25) return false;
+  Mu_Pt.push_back(mu.Pt());
+  Mu_Eta.push_back(mu.Eta());
+  Mu_Charge.push_back(Muon_charge[i]);
+  Mu_Phi.push_back(mu.Phi());
+  Mu_M.push_back(mu.M());
+  return true;
+}
+
+inline Double_t nanoAnalysis::MuScaleFactor(const UInt_t i)
+{
+  Float_t scaleFactor = 1.0;
+  Float_t u1 = gRandom->Rndm();
+  Float_t u2 = gRandom->Rndm();
+  if (!isMC)
+  {
+    scaleFactor = rocCor->kScaleDT(Muon_charge[i], Muon_pt[i], Muon_eta[i], Muon_phi[i], 0, 0);
+  } 
+  else
+  {
+    if (Muon_pt[i] == GenLep1.Pt())      scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
+                                                                               Muon_pt[i], 
+                                                                               Muon_eta[i],
+                                                                               Muon_phi[i], 
+                                                                               Muon_nTrackerLayers[i], 
+                                                                               GenLep1.Pt(), 
+                                                                               u1, 0, 0);
+    else if (Muon_pt[i] == GenLep2.Pt()) scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
+                                                                               Muon_pt[i], 
+                                                                               Muon_eta[i], 
+                                                                               Muon_phi[i], 
+                                                                               Muon_nTrackerLayers[i], 
+                                                                               GenLep2.Pt(), 
+                                                                               u1, 0, 0);
+    else                            scaleFactor = rocCor->kScaleAndSmearMC(Muon_charge[i], 
+                                                                           Muon_pt[i], 
+                                                                           Muon_eta[i], 
+                                                                           Muon_phi[i], 
+                                                                           Muon_nTrackerLayers[i], 
+                                                                           u1, u2, 0, 0);
+  }
+  return scaleFactor;
+}
+
 void nanoAnalysis::Loop()
 {
   if (fChain == 0) return;
 
-  Long64_t nentries = fChain->GetEntriesFast();
+  Long64_t nentries = fChain->GetEntries();
 
   Long64_t nbytes = 0, nb = 0;
   float nPassTrig = 0;
   
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     //Prepare for new loop
-    Event_No = 0;
-    Step = 0;
-    Dilep.SetPtEtaPhiM(0,0,0,0);
-    GenLep1.SetPtEtaPhiM(0,0,0,0);
-    GenLep2.SetPtEtaPhiM(0,0,0,0);
-    Mu1.SetPtEtaPhiM(0,0,0,0);
-    Mu2.SetPtEtaPhiM(0,0,0,0);
-    Nu_Mu = 0;
-    Mu_Pt.clear();
-    Mu_Eta.clear();
-    Mu_Phi.clear();
-    Mu_M.clear();
-    Mu_Charge.clear();
-    Event_Total = 1;
+    ResetBranch();
     Event_Tot->Fill(0.5, Event_Total);
     cutFlow->Fill(0);
 
@@ -147,18 +189,13 @@ void nanoAnalysis::Loop()
   // cout <<"pass hlt frac "<< nPassTrig/float(nentries) <<endl;
 }
 
-#include <iostream>
-#include <cstdlib>
-
 int main(Int_t argc, Char_t** argv)
 {
   if(argc != 0)
   {
     std::string env = std::getenv("CMSSW_BASE");
-    std::string dirName = env+("/src/nano/analysis/test/Result/Nano_C_Test/")+argv[1];
-    std::string temp = "mkdir -p " + dirName;
-    system(temp.c_str());
-    temp = argv[1];
+    std::string dirName = env+("/src/nano/analysis/h2mu/Results/Nano_C_Test/")+argv[1];
+    std::string temp = argv[1];
     Bool_t isMC = false;
     Size_t found = temp.find("Run");
     if(found == std::string::npos) isMC = true;
