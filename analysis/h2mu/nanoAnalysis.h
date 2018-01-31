@@ -2021,7 +2021,7 @@ public :
       TBranch        *b_Flag_METFilters;   //!
       
       
-      nanoAnalysis(TTree *tree=0);
+      nanoAnalysis(TTree *tree=0, Bool_t flag = false);
       virtual ~nanoAnalysis();
       virtual Int_t    Cut(Long64_t entry);
       virtual Int_t    GetEntry(Long64_t entry);
@@ -2035,7 +2035,7 @@ public :
 //OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo 
 //OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
       //Output Variables
-      TFile* f;
+      TFile* output;
       
       //Tree
       TTree* ALL;
@@ -2085,93 +2085,104 @@ public :
       //for Calculator
       WeightCalculatorFromHistogram* puWeightCalculator;
       RoccoR* rocCor;
+      TH1D* hist_mc;
+      Bool_t isMC;
 
       //LumiMap
       std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
+
+      //set output file
+      void SetOutput(std::string outputName);
 
       //Making output branch
       void MakeBranch(TTree* t);
 
       //For Selection
-      inline Bool_t LumiCheck(const Int_t i);
-      inline Bool_t MuonSelection(const Int_t i);
-      inline Double_t MuScaleFactor(const Int_t i);
+      inline Bool_t LumiCheck();
+      inline Bool_t MuonSelection(const UInt_t i);
+      inline Double_t MuScaleFactor(const UInt_t i);
 };
 
 #endif
 
 #ifdef nanoAnalysis_cxx
-nanoAnalysis::nanoAnalysis(TTree *tree) : fChain(0) 
+nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), isMC(flag)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
-   if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
-      if (!f || !f->IsOpen()) {
-         f = new TFile("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
-      }
-      f->GetObject("Events",tree);
+  if (tree == 0) {
+    TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
+    if (!f || !f->IsOpen()) {
+      f = TFile::Open("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
+    }
+    f->GetObject("Events",tree);
 
-   }
-   //Get Modules
-   std::string env = std::getenv("CMSSW_BASE");
-   std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root";
-   TH1D* hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
-   hist_mc->SetDirectory(0);
-   temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
-   TH1D* hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
-   hist_data->SetDirectory(0);
-   puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
-   temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
-   rocCor = new RoccoR(temp);
+  }
+  //Get Modules
+  std::string env = std::getenv("CMSSW_BASE");
+  std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root";
+  hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
+  hist_mc->SetDirectory(0);
+  temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
+  TH1D* hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
+  hist_data->SetDirectory(0);
+  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
+  temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
+  rocCor = new RoccoR(temp);
 
-   //Get LumiMap
-   std::ifstream file("Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt");
-   Json::Value root;
-   Json::Reader reader;
-   if(!reader.parse(file, root, true))
-   {
-      std::cout  << "Failed to parse configuration\n" << reader.getFormattedErrorMessages();
-   }
-   auto member = root.getMemberNames();
-   for(std::string s : member){
-      std::vector<std::array<UInt_t, 2>> lumiVector;
+  //Get LumiMap
+  if(!isMC)
+  {
+  temp = env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt";
+  std::ifstream file(temp.c_str());
+  Json::Value root;
+  Json::Reader reader;
+  if(!reader.parse(file, root, true))
+  {
+    std::cout  << "Failed to parse configuration\n" << reader.getFormattedErrorMessages();
+  }
+  auto member = root.getMemberNames();
+  for(std::string s : member){
+    std::vector<std::array<UInt_t, 2>> lumiVector;
       for(int i = 0; i < root[s].size(); i++){
-         std::array<UInt_t, 2> lumiArray;
-         lumiArray[0] = root[s][i][0].asUInt();
-         lumiArray[1] = root[s][i][1].asUInt();
-         lumiVector.push_back(lumiArray);
+        std::array<UInt_t, 2> lumiArray;
+        lumiArray[0] = root[s][i][0].asUInt();
+        lumiArray[1] = root[s][i][1].asUInt();
+        lumiVector.push_back(lumiArray);
       }
-      lumiMap[std::stoi(s)] = lumiVector;
-   }
-   file.close();
+    lumiMap[std::stoi(s)] = lumiVector;
+  }
+  file.close();
+  }
 
-   Init(tree);
+  Init(tree);
 }
 
 nanoAnalysis::~nanoAnalysis()
 {
-   if (!fChain) return;
-   delete fChain->GetCurrentFile();
+  if (!fChain) return;
+  delete fChain->GetCurrentFile();
+  output->Write();
+  output->Close();
 }
 
 Int_t nanoAnalysis::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
-   if (!fChain) return 0;
-   return fChain->GetEntry(entry);
+  if (!fChain) return 0;
+  return fChain->GetEntry(entry);
 }
 Long64_t nanoAnalysis::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
-   if (!fChain) return -5;
-   Long64_t centry = fChain->LoadTree(entry);
-   if (centry < 0) return centry;
-   if (fChain->GetTreeNumber() != fCurrent) {
-      fCurrent = fChain->GetTreeNumber();
-      Notify();
-   }
-   return centry;
+  if (!fChain) return -5;
+  Long64_t centry = fChain->LoadTree(entry);
+  if (centry < 0) return centry;
+  if (fChain->GetTreeNumber() != fCurrent) {
+    fCurrent = fChain->GetTreeNumber();
+    Notify();
+  }
+  return centry;
 }
 
 void nanoAnalysis::Init(TTree *tree)
@@ -3220,6 +3231,19 @@ Int_t nanoAnalysis::Cut(Long64_t entry)
 //OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
 //OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
 //OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
+void nanoAnalysis::SetOutput(std::string outputName)
+{
+  output = TFile::Open(outputName.c_str(), "recreate");
+
+  ALL = new TTree("nEvent", "nEvent");
+  MakeBranch(ALL);
+  
+  Event_Tot = new TH1D("Event_total", "Event_total" ,1,0,1);
+  genweights = new TH1D("genweight", "genweight" , 1,0,1);
+  weight = new TH1D("weight", "weight", 1,0,1);
+  cutFlow = new TH1D("cutflow", "cutflow", 11, -0.5, 10.5);
+}
+
 void nanoAnalysis::MakeBranch(TTree* t)
 {
   t->Branch("Event_No", &Event_No, "Event_No/I");
@@ -3230,30 +3254,30 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("Nu_Mu", &Nu_Mu, "Nu_Mu/I");
   t->Branch("Mu_Pt", &Mu_Pt);
   t->Branch("Mu_Eta", &Mu_Eta);
-  t->Branch("Nu_El", &Nu_El, "Nu_El/I");
-  t->Branch("El_Pt", &El_Pt);
-  t->Branch("El_Eta", &El_Eta);
-  t->Branch("Nu_Jet", &Nu_Jet, "Nu_Jet/I");
-  t->Branch("Jet_Pt", &Jet_Pt);
-  t->Branch("Jet_Eta", &Jet_Eta);
-  t->Branch("Nu_BJet", &Nu_BJet, "Nu_BJet/I");
+  // t->Branch("Nu_El", &Nu_El, "Nu_El/I");
+  // t->Branch("El_Pt", &El_Pt);
+  // t->Branch("El_Eta", &El_Eta);
+  // t->Branch("Nu_Jet", &Nu_Jet, "Nu_Jet/I");
+  // t->Branch("Jet_Pt", &Jet_Pt);
+  // t->Branch("Jet_Eta", &Jet_Eta);
+  // t->Branch("Nu_BJet", &Nu_BJet, "Nu_BJet/I");
   t->Branch("genweight", &genweight, "genweight/F");
   t->Branch("puweight", &puweight, "puweight/F");
 }
 
-inline Bool_t nanoAnalysis::LumiCheck(const Int_t i)
+inline Bool_t nanoAnalysis::LumiCheck()
 {
-  if ( lumiMap.find(run[i]) == lumiMap.end() ) {
+  if ( lumiMap.find(run) == lumiMap.end() ) {
     return false;
   } else {
-    for (unsigned int i = 0; i < lumiMap[run[i]].size(); i++){
-      if(lumiMap[run][i][0] <= lumiBlock[i] && lumiMap[run][i][1] >= lumiBlock) return true;
+    for (UInt_t i = 0; i < lumiMap[run].size(); i++){
+      if(lumiMap[run][i][0] <= luminosityBlock && lumiMap[run][i][1] >= luminosityBlock) return true;
     }
     return false;
   }
 }
 
-inline Bool_t nanoAnalysis::MuonSelection(const int i)
+inline Bool_t nanoAnalysis::MuonSelection(const UInt_t i)
 {
   if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i]) return false;
   TLorentzVector m;
@@ -3263,40 +3287,40 @@ inline Bool_t nanoAnalysis::MuonSelection(const int i)
 
   if (mu.Pt() < 20) return false;
   else if (std::abs(mu.Eta()) > 2.4) return false;
-  else if (mu_iso > 0.25) return false;
+  else if (Muon_pfRelIso04_all[i] > 0.25) return false;
   Mu_Pt.push_back(mu.Pt());
   Mu_Eta.push_back(mu.Eta());
-  Mu_Charge.push_back(mu_charge);
+  Mu_Charge.push_back(Muon_charge[i]);
   Mu_Phi.push_back(mu.Phi());
   Mu_M.push_back(mu.M());
   return true;
 }
 
-inline Double_t TTH2MuAnalyzer::MuScaleFactor(const int i)
+inline Double_t nanoAnalysis::MuScaleFactor(const UInt_t i)
 {
-  float scaleFactor = 1.0;
-  float u1 = gRandom->Rndm();
-  float u2 = gRandom->Rndm();
+  Float_t scaleFactor = 1.0;
+  Float_t u1 = gRandom->Rndm();
+  Float_t u2 = gRandom->Rndm();
   if (!isMC)
   {
     scaleFactor = rocCor->kScaleDT(Muon_charge[i], Muon_pt[i], Muon_eta[i], Muon_phi[i], 0, 0);
   } 
   else
   {
-    if (mu_pt == GenLep1.Pt())      scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
-                                                                          Muon_pt[i], 
-                                                                          Muon_eta[i],
-                                                                          Muon_phi[i], 
-                                                                          Muon_nTrackerLayers[i], 
-                                                                          GenLep1.Pt(), 
-                                                                          u1, 0, 0);
-    else if (mu_pt == GenLep2.Pt()) scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
-                                                                          Muon_pt[i], 
-                                                                          Muon_eta[i], 
-                                                                          Muon_phi[i], 
-                                                                          Muon_nTrackerLayers[i], 
-                                                                          GenLep2.Pt(), 
-                                                                          u1, 0, 0);
+    if (Muon_pt[i] == GenLep1.Pt())      scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
+                                                                               Muon_pt[i], 
+                                                                               Muon_eta[i],
+                                                                               Muon_phi[i], 
+                                                                               Muon_nTrackerLayers[i], 
+                                                                               GenLep1.Pt(), 
+                                                                               u1, 0, 0);
+    else if (Muon_pt[i] == GenLep2.Pt()) scaleFactor = rocCor->kScaleFromGenMC(Muon_charge[i], 
+                                                                               Muon_pt[i], 
+                                                                               Muon_eta[i], 
+                                                                               Muon_phi[i], 
+                                                                               Muon_nTrackerLayers[i], 
+                                                                               GenLep2.Pt(), 
+                                                                               u1, 0, 0);
     else                            scaleFactor = rocCor->kScaleAndSmearMC(Muon_charge[i], 
                                                                            Muon_pt[i], 
                                                                            Muon_eta[i], 
