@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os,json,sys,shutil,time,getopt
 
-def submitjob(requestName, psetName, dataset, submit):
+def submitjob(requestName, psetName, dataset, submit,lumiMask=None):
     print 'v'*80
     print "creating job"
     print dataset
@@ -21,8 +21,11 @@ def submitjob(requestName, psetName, dataset, submit):
     outLFNDirBase = '/store/group/nanoAOD/%s/'%(requestName)
     
     sendjob = "crab submit JobType.psetName='%s' General.requestName='%s' Data.outLFNDirBase='%s' Data.outputDatasetTag='%s' Data.inputDataset='%s'"%(psetName,dataRequestName,outLFNDirBase,outputDatasetTag,dataset)
+    if not isMC:
+       sendjob+=" Data.splitting='LumiBased' Data.unitsPerJob=20 Data.lumiMask='%s'"%(lumiMask)
+       
     print sendjob
-
+    
     if submit:
         print "submiting job"
         os.system(sendjob)
@@ -36,17 +39,17 @@ datasets = []
 inputFile =None
 submit = False
 psetName =""
-globalTag =""
+lumiMask =""
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"hsi:n:p:g:b:",["requestName","inputFile","psetName","globalTag","submitBlock"])
+    opts, args = getopt.getopt(sys.argv[1:],"hsi:n:p:j:b:",["requestName","inputFile","psetName","lumiMask","submitBlock"])
 except getopt.GetoptError:          
-    print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -g <globalTag>'
+    print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -j <lumiMask>'
     sys.exit(2)
 
 for opt, arg in opts:
     if opt == '-h':
-        print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -g <globalTag>'
+        print 'Usage : ./submitCrab3.py -n <requestName> -i <inputFile> -p <psetName> -j <lumiMask>'
         sys.exit()
     elif opt in ("-n", "--requestName"):
         requestName = arg
@@ -63,8 +66,8 @@ for opt, arg in opts:
         psetName = arg
     elif opt in ("-b", "--submitBlock"):
         submitBlock = arg
-    elif opt in ("-g", "--globalTag"):
-        globalTag = arg
+    elif opt in ("-j", "--lumiMask"):
+        lumiMask = arg
 
 if requestName == "" :
     print "requestName(-n) is mandantory"
@@ -92,7 +95,7 @@ if inputFile is None:
         #if os.path.exists('crab_%s_%s_%s' % (requestName, dataset.split('/')[1], dataset.split('/')[2])): continue
         #if len( d['path']) == 0:
             #print d['path'], len( d['path'])
-        submitjob(requestName, psetName, dataset, submit)
+        submitjob(requestName, psetName, dataset, submit, lumiMask)
         
         #if submitBlock == '1' and 'QCD' in dataset:
         #    continue

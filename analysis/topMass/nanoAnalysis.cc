@@ -51,8 +51,7 @@ void nanoAnalysis::analysis()
   //Run for MC
   if (m_isMC) {
     Int_t nvtx = Pileup_nTrueInt;
-    if (nvtx < hist_mc->GetNbinsX()) b_puweight = m_puWeightCalculator->getWeight(nvtx);
-    else b_puweight = 1;
+    b_puweight = m_pileUp->getWeight(nvtx);
       
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
