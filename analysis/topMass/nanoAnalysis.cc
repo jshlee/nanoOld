@@ -253,7 +253,6 @@ void nanoAnalysis::fillMcBranch()
   }
 }
 
-
 Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers)
 {
   Float_t u1 = gRandom->Rndm();
