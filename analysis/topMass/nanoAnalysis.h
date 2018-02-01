@@ -16,8 +16,8 @@
 #include <TH1.h>
 #include <vector>
 
-#include "../scripts/WeightCalculatorFromHistogram.cc"
 #include "../src/RoccoR.cc"
+#include "../src/pileUpTool.h"
 #include "../plugins/jsoncpp.cpp"
 
 // Header file for the classes stored in the TTree if any.
@@ -41,10 +41,10 @@ class nanoAnalysis {
   float b_met, b_weight, b_genweight, b_puweight;
   
   // Tools
-  WeightCalculatorFromHistogram* m_puWeightCalculator;
   RoccoR* m_rocCor;
   TH1D* hist_mc;
   Bool_t m_isMC;
+  pileUpTool *m_pileUp;
 
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
@@ -2091,17 +2091,11 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
 
   }
   //Get Modules
+  m_pileUp = new pileUpTool();  
   std::string env = std::getenv("CMSSW_BASE");
-  std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root";
-  hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
-  hist_mc->SetDirectory(0);
-  temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
-  TH1D* hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
-  hist_data->SetDirectory(0);
-  m_puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
-  temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
+  std::string temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
   m_rocCor = new RoccoR(temp);
-
+  
   //Get LumiMap
   if(!m_isMC)
     {
