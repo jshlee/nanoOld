@@ -13,6 +13,7 @@
 #include <TFile.h>
 #include <TLorentzVector.h>
 #include <TParticle.h>
+#include <TH1.h>
 #include <vector>
 
 #include "../scripts/WeightCalculatorFromHistogram.cc"
@@ -22,79 +23,46 @@
 // Header file for the classes stored in the TTree if any.
 
 class nanoAnalysis {
-
-  // change all member variables to start with 'm_'
   //Output Variables
-  TFile* output;      
+  TFile* m_output;      
   //Tree
-  TTree* ALL;
+  TTree* m_tree;
       
   //histogram
-  TH1D* Event_Tot;
-  TH1D* genweights;
-  TH1D* weight;
+  TH1D *h_nevents, *h_genweights, *h_weights, *h_cutFlow;
       
   //Variables
-  TLorentzVector Dilep;
-  TLorentzVector Mu1;
-  TLorentzVector Mu2;
-  TLorentzVector GenLep1;
-  TLorentzVector GenLep2;
+  TLorentzVector b_lep1, b_lep2, b_dilep, b_jet1, b_jet2;
+  int b_lep1_pid, b_lep2_pid;
+  float b_jet1_CSVInclV2, b_jet2_CSVInclV2;
 
-  std::vector<Float_t> Mu_Pt;
-  std::vector<Float_t> Mu_Eta;
-  std::vector<Float_t> Mu_Charge;
-  std::vector<Float_t> Mu_Phi;
-  std::vector<Float_t> Mu_M;
-
-  std::vector<Float_t> El_Pt;
-  std::vector<Float_t> El_Eta;
-
-  std::vector<Float_t> Jet_Pt;
-  std::vector<Float_t> Jet_Eta;
-  std::vector<Float_t> Jet_CSVV2;
-  std::vector<Float_t> Jet_M;
-  std::vector<Float_t> Jet_Phi;
-
-  Int_t Event_No;
-  Int_t Event_Total;
-  Int_t Nu_Mu;
-  Int_t Nu_El;
-  Int_t Nu_Jet;
-  Int_t Nu_BJet;
-  Int_t Nu_NonBJet;
-  Float_t genweight;
-  Float_t puweight;
-  Float_t b_weight;
-      
-  //Step and Cutflow
-  TH1D* cutFlow;
-  Int_t Step;
-
-  //for Calculator
-  WeightCalculatorFromHistogram* puWeightCalculator;
-  RoccoR* rocCor;
+  int b_nvertex, b_step, b_channel, b_njet, b_nbjet;
+  bool b_step1, b_step2, b_step3, b_step4, b_step5, b_step6, b_step7;  
+  float b_met, b_weight, b_genweight, b_puweight;
+  
+  // Tools
+  WeightCalculatorFromHistogram* m_puWeightCalculator;
+  RoccoR* m_rocCor;
   TH1D* hist_mc;
-  Bool_t isMC;
+  Bool_t m_isMC;
 
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
 
   void analysis();
+  void mcAnalysis();
   
   //Making output branch
-  void MakeBranch(TTree* t);
-  void ResetBranch();
-  void fillMcBranch();
+  void resetBranch();
 
   //For Selection
-  inline Bool_t LumiCheck();
+  Bool_t lumiCheck();
   std::vector<TParticle> muonSelection();
   Double_t roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers);
   
  public :
   //set output file
-  void SetOutput(std::string outputName);
+  void setOutput(std::string outputName);
   
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
@@ -2110,7 +2078,7 @@ class nanoAnalysis {
 #endif
 
 #ifdef nanoAnalysis_cxx
-nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), isMC(flag)
+nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
 {
   // if parameter tree is not specified (or zero), connect the file
   // used to generate this class and read the Tree.
@@ -2130,12 +2098,12 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), isMC(flag)
   temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
   TH1D* hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
   hist_data->SetDirectory(0);
-  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
+  m_puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
   temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
-  rocCor = new RoccoR(temp);
+  m_rocCor = new RoccoR(temp);
 
   //Get LumiMap
-  if(!isMC)
+  if(!m_isMC)
     {
       temp = env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt";
       std::ifstream file(temp.c_str());
@@ -2166,8 +2134,8 @@ nanoAnalysis::~nanoAnalysis()
 {
   if (!fChain) return;
   delete fChain->GetCurrentFile();
-  output->Write();
-  output->Close();
+  m_output->Write();
+  m_output->Close();
 }
 
 Int_t nanoAnalysis::GetEntry(Long64_t entry)
