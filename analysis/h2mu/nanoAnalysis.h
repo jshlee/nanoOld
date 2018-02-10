@@ -11,16 +11,87 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
-#include <TLorentzVector.h>
-
-#include "../scripts/WeightCalculatorFromHistogram.cc"
-#include "../src/RoccoR.cc"
-#include "../plugins/jsoncpp.cpp"
 
 // Header file for the classes stored in the TTree if any.
+#include <TH1D.h>
+#include <TLorentzVector.h>
+
+#include "../src/pileUpTool.h"
+#include "../src/RoccoR.cc"
+#include "../src/lumiTool.h"
+#include "../plugins/jsoncpp.cpp"
 
 class nanoAnalysis {
-public :
+private: 
+      //Output Variables
+      TFile* m_output;
+      
+      //Tree
+      TTree* ALL;
+      
+      //histogram
+      TH1D* h_Event_Tot;
+      TH1D* h_genweights;
+      TH1D* h_weight;
+      
+      //Variables
+      TLorentzVector b_Dilep;
+      TLorentzVector b_Mu1;
+      TLorentzVector b_Mu2;
+      
+      UInt_t b_Nu_Mu;
+      Float_t b_Mu_Pt[5];
+      Float_t b_Mu_Eta[5];
+      Float_t b_Mu_Charge[5];
+      Float_t b_Mu_Phi[5];
+      Float_t b_Mu_M[5];
+
+      UInt_t b_Nu_El;
+      Float_t b_El_Pt[6];
+      Float_t b_El_Eta[6];
+
+      UInt_t b_Nu_Jet;
+      Float_t b_Jet_Pt[35];
+      Float_t b_Jet_Eta[35];
+      Float_t b_Jet_CSVV2[35];
+      Float_t b_Jet_M[35];
+      Float_t b_Jet_Phi[35];
+
+      Float_t b_genweight;
+      Float_t b_puweight;
+      Float_t b_weight;
+
+      Int_t b_Event_No;
+      Int_t b_Event_Total;
+      
+      Int_t b_Nu_BJet;
+      Int_t b_Nu_NonBJet;
+      
+      //Step and Cutflow
+      TH1D* h_cutFlow;
+      Int_t b_Step;
+      
+      //Tools
+      pileUpTool* m_pileUp;
+      lumiTool* m_lumi;
+      RoccoR* m_rocCor;
+      Bool_t m_isMC;
+      
+      //Making output branch
+      void MakeBranch(TTree* t);
+      void ResetBranch();
+
+      void Analysis();
+      //For Selection
+      Bool_t LumiCheck();
+      void MuonSelection();
+      Double_t roccoR(TLorentzVector m, Int_t &q, Int_t &nGen, Int_t &nTrackerLayers);
+public:
+      //set output file
+      void SetOutput(std::string outputName);
+      void LoadModules(pileUpTool* pileUp, lumiTool* lumi, RoccoR* rocCor);
+
+public:
       TTree          *fChain;   //!pointer to the analyzed TTree or TChain
       Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -2030,84 +2101,12 @@ public :
       virtual void     Loop();
       virtual Bool_t   Notify();
       virtual void     Show(Long64_t entry = -1);
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo 
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-      //Output Variables
-      TFile* output;
-      
-      //Tree
-      TTree* ALL;
-      
-      //histogram
-      TH1D* Event_Tot;
-      TH1D* genweights;
-      TH1D* weight;
-      
-      //Variables
-      TLorentzVector Dilep;
-      TLorentzVector Mu1;
-      TLorentzVector Mu2;
-      TLorentzVector GenLep1;
-      TLorentzVector GenLep2;
-
-      std::vector<Float_t> Mu_Pt;
-      std::vector<Float_t> Mu_Eta;
-      std::vector<Float_t> Mu_Charge;
-      std::vector<Float_t> Mu_Phi;
-      std::vector<Float_t> Mu_M;
-
-      std::vector<Float_t> El_Pt;
-      std::vector<Float_t> El_Eta;
-
-      std::vector<Float_t> Jet_Pt;
-      std::vector<Float_t> Jet_Eta;
-      std::vector<Float_t> Jet_CSVV2;
-      std::vector<Float_t> Jet_M;
-      std::vector<Float_t> Jet_Phi;
-
-      Int_t Event_No;
-      Int_t Event_Total;
-      Int_t Nu_Mu;
-      Int_t Nu_El;
-      Int_t Nu_Jet;
-      Int_t Nu_BJet;
-      Int_t Nu_NonBJet;
-      Float_t genweight;
-      Float_t puweight;
-      Float_t b_weight;
-      
-      //Step and Cutflow
-      TH1D* cutFlow;
-      Int_t Step;
-
-      //for Calculator
-      WeightCalculatorFromHistogram* puWeightCalculator;
-      RoccoR* rocCor;
-      TH1D* hist_mc;
-      Bool_t isMC;
-
-      //LumiMap
-      std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
-
-      //set output file
-      void SetOutput(std::string outputName);
-
-      //Making output branch
-      void MakeBranch(TTree* t);
-      void ResetBranch();
-
-      //For Selection
-      inline Bool_t LumiCheck();
-      inline Bool_t MuonSelection(const UInt_t i);
-      inline Double_t MuScaleFactor(const UInt_t i);
 };
 
 #endif
 
 #ifdef nanoAnalysis_cxx
-nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), isMC(flag)
+nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -2119,43 +2118,6 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), isMC(flag)
     f->GetObject("Events",tree);
 
   }
-  //Get Modules
-  std::string env = std::getenv("CMSSW_BASE");
-  std::string temp = env+"/src/nano/analysis/data/pu_root/Moriond17MC_PoissonOOTPU.root";
-  hist_mc = (TH1D*)TFile::Open(temp.c_str())->Get("pu_mc");
-  hist_mc->SetDirectory(0);
-  temp = env+"/src/nano/analysis/data/pu_root/PileUpData.root";
-  TH1D* hist_data = (TH1D*)TFile::Open(temp.c_str())->Get("pileup");
-  hist_data->SetDirectory(0);
-  puWeightCalculator = new WeightCalculatorFromHistogram(hist_mc, hist_data, true, false, false);
-  temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
-  rocCor = new RoccoR(temp);
-
-  //Get LumiMap
-  if(!isMC)
-  {
-    temp = env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt";
-    std::ifstream file(temp.c_str());
-    Json::Value root;
-    Json::Reader reader;
-    if(!reader.parse(file, root, true))
-    {
-      std::cout  << "Failed to parse configuration\n" << reader.getFormattedErrorMessages();
-    }
-    auto member = root.getMemberNames();
-    for(std::string s : member){
-      std::vector<std::array<UInt_t, 2>> lumiVector;
-        for(int i = 0; i < root[s].size(); i++){
-          std::array<UInt_t, 2> lumiArray;
-          lumiArray[0] = root[s][i][0].asUInt();
-          lumiArray[1] = root[s][i][1].asUInt();
-          lumiVector.push_back(lumiArray);
-        }
-      lumiMap[std::stoi(s)] = lumiVector;
-    }
-    file.close();
-  }
-
   Init(tree);
 }
 
@@ -2163,8 +2125,8 @@ nanoAnalysis::~nanoAnalysis()
 {
   if (!fChain) return;
   delete fChain->GetCurrentFile();
-  output->Write();
-  output->Close();
+  m_output->Write();
+  m_output->Close();
 }
 
 Int_t nanoAnalysis::GetEntry(Long64_t entry)
@@ -3224,77 +3186,6 @@ Int_t nanoAnalysis::Cut(Long64_t entry)
   // returns  1 if entry is accepted.
   // returns -1 otherwise.
   return 1;
-}
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-//OOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOoooOOOooo
-void nanoAnalysis::SetOutput(std::string outputName)
-{
-  output = TFile::Open(outputName.c_str(), "recreate");
-
-  ALL = new TTree("nEvent", "nEvent");
-  MakeBranch(ALL);
-  
-  Event_Tot = new TH1D("Event_total", "Event_total" ,1,0,1);
-  genweights = new TH1D("genweight", "genweight" , 1,0,1);
-  weight = new TH1D("weight", "weight", 1,0,1);
-  cutFlow = new TH1D("cutflow", "cutflow", 11, -0.5, 10.5);
-}
-
-void nanoAnalysis::MakeBranch(TTree* t)
-{
-  t->Branch("Event_No", &Event_No, "Event_No/I");
-  t->Branch("Step", &Step, "Step/I");
-  t->Branch("Dilep", "TLorentzVector", &Dilep);
-  t->Branch("Mu1", "TLorentzVector", &Mu1);
-  t->Branch("Mu2", "TLorentzVector", &Mu2);
-  t->Branch("Nu_Mu", &Nu_Mu, "Nu_Mu/I");
-  t->Branch("Mu_Pt", &Mu_Pt);
-  t->Branch("Mu_Eta", &Mu_Eta);
-  // t->Branch("Nu_El", &Nu_El, "Nu_El/I");
-  // t->Branch("El_Pt", &El_Pt);
-  // t->Branch("El_Eta", &El_Eta);
-  // t->Branch("Nu_Jet", &Nu_Jet, "Nu_Jet/I");
-  // t->Branch("Jet_Pt", &Jet_Pt);
-  // t->Branch("Jet_Eta", &Jet_Eta);
-  // t->Branch("Nu_BJet", &Nu_BJet, "Nu_BJet/I");
-  t->Branch("genweight", &genweight, "genweight/F");
-  t->Branch("puweight", &puweight, "puweight/F");
-  t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
-}
-
-void nanoAnalysis::ResetBranch()
-{
-  Event_No = 0;
-  Step = 0;
-  Dilep.SetPtEtaPhiM(0,0,0,0);
-  GenLep1.SetPtEtaPhiM(0,0,0,0);
-  GenLep2.SetPtEtaPhiM(0,0,0,0);
-  Mu1.SetPtEtaPhiM(0,0,0,0);
-  Mu2.SetPtEtaPhiM(0,0,0,0);
-  Nu_Mu = 0;
-  Mu_Pt.clear();
-  Mu_Eta.clear();
-  Mu_Phi.clear();
-  Mu_M.clear();
-  Mu_Charge.clear();
-  Event_Total = 1;
-}
-
-inline Bool_t nanoAnalysis::LumiCheck()
-{
-  if ( lumiMap.find(run) == lumiMap.end() ) {
-    return false;
-  } else {
-    for (UInt_t i = 0; i < lumiMap[run].size(); i++){
-      if(lumiMap[run][i][0] <= luminosityBlock && lumiMap[run][i][1] >= luminosityBlock) return true;
-    }
-    return false;
-  }
 }
 
 #endif // #ifdef nanoAnalysis_cxx
