@@ -2,7 +2,7 @@ import ROOT, os, getopt, sys, array, math, glob, json
 from ROOT import * 
 from array import array
 
-
+ROOT.gROOT.LoadMacro("%s/src/nano/analysis/plugins/tth2mu.cc+"%os.environ['CMSSW_BASE'])
 ### Make TTREE ### 
 FileArg = sys.argv
 print FileArg
@@ -31,7 +31,6 @@ for i in Gfile :
         lumiVector.push_back(lumiArray)
     lumiMap[int(i)] = lumiVector
 
-ROOT.gROOT.LoadMacro("%s/src/nano/analysis/plugins/tth2mu.cc+"%os.environ['CMSSW_BASE'])
 analyzer = ROOT.TTH2MuAnalyzer(cattree, envName)
 analyzer.LoadLumiMap(lumiMap)
 
@@ -41,5 +40,5 @@ for i,Nfile in enumerate(FileArg[2:]):
         isMC = True
     else:
         isMC = False
-    analyer.analyze(Nfile, isMC)
+    analyzer.Analyze(Nfile, isMC)
 analyzer.EndOfAnalyze()
