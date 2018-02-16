@@ -22,7 +22,7 @@ datalumi = 36814 #35.9fb-1
 #datalumi = 8360.481454 #35.9fb-1
 version = os.environ['CMSSW_VERSION']
 
-rootfileDir = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/test/Results/Nano_3_Test/results_merged/tth2mu_"
+rootfileDir = "%s/src/nano/analysis/h2mu/Results/Nano_C_Test/results_merged/tth2mu_"% os.environ['CMSSW_BASE']
 
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
 #rootfileDir = "%s/src/CATTools/CatAnalyzer/test/results_merged/h2muAnalyzer_" % os.environ['CMSSW_BASE']
@@ -78,7 +78,7 @@ mcfilelist = [
 #mcfilelist = ['VBF_HToMuMu','WW','WZ','ZZ','TT_powheg','DYJets','DYJets_10to50']#,'WJets']
 #mcfilelist = [ 'TTJets_aMC']
 rdfilelist = [
-              'SingleMuon_Run2016B',#mumu
+              'SingleMuon_Run2016',#mumu
              # 'SingleMuon_Run2016',#mumu
               #'SingleMuon_Run2015C',
              #'SingleMuon_Run2015D'
@@ -103,7 +103,7 @@ binning = [150, 50, 200]#[150, 50, 200]
 x_name = 'Invariant Mass'
 y_name = 'Events'
 dolog = True
-f_name = 'Dilep_M_3'
+f_name = 'Dilep_M_C_Test'
 #minp = 0.05
 #maxp = 1000000000
 try:
