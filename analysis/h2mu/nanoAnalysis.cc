@@ -33,8 +33,8 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("Mu1", "TLorentzVector", &b_Mu1);
   t->Branch("Mu2", "TLorentzVector", &b_Mu2);
   t->Branch("Nu_Mu", &b_Nu_Mu, "Nu_Mu/I");
-  t->Branch("Mu_Pt", &b_Mu_Pt);
-  t->Branch("Mu_Eta", &b_Mu_Eta);
+  t->Branch("Mu_Pt", &b_Mu_Pt, "Mu_Eta/F");
+  t->Branch("Mu_Eta", &b_Mu_Eta, "Mu_Pt/F");
   t->Branch("genweight", &b_genweight, "genweight/F");
   t->Branch("puweight", &b_puweight, "puweight/F");
   t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
