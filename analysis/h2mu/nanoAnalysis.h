@@ -15,10 +15,12 @@
 // Header file for the classes stored in the TTree if any.
 #include <TH1D.h>
 #include <TLorentzVector.h>
+#include <TParticle.h>
 
 #include "../src/pileUpTool.h"
 #include "../src/RoccoR.cc"
 #include "../src/lumiTool.h"
+#include "../src/ScaleFactorEvaluator.h"
 #include "../plugins/jsoncpp.cpp"
 
 class nanoAnalysis {
@@ -40,26 +42,30 @@ private:
       TLorentzVector b_Mu2;
       
       UInt_t b_Nu_Mu;
-      Float_t b_Mu_Pt[5];
-      Float_t b_Mu_Eta[5];
-      Float_t b_Mu_Charge[5];
-      Float_t b_Mu_Phi[5];
-      Float_t b_Mu_M[5];
+      std::vector<Float_t> b_Mu_Pt;
+      std::vector<Float_t> b_Mu_Eta;
+      std::vector<Int_t> b_Mu_Charge;
+      std::vector<Float_t> b_Mu_Phi;
+      std::vector<Float_t> b_Mu_M;
 
       UInt_t b_Nu_El;
-      Float_t b_El_Pt[6];
-      Float_t b_El_Eta[6];
+      std::vector<Float_t> b_El_Pt;
+      std::vector<Float_t> b_El_Eta;
 
       UInt_t b_Nu_Jet;
-      Float_t b_Jet_Pt[35];
-      Float_t b_Jet_Eta[35];
-      Float_t b_Jet_CSVV2[35];
-      Float_t b_Jet_M[35];
-      Float_t b_Jet_Phi[35];
+      std::vector<Float_t> b_Jet_Pt;
+      std::vector<Float_t> b_Jet_Eta;
+      std::vector<Float_t> b_Jet_CSVV2;
+      std::vector<Float_t> b_Jet_M;
+      std::vector<Float_t> b_Jet_Phi;
 
       Float_t b_genweight;
       Float_t b_puweight;
       Float_t b_weight;
+
+      Float_t b_mueffweight;
+      Float_t b_mueffweight_up;
+      Float_t b_mueffweight_dn;
 
       Int_t b_Event_No;
       Int_t b_Event_Total;
@@ -75,6 +81,7 @@ private:
       pileUpTool* m_pileUp;
       lumiTool* m_lumi;
       RoccoR* m_rocCor;
+      ScaleFactorEvaluator m_muonSF;
       Bool_t m_isMC;
       
       //Making output branch
