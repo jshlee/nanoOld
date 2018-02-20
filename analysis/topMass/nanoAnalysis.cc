@@ -1,5 +1,6 @@
 #define nanoAnalysis_cxx
 #include "nanoAnalysis.h"
+#include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <iostream>
@@ -7,93 +8,199 @@
 
 using namespace std;
 /*
-  To compile:
-  g++ `root-config --cflags --glibs` -lEG nanoAnalysis.cc -o nanoAnalysis
+To compile:
+g++ `root-config --cflags --glibs` nanoAnalysis.cc -o nanoAnalysis
 */
 
-vector<TParticle> nanoAnalysis::muonSelection()
+void nanoAnalysis::SetOutput(std::string outputName)
 {
-  vector<TParticle> muons; 
-  for (UInt_t i = 0; i < nMuon; ++i){
-    if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i]) continue;
-    if (Muon_pt[i] < 20) continue;
-    if (std::abs(Muon_eta[i]) > 2.4) continue;
-    if (Muon_pfRelIso04_all[i] > 0.25) continue;
+  m_output = TFile::Open(outputName.c_str(), "recreate");
 
-    TLorentzVector mom;
-    mom.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
-
-    mom *= roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
-    
-    auto muon = TParticle();
-    muon.SetPdgCode(13*Muon_charge[i]*-1);
-    muon.SetMomentum(mom);
-
-    // int genN = Muon_genPartIdx[i];
-    // cout << " genN "<< genN<< endl;
-    // cout << " muon pid "<< muon.GetPdgCode()
-    // 	 << " pt "<< muon.Pt()
-    // 	 << " eta "<< muon.Eta()
-    // 	 << " gen pid "<< GenPart_pdgId[genN]
-    // 	 << " pt "<< GenPart_pt[genN]
-    // 	 << " eta "<< GenPart_eta[genN]
-    // 	 << endl;
-    muons.push_back(muon);
-  }
-  return muons;
+  ALL = new TTree("nEvent", "nEvent");
+  MakeBranch(ALL);
+  
+  h_Event_Tot = new TH1D("Event_total", "Event_total" ,1,0,1);
+  h_genweights = new TH1D("genweight", "genweight" , 1,0,1);
+  h_weight = new TH1D("weight", "weight", 1,0,1);
+  h_cutFlow = new TH1D("cutflow", "cutflow", 11, -0.5, 10.5);
 }
 
-void nanoAnalysis::analysis()
+void nanoAnalysis::MakeBranch(TTree* t)
 {
-  h_nevents->Fill(0.5);
+  t->Branch("Event_No", &b_Event_No, "Event_No/I");
+  t->Branch("Step", &b_Step, "Step/I");
+  t->Branch("Channel", &b_Channel, "Channel/I");
+  t->Branch("Dilep", "TLorentzVector", &b_Dilep);
+  t->Branch("Mu1", "TLorentzVector", &b_Mu1);
+  t->Branch("Mu2", "TLorentzVector", &b_Mu2);
+  t->Branch("Nu_Mu", &b_Nu_Mu, "Nu_Mu/I");
+  t->Branch("Mu_Pt", &b_Mu_Pt);
+  t->Branch("Mu_Eta", &b_Mu_Eta);
+  t->Branch("El1", "TLorentzVector", &b_El1);
+  t->Branch("El2", "TLorentzVector", &b_El2);
+  t->Branch("Nu_El", &b_Nu_El, "Nu_Mu/I");
+  t->Branch("El_Pt", &b_El_Pt);
+  t->Branch("El_Eta", &b_El_Eta);
+  t->Branch("genweight", &b_genweight, "genweight/F");
+  t->Branch("puweight", &b_puweight, "puweight/F");
+  //t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
+  //t->Branch("Jet1", "TLorentzVector", &b_Jet1);
+  //t->Branch("Jet2", "TLorentzVector", &b_Jet2);
+  t->Branch("Nu_Jet", &b_Nu_Jet, "Nu_Jet/I");
+  t->Branch("Jet_Pt", &b_Jet_Pt);
+  t->Branch("Jet_Eta", &b_Jet_Eta);
+  t->Branch("Nu_BJet", &b_Nu_BJet, "Nu_BJet/I");
+}
+
+void nanoAnalysis::ResetBranch()
+{
+  b_Event_No = 0;
+  b_Step = 0;
+  b_Channel = 0;
+  b_Dilep.SetPtEtaPhiM(0,0,0,0);
+  b_Mu1.SetPtEtaPhiM(0,0,0,0);
+  b_Mu2.SetPtEtaPhiM(0,0,0,0);
+  b_Nu_Mu = 0;
+  b_El1.SetPtEtaPhiM(0,0,0,0);
+  b_El2.SetPtEtaPhiM(0,0,0,0);
+  b_Nu_El = 0;
+  b_Nu_Jet = 0;
+  b_Nu_BJet = 0;
+  for(UInt_t i = 0; i < 5; i++)
+  {
+    b_Mu_Pt[i] = 0;
+    b_Mu_Eta[i] = 0;
+    b_Mu_Phi[i] = 0;
+    b_Mu_M[i] = 0;
+    b_Mu_Charge[i] = 0;
+    b_El_Pt[i] = 0;
+    b_El_Eta[i] = 0;
+    b_El_Phi[i] = 0;
+    b_El_M[i] = 0;
+    b_El_Charge[i] = 0;
+    b_Jet_Pt[i] = 0;
+    b_Jet_Eta[i] = 0;
+    b_Jet_Phi[i] = 0;
+    b_Jet_M[i] = 0; 
+  }
+  b_Event_Total = 1;
+}
+
+void nanoAnalysis::LoadModules(pileUpTool* pileUp, lumiTool* lumi, RoccoR* rocCor)
+{
+  //Get Modules
+  m_rocCor = rocCor;
+  m_lumi = lumi;
+  m_pileUp = pileUp;
+}
+
+void nanoAnalysis::Analysis()
+{
+  h_Event_Tot->Fill(0.5, b_Event_Total);
   h_cutFlow->Fill(0);
+  b_Step = 0;
 
   //Run for MC
-  if (m_isMC) {
+  if(m_isMC)
+  {
     Int_t nvtx = Pileup_nTrueInt;
     b_puweight = m_pileUp->getWeight(nvtx);
       
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
     b_weight = b_genweight * b_puweight;
-    h_weights->Fill(0.5, b_weight);
-    
-    mcAnalysis();
-  }
-  else {
+    h_weight->Fill(0.5, b_weight);
+  } else
+  {
     b_puweight = 1;
     b_genweight = 0;
-    if (!lumiCheck()) return;
+    if(!(m_lumi->LumiCheck(run, luminosityBlock))) return;
   }
-    
-  b_step = 1;
+
+
+  MuonSelection();
+  ElectronSelection();
+  JetSelection();
+  BJetSelection();
+  //if(b_Nu_Mu < 2) return;
+  //b_Step = 1;
+  //h_cutFlow->Fill(1);
+  //if (std::abs(PV_z) >= 24.) return;
+  //if (PV_npvs == 0) return;
+  //if (PV_ndof < 4) return;
+
+  Bool_t charge = false;
+  if (b_Nu_Mu == 2 && b_Nu_El == 0){
+    for(Int_t i = 0; i < b_Nu_Mu; i++)
+    {
+      if( (b_Mu_Pt[0] > 20) || (b_Mu_Pt[i] > 20) )
+      {
+        if( ( b_Mu_Charge[0] * b_Mu_Charge[i] ) < 0 )
+        {
+          b_Mu1.SetPtEtaPhiM(b_Mu_Pt[0], b_Mu_Eta[0], b_Mu_Phi[0], b_Mu_M[0]);
+          b_Mu2.SetPtEtaPhiM(b_Mu_Pt[i], b_Mu_Eta[i], b_Mu_Phi[i], b_Mu_M[i]);
+          charge = true;
+          b_Dilep = b_Mu1 + b_Mu2;
+          b_Channel = 1;
+        }
+      }
+    }
+  }
+
+  else if (b_Nu_El == 2 && b_Nu_Mu == 0){
+    for(Int_t i = 0; i < b_Nu_El; i++)
+    {
+      if( ( b_El_Charge[0] * b_El_Charge[i] ) < 0 )
+      {
+        b_El1.SetPtEtaPhiM(b_El_Pt[0], b_El_Eta[0], b_El_Phi[0], b_El_M[0]);
+        b_El2.SetPtEtaPhiM(b_El_Pt[i], b_El_Eta[i], b_El_Phi[i], b_El_M[i]);
+        charge = true;
+        b_Dilep = b_El1 + b_El2;
+        b_Channel = 2;
+      }
+    }
+  }
+  
+  else {
+    if( ( b_El_Charge[0] * b_Mu_Charge[0] ) < 0 )    
+    {
+      b_El1.SetPtEtaPhiM(b_El_Pt[0], b_El_Eta[0], b_El_Phi[0], b_El_M[0]);
+      b_Mu1.SetPtEtaPhiM(b_Mu_Pt[0], b_Mu_Eta[0], b_Mu_Phi[0], b_Mu_M[0]);
+      charge = true;
+      b_Dilep = b_El1 + b_Mu1;
+      b_Channel = 3;
+    }
+  }
+  
+
+  if(!charge) return;
+  if(b_Dilep.M() < 20.) return;
+  b_Step = 1;
   h_cutFlow->Fill(1);
-
-  if (std::abs(PV_z) >= 24.) return;
-  if (PV_npvs == 0) return;
-  if (PV_ndof < 4) return;
-
-  b_step = 2;
+  
+  if (b_Channel != 3 && 76 < b_Dilep.M() && b_Dilep.M() < 106) return;
+  b_Step = 2;
   h_cutFlow->Fill(2);
-
-  auto muons = muonSelection();
-    
-  if(muons.size() < 2) return;
-  b_step = 3;
+  
+  if (b_Channel != 3 && MET_pt < 40.) return;
+  b_Step = 3;
   h_cutFlow->Fill(3);
 
-  if (muons[0].GetPdgCode()*muons[1].GetPdgCode() > 0 ) return;
-  b_step = 4;
+/*
+  if (76 < b_Dilep.M() < 106) return;
+  b_Step = 3;
+  h_cutFlow->Fill(3);
+  */
+
+  if (b_Nu_Jet < 2) return;
+  b_Step = 4;
   h_cutFlow->Fill(4);
 
-  muons[0].Momentum(b_lep1);
-  muons[1].Momentum(b_lep2);
-  
-  b_dilep = b_lep1 + b_lep2;
 
-  if (b_dilep.M() < 12.) return;
-  b_step = 5;
+  if (b_Nu_BJet < 1) return;
+  b_Step = 5;
   h_cutFlow->Fill(5);
+
 
   Bool_t IsoMu24 = false;
   Bool_t IsoTkMu24 = false;
@@ -105,9 +212,28 @@ void nanoAnalysis::analysis()
     if (bits & 0x8) IsoTkMu24 = true;	
   }
   if (!(IsoMu24 || IsoTkMu24)) return;
-  b_step = 6;
+  b_Step = 6;
   h_cutFlow->Fill(6);
+  
+  if (b_Channel == 1){
+    if ((!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ)
+      && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ)) return;
+  }
+
+  if (b_Channel == 3){
+    if ((!HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL) && (!HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL)
+      && (!HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) && (!HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ)) return;
+  }
+  if (b_Channel == 2){
+    if (!HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) return;
+  }
+
+  b_Step = 7;
+  h_cutFlow->Fill(7);
+
+  b_Event_No = 1;
 }
+
 
 void nanoAnalysis::Loop()
 {
@@ -119,124 +245,163 @@ void nanoAnalysis::Loop()
   float nPassTrig = 0;
   
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    std::cout << jentry << "\n";
     //Prepare for new loop
+    ResetBranch();
+
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
-    nb = fChain->GetEntry(jentry); nbytes += nb;
-
-    resetBranch();
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
     
-    analysis();
-
-    m_tree->Fill();
-
+    Analysis();
+    
+    ALL->Fill();
   }
 }
 
-int main(int argc, char* argv[])
+int main(Int_t argc, Char_t** argv)
 {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " data set txt file" << std::endl;
-    return 1;
+  if(argc != 0)
+  {
+    std::string env = std::getenv("CMSSW_BASE");
+    std::cout << "start\n";
+    RoccoR* rocCor = new RoccoR(env+"/src/nano/analysis/data/rcdata.2016.v3/");
+    std::cout << "roccor loaded\n";
+    lumiTool* lumi = new lumiTool(env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt");
+    std::cout << "lumiTool loaded\n";
+    pileUpTool* pileUp = new pileUpTool();
+    std::cout << "pileup loaded\n";
+    std::string dirName = env+("/src/nano/analysis/h2mu/Results/Nano_C_Test/")+argv[1];
+    std::string temp = argv[1];
+    Bool_t isMC = false;
+    Size_t found = temp.find("Run");
+    if(found == std::string::npos) isMC = true;
+    for(Int_t i = 2; i < argc; i++)
+    {
+      TFile *f = TFile::Open(argv[i], "read");
+      
+      std::cout << argv[i] << "\n";
+      
+      TTree *tree;
+      f->GetObject("Events", tree);
+      temp = argv[i];
+      found = temp.find_last_of('/');
+      std::string outPutName = dirName+temp.substr(found);
+      nanoAnalysis t(tree, isMC);
+      t.LoadModules(pileUp, lumi, rocCor);
+      t.SetOutput(outPutName);
+      t.Loop();
+    }
   }
-
-  TChain * chain = new TChain("Events","");
-  string filename;
-  ifstream infile;
-  infile.open(argv[1]);
-
-  while(!infile.eof()){
-    getline(infile,filename);
-    if (filename.find('#') != string::npos) continue;
-    if (filename.empty()) continue;
-
-    cout<< "Opening File: "<<filename << endl;
-    chain->Add(TString(filename+"/Events"));
-
+  else
+  {
+    TFile *f = TFile::Open("/xrootd/store/group/nanoAOD/run2_2016v3/SingleMuon/Run2016D-18Apr2017-v1/180117_173704/0000/nanoAOD_74.root", "read");
+    
+    TTree *tree;
+    f->GetObject("Events", tree);
+    
+    nanoAnalysis t(tree);
+    t.SetOutput("test.root");
+    t.Loop();
   }
-  infile.close();
-
-
-  nanoAnalysis t(chain, true);
-  t.setOutput("tree.root");
-  t.Loop();
 
   return 0;
 }
 
-void nanoAnalysis::setOutput(std::string outputName)
+//Object Selection
+void nanoAnalysis::MuonSelection()
 {
-  m_output = TFile::Open(outputName.c_str(), "recreate");
-
-  m_tree = new TTree("event", "event");
-  m_tree->Branch("nvertex", &b_nvertex, "nvertex/I");
-  m_tree->Branch("step", &b_step, "step/I");
-  m_tree->Branch("channel", &b_channel, "channel/I");
-  m_tree->Branch("njet", &b_njet, "njet/I");
-  m_tree->Branch("nbjet", &b_nbjet, "nbjet/I");
-  m_tree->Branch("step1", &b_step1, "step1/O");
-  m_tree->Branch("step2", &b_step2, "step2/O");
-  m_tree->Branch("step3", &b_step3, "step3/O");
-  m_tree->Branch("step4", &b_step4, "step4/O");
-  m_tree->Branch("step5", &b_step5, "step5/O");
-  m_tree->Branch("step6", &b_step6, "step6/O");
-  m_tree->Branch("step7", &b_step7, "step7/O");
-
-  m_tree->Branch("lep1", "TLorentzVector", &b_lep1);
-  m_tree->Branch("lep1_pid", &b_lep1_pid, "lep1_pid/I");    
-  m_tree->Branch("lep2", "TLorentzVector", &b_lep2);
-  m_tree->Branch("lep2_pid", &b_lep2_pid, "lep2_pid/I");    
-  m_tree->Branch("dilep", "TLorentzVector", &b_dilep);
-  m_tree->Branch("jet1", "TLorentzVector", &b_jet1);
-  m_tree->Branch("jet1_CSVInclV2", &b_jet1_CSVInclV2, "jet1_CSVInclV2/F");
-  m_tree->Branch("jet2", "TLorentzVector", &b_jet2);
-  m_tree->Branch("jet2_CSVInclV2", &b_jet2_CSVInclV2, "jet2_CSVInclV2/F");
-
-  m_tree->Branch("met", &b_met, "met/F");
-  m_tree->Branch("weight", &b_weight, "weight/F");
-  m_tree->Branch("puweight", &b_puweight, "puweight/F");
-  m_tree->Branch("genweight", &b_genweight, "genweight/F");
-  
-  h_nevents = new TH1D("nevents", "nevents", 1, 0, 1);
-  h_genweights = new TH1D("genweight", "genweight", 1, 0, 1);
-  h_weights = new TH1D("weight", "weight", 1, 0, 1);
-  h_cutFlow = new TH1D("cutflow", "cutflow", 11, -0.5, 10.5);
-}
-
-void nanoAnalysis::resetBranch()
-{
-  b_lep1.SetPtEtaPhiM(0,0,0,0);
-  b_lep2.SetPtEtaPhiM(0,0,0,0);
-  b_dilep.SetPtEtaPhiM(0,0,0,0);
-  b_jet1.SetPtEtaPhiM(0,0,0,0);
-  b_jet2.SetPtEtaPhiM(0,0,0,0);
-  
-  b_lep1_pid = -1; b_lep2_pid = -1;
-  b_jet1_CSVInclV2 = -1; b_jet2_CSVInclV2 = -1;
-
-  b_nvertex = -1; b_step = -1; b_channel = -1; b_njet = -1; b_nbjet = -1;
-  b_step1 = 0; b_step2 = 0; b_step3 = 0; b_step4 = 0; b_step5 = 0; b_step6 = 0; b_step7 = 0;
-  b_met = -1; b_weight = -1; b_genweight = -1; b_puweight = -1;
-}
-
-Bool_t nanoAnalysis::lumiCheck()
-{
-  if ( lumiMap.find(run) == lumiMap.end() ) {
-    return false;
-  } else {
-    for (UInt_t i = 0; i < lumiMap[run].size(); i++){
-      if(lumiMap[run][i][0] <= luminosityBlock && lumiMap[run][i][1] >= luminosityBlock) return true;
-    }
-    return false;
+  for(UInt_t i = 0; i < nMuon; i++)
+  {
+    //if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i] || Muon_pfRelIso04_all[i] > 0.25) continue;
+    if (!Muon_tightId[i]) continue;
+    if (Muon_pfRelIso04_all[i] > 0.15) continue;
+    TLorentzVector m;
+    m.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
+    m = m * roccoR(m, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
+    if (m.Pt() < 20) continue;
+    else if (std::abs(m.Eta()) > 2.4) continue;
+    b_Mu_Pt[b_Nu_Mu] = m.Pt();
+    b_Mu_Eta[b_Nu_Mu] = m.Eta();
+    b_Mu_Phi[b_Nu_Mu] = m.Phi();
+    b_Mu_M[b_Nu_Mu] = m.M();
+    b_Mu_Charge[b_Nu_Mu] = Muon_charge[i];
+    b_Nu_Mu++;
   }
+  return;
 }
 
-void nanoAnalysis::mcAnalysis()
+void nanoAnalysis::ElectronSelection()
 {
- 
+  for(UInt_t i = 0; i < nElectron; i++)
+  {		
+    if (Electron_pt[i] < 20. ) continue;
+    if (std::abs(Electron_eta[i]) > 2.4 ) continue;
+    if (Electron_cutBased[i] < 3) continue;
+    float el_scEta = Electron_deltaEtaSC[i] + Electron_eta[i];
+    if ((std::abs(el_scEta) > 1.4442) && (std::abs(el_scEta) < 1.566)) continue;
+    if (Electron_pfRelIso03_all[i] > 0.12) continue;
+    TLorentzVector eom;
+    
+    eom.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
+    b_El_Pt[b_Nu_El] = eom.Pt();
+    b_El_Eta[b_Nu_El] = eom.Eta();
+    b_El_Phi[b_Nu_El] = eom.Phi();
+    b_El_M[b_Nu_El] = eom.M();
+    b_El_Charge[b_Nu_El] = Electron_charge[i];
+    b_Nu_El++;
+  }
+  return;
 }
 
-Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers)
+
+void nanoAnalysis::JetSelection()
+{
+  int JET_LOOSE = (1<<0);
+  for (UInt_t i = 0; i < nJet; ++i){
+    if (Jet_pt[i] < 30) continue;
+    if (std::abs(Jet_eta[i]) > 2.4) continue;
+    if ((Jet_jetId[i] & JET_LOOSE) == 0) continue;
+    if (Jet_jetId[i] < 1) continue;
+      
+    TLorentzVector jom;
+    jom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
+
+
+/*
+    bool hasOverLap = false;
+    for (int k = 0; k < b_Nu_Mu; ++k ){
+      if (jom.TLorentzVector::DeltaR() < 0.4) hasOverLap = true;
+    }
+    if (hasOverLap) continue;
+*/                            
+    
+    b_Jet_Pt[b_Nu_Jet] = jom.Pt();
+    b_Jet_Eta[b_Nu_Jet] = jom.Eta();
+    b_Jet_Phi[b_Nu_Jet] = jom.Phi();
+    b_Jet_M[b_Nu_Jet] = jom.M();
+    b_Nu_Jet++;
+    
+    // idxs.push_back(i);
+  }
+  return;
+}
+
+
+void nanoAnalysis::BJetSelection()
+{
+  for (UInt_t k = 0; k < nJet; ++k ){
+    if (Jet_pt[k] < 30) continue;
+    if (std::abs(Jet_eta[k]) > 2.4) continue;
+    if (Jet_jetId[k]< 1) continue;
+    if (Jet_btagCSVV2[k] > 0.8484) continue;
+    b_Nu_BJet++;
+  }
+  return;
+}
+
+
+Double_t nanoAnalysis::roccoR(TLorentzVector m, int &q, int &nGen, int &nTrackerLayers)
 {
   Float_t u1 = gRandom->Rndm();
   Float_t u2 = gRandom->Rndm();
