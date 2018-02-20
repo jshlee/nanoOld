@@ -32,12 +32,15 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("Dilep", "TLorentzVector", &b_Dilep);
   t->Branch("Mu1", "TLorentzVector", &b_Mu1);
   t->Branch("Mu2", "TLorentzVector", &b_Mu2);
-  t->Branch("Nu_Mu", &b_Nu_Mu, "Nu_Mu/I");
-  t->Branch("Mu_Pt", &b_Mu_Pt, "Mu_Eta/F");
-  t->Branch("Mu_Eta", &b_Mu_Eta, "Mu_Pt/F");
+  t->Branch("Nu_Mu", &b_Nu_Mu, "Nu_Mu/i");
+  t->Branch("Mu_Pt", &b_Mu_Pt);
+  t->Branch("Mu_Eta", &b_Mu_Eta);
   t->Branch("genweight", &b_genweight, "genweight/F");
   t->Branch("puweight", &b_puweight, "puweight/F");
   t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
+  t->Branch("mueffweight", &b_mueffweight, "mueffweight/F");
+  t->Branch("mueffweight_up", &b_mueffweight_up, "mueffweight_up/F");
+  t->Branch("mueffweight_dn", &b_mueffweight_dn, "mueffweight_dn/F");
 }
 
 void nanoAnalysis::ResetBranch()
@@ -48,15 +51,15 @@ void nanoAnalysis::ResetBranch()
   b_Mu1.SetPtEtaPhiM(0,0,0,0);
   b_Mu2.SetPtEtaPhiM(0,0,0,0);
   b_Nu_Mu = 0;
-  for(UInt_t i = 0; i < 5; i++)
-  {
-    b_Mu_Pt[i] = 0;
-    b_Mu_Eta[i] = 0;
-    b_Mu_Phi[i] = 0;
-    b_Mu_M[i] = 0;
-    b_Mu_Charge[i] = 0;  
-  }
+  b_Mu_Pt.clear();
+  b_Mu_Eta.clear();
+  b_Mu_Phi.clear();
+  b_Mu_M.clear();
+  b_Mu_Charge.clear();
   b_Event_Total = 1;
+  b_mueffweight = 0;
+  b_mueffweight_up = 0;
+  b_mueffweight_dn = 0;
 }
 
 void nanoAnalysis::LoadModules(pileUpTool* pileUp, lumiTool* lumi, RoccoR* rocCor)
@@ -122,9 +125,13 @@ void nanoAnalysis::Analysis()
   if(!charge) return;
   b_Step = 4;
   h_cutFlow->Fill(4);
-
   b_Dilep = b_Mu1 + b_Mu2;
   if (b_Dilep.M() < 12.) return;
+
+  b_mueffweight = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, 0)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, 0);
+  b_mueffweight_up = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, +1)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, +1);
+  b_mueffweight_dn = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, -1)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, -1);
+
   b_Step = 5;
   h_cutFlow->Fill(5);
 
@@ -220,13 +227,14 @@ void nanoAnalysis::MuonSelection()
     TLorentzVector m;
     m.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
     m = m * roccoR(m, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
+
     if (m.Pt() < 20) continue;
     else if (std::abs(m.Eta()) > 2.4) continue;
-    b_Mu_Pt[b_Nu_Mu] = m.Pt();
-    b_Mu_Eta[b_Nu_Mu] = m.Eta();
-    b_Mu_Phi[b_Nu_Mu] = m.Phi();
-    b_Mu_M[b_Nu_Mu] = m.M();
-    b_Mu_Charge[b_Nu_Mu] = Muon_charge[i];
+    b_Mu_Pt.push_back(m.Pt());
+    b_Mu_Eta.push_back(m.Eta());
+    b_Mu_Phi.push_back(m.Phi());
+    b_Mu_M.push_back(m.M());
+    b_Mu_Charge.push_back(Muon_charge[i]);
     b_Nu_Mu++;
   }
   return;
