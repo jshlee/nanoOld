@@ -6,7 +6,10 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
   mcLabel  = cms.InputTag("prunedGenParticles"),
+  packed = cms.InputTag("packedGenParticles"),
+  pruned = cms.InputTag("prunedGenParticles"),
   applySoftLeptonCut = cms.bool(True),
+  doFullMCMatching = cms.bool(False),
   # -- cuts on initial track collection --
   # Track normalized Chi2 <
   tkChi2Cut = cms.double(100),
