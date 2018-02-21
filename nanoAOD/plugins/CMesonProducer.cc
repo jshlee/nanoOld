@@ -62,15 +62,15 @@ public:
 private:
   void produce( edm::Event&, const edm::EventSetup& ) override;
 
-  reco::VertexCompositeCandidate fit(vector<const pat::PackedCandidate*> cands,
-				     reco::Vertex pv, int pdgId,
+  reco::VertexCompositeCandidate fit(vector<const pat::PackedCandidate*>& cands,
+				     reco::Vertex& pv, int pdgId,
 				     float &dca, float &angleXY, float &angleXYZ);
     
-  SVector3 getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv);
-  pair<float, float> getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv);
-  trackVars getTrackVars(vector<const pat::PackedCandidate*> cands, reco::Vertex pv);
+  SVector3 getDistanceVector(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
+  pair<float, float> getDistance(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
+  trackVars getTrackVars(vector<const pat::PackedCandidate*>& cands, reco::Vertex& pv);
 
-  int findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid);
+  int findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*>& cands, int pdgid);
   /** Match of -1 means theres no meson inside the jet with same pdg,
       0 means there was a meson, but we didn't match any, N means we
       matched N daughters (except for KShort which does all or
@@ -78,9 +78,9 @@ private:
       pt */
   int findMiniMCMatch(const pat::Jet & aPatJet,
 		      reco::VertexCompositeCandidate& candD0,
-		      vector<const pat::PackedCandidate*> cands_D0,
-		      Handle<edm::View<pat::PackedGenParticle>> packed,
-		      Handle<edm::View<reco::GenParticle>> pruned, int targetPdgId);
+		      vector<const pat::PackedCandidate*>& cands_D0,
+		      Handle<edm::View<pat::PackedGenParticle>>& packed,
+		      Handle<edm::View<reco::GenParticle>>& pruned, int targetPdgId);
   
   edm::EDGetTokenT<edm::View<pat::Jet> > jetSrc_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
@@ -416,8 +416,8 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   
 }
 
-reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandidate*> cands,
-						   reco::Vertex pv, int pdgId,
+reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandidate*>& cands,
+						   reco::Vertex& pv, int pdgId,
 						   float &dca, float &angleXY, float &angleXYZ)
 {
   int charge = 0;
@@ -517,8 +517,8 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   return secVert;
 }
 
-CMesonProducer::trackVars CMesonProducer::getTrackVars(vector<const pat::PackedCandidate*> cands,
-						       reco::Vertex pv)
+CMesonProducer::trackVars CMesonProducer::getTrackVars(vector<const pat::PackedCandidate*>& cands,
+						       reco::Vertex& pv)
 {
   float normalizedChi2 = 0;
   int nHits = 100;
@@ -550,7 +550,7 @@ CMesonProducer::trackVars CMesonProducer::getTrackVars(vector<const pat::PackedC
 }
 
 CMesonProducer::SVector3
-CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv)
 {
   float z = 0.;
   if (dim == 3) z = vertex.vz() - pv.position().z();
@@ -560,7 +560,7 @@ CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex
   return distanceVector;
 }
 
-pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv)
 {
   SMatrixSym3D totalCov = vertex.vertexCovariance() + pv.covariance();
   SVector3 distVecXYZ = getDistanceVector(dim, vertex, pv);
@@ -572,9 +572,9 @@ pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCan
 
 int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
 				    reco::VertexCompositeCandidate& candD0,
-				    vector<const pat::PackedCandidate*> cands_D0,
-				    Handle<edm::View<pat::PackedGenParticle>> packed,
-				    Handle<edm::View<reco::GenParticle>> pruned, int target)
+				    vector<const pat::PackedCandidate*>& cands_D0,
+				    Handle<edm::View<pat::PackedGenParticle>>& packed,
+				    Handle<edm::View<reco::GenParticle>>& pruned, int target)
 {
   int match = -1;
 
@@ -637,7 +637,7 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
   return match;
 }
 
-int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid)
+int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*>& cands, int pdgid)
 {
   const reco::JetFlavourInfo & jetInfo =  aPatJet.jetFlavourInfo();
   if (abs(jetInfo.getHadronFlavour()) != 5) return -1;
