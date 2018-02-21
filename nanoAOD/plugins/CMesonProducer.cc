@@ -37,6 +37,8 @@
 #include "TrackingTools/IPTools/interface/IPTools.h"
 #include "TrackingTools/PatternTools/interface/ClosestApproachInRPhi.h"
 
+#include "TLorentzVector.h"
+
 using namespace edm;
 using namespace std;
 using namespace reco;
@@ -69,6 +71,11 @@ private:
   trackVars getTrackVars(vector<const pat::PackedCandidate*> cands, reco::Vertex pv);
 
   int findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid);
+  /** Match of -1 means theres no meson inside the jet with same pdg,
+      0 means there was a meson, but we didn't match any, N means we
+      matched N daughters (except for KShort which does all or
+      nothing). Matches are required to be within 0.1 DeltaR and 10%
+      pt */
   int findMiniMCMatch(const pat::Jet & aPatJet,
 		      reco::VertexCompositeCandidate& candD0,
 		      vector<const pat::PackedCandidate*> cands_D0,
@@ -573,28 +580,53 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
     const Candidate * prcand = &pr;
     if (abs(pr.pdgId()) == target &&
 	reco::deltaR(pr, aPatJet) < 0.5) {
-      // candidate for match
-      vector<const pat::PackedGenParticle*> dau;
-      for (auto& p : *packed) {
-	const Candidate * motherInPrunedCollection = p.mother(0);
-	if(motherInPrunedCollection != nullptr && isAncestor(prcand , motherInPrunedCollection)) {
-	  dau.push_back(&p);
+      // TODO: Any other mesons without info?
+      if (target == pdgId_KS) { // KShort doesn't have daughter links saved, so guess and check
+	vector<const pat::PackedGenParticle*> match;
+	TLorentzVector p4(0,0,0,0);
+	for (auto & c : cands_D0) {
+	  float bestdr = 100;
+	  const pat::PackedGenParticle *best = nullptr;
+	  for (auto& p : *packed) {
+	    if (c->pdgId() != p.pdgId()) continue;
+	    double dr = reco::deltaR(*c, p);
+	    if (dr < bestdr && (fabs(c->pt() - p.pt()) / p.pt()) < 0.1) {
+	      bestdr = dr;
+	      best = &p;
+	    }
+	  }
+	  if (bestdr > 0.1) return 0;
+	  match.push_back(best);
+	  TLorentzVector tlbest;
+	  tlbest.SetPtEtaPhiM(best->pt(), best->eta(), best->phi(), best->mass());
+	  p4 += tlbest;
 	}
-      }
-      // std::cout << "Mother " << target << " has " << dau.size() << " daughters";
-      // for (auto& d : dau) std::cout << " " << d->pdgId();
-      // std::cout << std::endl;
-      
-      match = 0;
-      if (dau.size() != cands_D0.size()) continue;
-      for (auto & c : cands_D0) {
-	for (auto & d : dau) {
-	  if (c->charge() != d->charge()) continue;
-	  if (c->pdgId() != d->pdgId()) continue;
-	  double dr = reco::deltaR(*c, *d); // deltaR(c->eta(), c->phi(), d->eta(), d->phi());
-	  if (dr < 0.1) { // && (fabs(c->pt() - d->pt()) / d->pt()) < 0.1) {
-	    match += 1;
-	    break; // from the daughter loop
+	if (deltaR(p4.Eta(), p4.Phi(), pr.eta(), pr.phi()) < 0.1  &&
+	    (fabs(pr.pt() - p4.Pt()) / pr.pt()) < 0.1)
+	  return match.size();
+      } else { // Other meson have daughter information stored in links
+	// candidate for match
+	vector<const pat::PackedGenParticle*> dau;
+	for (auto& p : *packed) {
+	  const Candidate * motherInPrunedCollection = p.mother(0);
+	  if(motherInPrunedCollection != nullptr && isAncestor(prcand , motherInPrunedCollection)) {
+	    dau.push_back(&p);
+	  }
+	}
+	// std::cout << "Mother " << target << " has " << dau.size() << " daughters";
+	// for (auto& d : dau) std::cout << " " << d->pdgId();
+	// std::cout << std::endl;
+	
+	match = 0;
+	if (dau.size() != cands_D0.size()) continue;
+	for (auto & c : cands_D0) {
+	  for (auto & d : dau) {
+	    if (c->pdgId() != d->pdgId()) continue;
+	    double dr = reco::deltaR(*c, *d);
+	    if (dr < 0.1 && (fabs(c->pt() - d->pt()) / d->pt()) < 0.1) {
+	      match += 1;
+	      break; // from the daughter loop
+	    }
 	  }
 	}
       }
@@ -629,7 +661,7 @@ int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::Pack
       for (auto pc : cands){
 	//cout << " pc " << pc->pt() << " " <<pc->eta() << " " <<pc->pdgId() << " " <<pc->status()<< endl;
 	if (pc->pdgId() != dauCand->pdgId()) continue;
-	if (reco::deltaR( *dauCand, *pc) < 0.1){
+	if (reco::deltaR( *dauCand, *pc) < 0.1) {
 	  match = true;
 	  //cout << " match is " << reco::deltaR( *dauCand, *pc) << endl;
 	}
