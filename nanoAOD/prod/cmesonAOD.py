@@ -73,6 +73,7 @@ process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load('nano.nanoAOD.cmesons_cff')
 process.cmesonTable.vertexLabel = cms.InputTag("offlinePrimaryVertices")
 process.cmesonTable.mcLabel  = cms.InputTag("genParticles")
+process.cmesonTable.doFullMCMatching  = cms.bool(True)
 
 process.p = cms.Path(process.makePatJets
                          +process.primaryVertexAssociation+process.puppi
