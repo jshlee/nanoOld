@@ -69,7 +69,8 @@ private:
   trackVars getTrackVars(vector<const pat::PackedCandidate*> cands, reco::Vertex pv);
 
   int findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid);
-  int findMiniMCMatch(reco::VertexCompositeCandidate& candD0,
+  int findMiniMCMatch(const pat::Jet & aPatJet,
+		      reco::VertexCompositeCandidate& candD0,
 		      vector<const pat::PackedCandidate*> cands_D0,
 		      Handle<edm::View<pat::PackedGenParticle>> packed,
 		      Handle<edm::View<reco::GenParticle>> pruned, int targetPdgId);
@@ -314,7 +315,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
 	  int mc_KS = -5;
 	  if (runOnMC) {
-	    if (!doMatch_) findMiniMCMatch(KSCand, cands_KS, packed, pruned, 310);
+	    if (!doMatch_) findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
 	    else mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
 	  mcMatch.emplace_back(mc_KS);
@@ -359,7 +360,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_D0 = -5;
 	if (runOnMC){
-	  if (!doMatch_) mc_D0 = findMiniMCMatch(D0Cand, cands_D0, packed, pruned, 421);
+	  if (!doMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
 	  else mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
 	}
 	mcMatch.emplace_back(mc_D0);
@@ -626,48 +627,40 @@ pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCan
   return make_pair(distMagXYZ,sigmaDistMagXYZ);
 }
 
-int CMesonProducer::findMiniMCMatch(reco::VertexCompositeCandidate& candD0,
+int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
+				    reco::VertexCompositeCandidate& candD0,
 				    vector<const pat::PackedCandidate*> cands_D0,
 				    Handle<edm::View<pat::PackedGenParticle>> packed,
 				    Handle<edm::View<reco::GenParticle>> pruned, int target)
 {
-  int match = 0;
-  vector<pat::PackedGenParticle> matches;
-  std::cout << "In match" << std::endl;
-  for (auto& c : cands_D0) {
-    std::cout << " Cand: " << std::endl;
-    for (auto& p : *packed) {
-      if (p.charge() != c->charge()) continue;
-      double dr = deltaR(p.eta(), p.phi(), c->eta(), c->phi());
-      if (dr < 0.03 && (fabs(p.pt() - c->pt()) / p.pt()) < 0.075) {
-	std::cout << " MATCH " << dr << std::endl;;
-	matches.push_back(p);
-      }
-    }
-  }
+  int match = -1;
 
-  if (matches.size() == cands_D0.size()) { // found matching tracks
-    for (auto& pr : *pruned) {
-      if (abs(pr.pdgId()) == target) {
-	const Candidate * bMeson = &pr;
-	double dr = deltaR(pr.eta(), pr.phi(), candD0.eta(), candD0.phi());
-	if (dr > 0.5) continue; // require it at least be in the jet cone
-	std::cout << "  PdgID: " << bMeson->pdgId() << " pt " << bMeson->pt() << " eta: " << bMeson->eta() << " phi: " << bMeson->phi() << std::endl;
-	std::cout << "    found daugthers: " << std::endl;
-	for (auto& p : matches) {
-	  //get the pointer to the first survied ancestor of a given packed GenParticle in the prunedCollection
-	  const Candidate * motherInPrunedCollection = p.mother(0) ;
-	  if(motherInPrunedCollection != nullptr && isAncestor(bMeson , motherInPrunedCollection)) {
+  for (auto & pr : *pruned) {
+    const Candidate * prcand = &pr;
+    if (abs(pr.pdgId()) == target &&
+	deltaR(pr.eta(), pr.phi(), aPatJet.eta(), aPatJet.phi()) < 0.5) {
+      // candidate for match
+      vector<const pat::PackedGenParticle*> dau;
+      for (auto& p : *packed) {
+	const Candidate * motherInPrunedCollection = p.mother(0);
+	if(motherInPrunedCollection != nullptr && isAncestor(prcand , motherInPrunedCollection)) {
+	  dau.push_back(&p);
+	}
+      }
+      
+      match = 0;
+      // if (dau.size() != cands_D0.size()) continue;
+      for (auto & c : cands_D0) {
+	for (auto & d : dau) {
+	  double dr = deltaR(c->eta(), c->phi(), d->eta(), d->phi());
+	  if (dr < 0.05 && (fabs(c->pt() - d->pt()) / d->pt()) < 0.1) {
 	    match += 1;
-	    std::cout << "     DauPdgID: " << p.pdgId() << " pt " << p.pt() << " eta: " << p.eta() << " phi: " << p.phi() << std::endl;
-	  } else {
-	    std::cout << "     No match" << std::endl;
+	    break; // from the daughter loop
 	  }
 	}
       }
     }
   }
-
   return match;
 }
 
