@@ -88,6 +88,7 @@ private:
   const float gJpsiMass = 3.096;
   const float gD0Mass = 1.865;
   const float gDstarMass = 2.010;
+  const int pdgId_Kp = 321;
   const int pdgId_Jpsi = 443;
   const int pdgId_D0 = 421;
   const int pdgId_Dstar = 413;
@@ -232,8 +233,38 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     // if ( dau_size > maxNumPFCand_ ) dau_size = maxNumPFCand_;
     // jetDaughters.resize( dau_size );
+
+    auto fill = [&](int mcmatch,
+		    reco::VertexCompositeCandidate& cand,
+		    vector<const pat::PackedCandidate*>& cands,
+		    float angleXY_, float angleXYZ_, float dca_) {
+      mcMatch.emplace_back(mcmatch);
+      cmVxCand->emplace_back(cand);
+      dca.emplace_back(dca_);
+      angleXY.emplace_back(angleXY_);
+      angleXYZ.emplace_back(angleXYZ_);
+      nJet.emplace_back(njet);
+      
+      trackVars tt = getTrackVars(cands, pv);
+      trkChi2.emplace_back(tt.normalizedChi2);
+      trknHits.emplace_back(tt.nHits);
+      trkPt.emplace_back(tt.trkPt);
+      trkipsigXY.emplace_back(tt.ipsigXY);
+      trkipsigZ.emplace_back(tt.ipsigZ);
+      
+      auto d2 = getDistance(2,cand,pv);
+      lxy.emplace_back(d2.first);
+      lxySig.emplace_back(d2.second);
+      auto d3 = getDistance(3,cand,pv);	
+      l3D.emplace_back(d3.first);
+      l3DSig.emplace_back(d3.second);
+      
+      jetDR.emplace_back(reco::deltaR( cand, aPatJet));
+      legDR.emplace_back(reco::deltaR( *cands[0], *cands[1]));
+      diffMass.emplace_back(0);	
+    };
+    
     for ( unsigned int lep1_idx = 0 ; lep1_idx< dau_size-1 ; ++lep1_idx) {
-      continue;
       const pat::PackedCandidate* lep1Cand = jetDaughters[lep1_idx];
       if ( abs(lep1Cand->pdgId()) != 13 and abs(lep1Cand->pdgId()) != 11) continue;
       
@@ -255,33 +286,10 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_Jpsi = -5;
 	if (runOnMC){
-	  mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
+	  if (!doMatch_) mc_Jpsi = findMiniMCMatch(aPatJet, JpsiCand, cands_Jpsi, packed, pruned, pdgId_Jpsi);
+	  else mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
 	}
-	mcMatch.emplace_back(mc_Jpsi);
-	cmVxCand->emplace_back(JpsiCand);
-	dca.emplace_back(dca_Jpsi);
-	angleXY.emplace_back(angleXY_Jpsi);
-	angleXYZ.emplace_back(angleXYZ_Jpsi);
-	nJet.emplace_back(njet);
-	
-	trackVars tt_Jpsi = getTrackVars(cands_Jpsi, pv);
-	trkChi2.emplace_back(tt_Jpsi.normalizedChi2);
-	trknHits.emplace_back(tt_Jpsi.nHits);
-	trkPt.emplace_back(tt_Jpsi.trkPt);
-	trkipsigXY.emplace_back(tt_Jpsi.ipsigXY);
-	trkipsigZ.emplace_back(tt_Jpsi.ipsigZ);
-
-	auto d2_Jpsi = getDistance(2,JpsiCand,pv);
-	lxy.emplace_back(d2_Jpsi.first);
-	lxySig.emplace_back(d2_Jpsi.second);
-	auto d3_Jpsi = getDistance(3,JpsiCand,pv);	
-	l3D.emplace_back(d3_Jpsi.first);
-	l3DSig.emplace_back(d3_Jpsi.second);
-	
-	jetDR.emplace_back(reco::deltaR( JpsiCand, aPatJet));
-	legDR.emplace_back(reco::deltaR( *lep1Cand, *lep2Cand));
-	diffMass.emplace_back(0);
-	
+	fill(mc_Jpsi, JpsiCand, cands_Jpsi, angleXY_Jpsi, angleXYZ_Jpsi, dca_Jpsi);
       }
     }
 
@@ -315,37 +323,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
 	  int mc_KS = -5;
 	  if (runOnMC) {
-	    if (!doMatch_) findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
+	    if (!doMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
 	    else mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
-	  mcMatch.emplace_back(mc_KS);
-	  
-	  cmVxCand->emplace_back(KSCand);
-	  dca.emplace_back(dca_KS);
-	  angleXY.emplace_back(angleXY_KS);
-	  angleXYZ.emplace_back(angleXYZ_KS);
-	  nJet.emplace_back(njet);
-	  
-	  trackVars tt_KS = getTrackVars(cands_KS, pv);
-	  trkChi2.emplace_back(tt_KS.normalizedChi2);
-	  trknHits.emplace_back(tt_KS.nHits);
-	  trkPt.emplace_back(tt_KS.trkPt);
-	  trkipsigXY.emplace_back(tt_KS.ipsigXY);
-	  trkipsigZ.emplace_back(tt_KS.ipsigZ);
-	  
-	  auto d2_KS = getDistance(2,KSCand,pv);
-	  lxy.emplace_back(d2_KS.first);
-	  lxySig.emplace_back(d2_KS.second);
-	  auto d3_KS = getDistance(3,KSCand,pv);	
-	  l3D.emplace_back(d3_KS.first);
-	  l3DSig.emplace_back(d3_KS.second);
-	  
-	  jetDR.emplace_back(reco::deltaR( KSCand, aPatJet));
-	  legDR.emplace_back(reco::deltaR( *pionCand, kaonCand));
-	  diffMass.emplace_back(0);
+	  fill(mc_KS, KSCand, cands_KS, angleXY_KS, angleXYZ_KS, dca_KS);
 	}
       dmeson:
         kaonCand.setMass(gKaonMass);
+        kaonCand.setPdgId(kaonCand.charge()*pdgId_Kp);
 	
 	float dca_D0 = -2;
 	float angleXY_D0 = -2;
@@ -363,34 +348,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if (!doMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
 	  else mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
 	}
-	mcMatch.emplace_back(mc_D0);
-	
-	cmVxCand->emplace_back(D0Cand);
-	dca.emplace_back(dca_D0);
-	angleXY.emplace_back(angleXY_D0);
-	angleXYZ.emplace_back(angleXYZ_D0);
-	nJet.emplace_back(njet);
-	
-	trackVars tt_D0 = getTrackVars(cands_D0, pv);
-	trkChi2.emplace_back(tt_D0.normalizedChi2);
-	trknHits.emplace_back(tt_D0.nHits);
-	trkPt.emplace_back(tt_D0.trkPt);
-	trkipsigXY.emplace_back(tt_D0.ipsigXY);
-	trkipsigZ.emplace_back(tt_D0.ipsigZ);
-
-	auto d2_D0 = getDistance(2,D0Cand,pv);
-	lxy.emplace_back(d2_D0.first);
-	lxySig.emplace_back(d2_D0.second);
-	auto d3_D0 = getDistance(3,D0Cand,pv);	
-	l3D.emplace_back(d3_D0.first);
-	l3DSig.emplace_back(d3_D0.second);
-	
-	jetDR.emplace_back(reco::deltaR( D0Cand, aPatJet));
-	legDR.emplace_back(reco::deltaR( *pionCand, kaonCand));
-	diffMass.emplace_back(0);
-	continue;
-	
-        if ( dau_size < 3 ) continue;
+	fill(mc_D0, D0Cand, cands_D0, angleXY_D0, angleXYZ_D0, dca_D0);
 
 	for( unsigned int extra_pion_idx = 0 ;  extra_pion_idx < dau_size ; ++extra_pion_idx) {
 	  if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
@@ -400,7 +358,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  float dca_Dstar = -2;
 	  float angleXY_Dstar = -2;
 	  float angleXYZ_Dstar = -2;	  
-	  vector<const pat::PackedCandidate*> cands_Dstar{pionCand,&kaonCand,pion2Cand};
+	  vector<const pat::PackedCandidate*> cands_Dstar{&kaonCand,pionCand,pion2Cand};
 	  reco::VertexCompositeCandidate DstarCand = fit(cands_Dstar, pv, pdgId_Dstar,
 							 /*pion2Cand->charge()*pdgId_Dstar*/
 							 dca_Dstar, angleXY_Dstar, angleXYZ_Dstar);
@@ -412,34 +370,10 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  int mc_Dstar = -5;
 	  if (runOnMC){
-	    mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
+	    if (!doMatch_) mc_Dstar = findMiniMCMatch(aPatJet, DstarCand, cands_Dstar, packed, pruned, pdgId_Dstar);
+	    else mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
 	  }
-	  mcMatch.emplace_back(mc_Dstar);
-	  
-	  cmVxCand->emplace_back(DstarCand);
-	  dca.emplace_back(dca_Dstar);
-	  angleXY.emplace_back(angleXY_Dstar);
-	  angleXYZ.emplace_back(angleXYZ_Dstar);
-	  nJet.emplace_back(njet);
-	
-	  trackVars tt_Dstar = getTrackVars(cands_Dstar, pv);
-	  trkChi2.emplace_back(tt_Dstar.normalizedChi2);
-	  trknHits.emplace_back(tt_Dstar.nHits);
-	  trkPt.emplace_back(tt_Dstar.trkPt);
-	  trkipsigXY.emplace_back(tt_Dstar.ipsigXY);
-	  trkipsigZ.emplace_back(tt_Dstar.ipsigZ);
-
-	  auto d2_Dstar = getDistance(2,DstarCand,pv);
-	  lxy.emplace_back(d2_Dstar.first);
-	  lxySig.emplace_back(d2_Dstar.second);
-	  auto d3_Dstar = getDistance(3,DstarCand,pv);	
-	  l3D.emplace_back(d3_Dstar.first);
-	  l3DSig.emplace_back(d3_Dstar.second);
-	
-	  jetDR.emplace_back(reco::deltaR( DstarCand, aPatJet));
-	  legDR.emplace_back(reco::deltaR( DstarCand, *pion2Cand));	  
-	  diffMass.emplace_back(diffMass_Dstar);
-	      
+	  fill(mc_Dstar, DstarCand, cands_Dstar, angleXY_Dstar, angleXYZ_Dstar, dca_Dstar);
 	}
       }
     }
@@ -638,7 +572,7 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
   for (auto & pr : *pruned) {
     const Candidate * prcand = &pr;
     if (abs(pr.pdgId()) == target &&
-	deltaR(pr.eta(), pr.phi(), aPatJet.eta(), aPatJet.phi()) < 0.5) {
+	reco::deltaR(pr, aPatJet) < 0.5) {
       // candidate for match
       vector<const pat::PackedGenParticle*> dau;
       for (auto& p : *packed) {
@@ -647,13 +581,18 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
 	  dau.push_back(&p);
 	}
       }
+      // std::cout << "Mother " << target << " has " << dau.size() << " daughters";
+      // for (auto& d : dau) std::cout << " " << d->pdgId();
+      // std::cout << std::endl;
       
       match = 0;
-      // if (dau.size() != cands_D0.size()) continue;
+      if (dau.size() != cands_D0.size()) continue;
       for (auto & c : cands_D0) {
 	for (auto & d : dau) {
-	  double dr = deltaR(c->eta(), c->phi(), d->eta(), d->phi());
-	  if (dr < 0.05 && (fabs(c->pt() - d->pt()) / d->pt()) < 0.1) {
+	  if (c->charge() != d->charge()) continue;
+	  if (c->pdgId() != d->pdgId()) continue;
+	  double dr = reco::deltaR(*c, *d); // deltaR(c->eta(), c->phi(), d->eta(), d->phi());
+	  if (dr < 0.1) { // && (fabs(c->pt() - d->pt()) / d->pt()) < 0.1) {
 	    match += 1;
 	    break; // from the daughter loop
 	  }
@@ -678,6 +617,8 @@ int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::Pack
     //cout << " cHads " << part.pt() << " " <<part.eta() << " " <<part.pdgId() << " " <<part.status()<< endl;
 
     if (abs(part.pdgId()) != pdgid) continue;
+
+    if (part.numberOfDaughters() != cands.size()) continue;
     
     for( unsigned int idx = 0 ; idx < part.numberOfDaughters() ; ++idx) {
       const reco::Candidate *dauCand = part.daughter(idx);
