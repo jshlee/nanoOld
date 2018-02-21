@@ -9,7 +9,7 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   packed = cms.InputTag("packedGenParticles"),
   pruned = cms.InputTag("prunedGenParticles"),
   applySoftLeptonCut = cms.bool(True),
-  doMCMatching = cms.bool(False),
+  doFullMCMatching = cms.bool(False),
   # -- cuts on initial track collection --
   # Track normalized Chi2 <
   tkChi2Cut = cms.double(100),
