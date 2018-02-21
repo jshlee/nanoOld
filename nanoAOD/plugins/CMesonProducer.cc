@@ -109,7 +109,7 @@ private:
   const float KSMin_   = 0.4;
   const float KSMax_   = 0.6;
   //unsigned int maxNumPFCand_;
-  bool doMatch_;
+  bool doFullMatch_;
   bool applyCuts_;
   // cuts on initial track selection
   float tkChi2Cut_;
@@ -148,7 +148,7 @@ CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   prunedGenToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("pruned"))),
   packedGenToken_(consumes<edm::View<pat::PackedGenParticle> >(iConfig.getParameter<edm::InputTag>("packed"))),
   //mcSrc_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("mcLabel"))),
-  doMatch_(iConfig.getParameter<bool>("doMCMatching")),
+  doFullMatch_(iConfig.getParameter<bool>("doFullMCMatching")),
   applyCuts_(iConfig.getParameter<bool>("applySoftLeptonCut"))  
 {
   // cuts on initial track selection
@@ -293,7 +293,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_Jpsi = -5;
 	if (runOnMC){
-	  if (!doMatch_) mc_Jpsi = findMiniMCMatch(aPatJet, JpsiCand, cands_Jpsi, packed, pruned, pdgId_Jpsi);
+	  if (!doFullMatch_) mc_Jpsi = findMiniMCMatch(aPatJet, JpsiCand, cands_Jpsi, packed, pruned, pdgId_Jpsi);
 	  else mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
 	}
 	fill(mc_Jpsi, JpsiCand, cands_Jpsi, angleXY_Jpsi, angleXYZ_Jpsi, dca_Jpsi);
@@ -330,7 +330,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
 	  int mc_KS = -5;
 	  if (runOnMC) {
-	    if (!doMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
+	    if (!doFullMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
 	    else mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
 	  fill(mc_KS, KSCand, cands_KS, angleXY_KS, angleXYZ_KS, dca_KS);
@@ -352,7 +352,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_D0 = -5;
 	if (runOnMC){
-	  if (!doMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
+	  if (!doFullMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
 	  else mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
 	}
 	fill(mc_D0, D0Cand, cands_D0, angleXY_D0, angleXYZ_D0, dca_D0);
@@ -361,7 +361,9 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if ( extra_pion_idx== pion_idx || extra_pion_idx == kaon_idx) continue;
 	  const pat::PackedCandidate * pion2Cand = jetDaughters[extra_pion_idx];
 	  if ( abs(pion2Cand->pdgId()) != 211) continue;
-	    
+	  // D*+ -> [K- pi+]D0 pi+ (opposite signed kaon is suppressed by 2 OoM)
+	  if (pion2Cand->charge()*kaonCand.charge() > 0) continue;
+	  
 	  float dca_Dstar = -2;
 	  float angleXY_Dstar = -2;
 	  float angleXYZ_Dstar = -2;	  
@@ -377,7 +379,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  int mc_Dstar = -5;
 	  if (runOnMC){
-	    if (!doMatch_) mc_Dstar = findMiniMCMatch(aPatJet, DstarCand, cands_Dstar, packed, pruned, pdgId_Dstar);
+	    if (!doFullMatch_) mc_Dstar = findMiniMCMatch(aPatJet, DstarCand, cands_Dstar, packed, pruned, pdgId_Dstar);
 	    else mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
 	  }
 	  fill(mc_Dstar, DstarCand, cands_Dstar, angleXY_Dstar, angleXYZ_Dstar, dca_Dstar);
@@ -637,7 +639,6 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
 
 int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid)
 {
-  if (!doMatch_) return -1;
   const reco::JetFlavourInfo & jetInfo =  aPatJet.jetFlavourInfo();
   if (abs(jetInfo.getHadronFlavour()) != 5) return -1;
   if (abs(jetInfo.getPartonFlavour()) != 5) return -1;
