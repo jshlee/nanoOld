@@ -16,8 +16,6 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/Candidate/interface/VertexCompositeCandidate.h"
 
-#include "DataFormats/Math/interface/deltaR.h"
-
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include "DataFormats/NanoAOD/interface/FlatTable.h"
@@ -29,8 +27,6 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 
-#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
-
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
@@ -41,7 +37,7 @@ using namespace edm;
 using namespace std;
 using namespace reco;
 
-class CMesonProducer : public edm::stream::EDProducer<> {
+class MesonProducer : public edm::stream::EDProducer<> {
   typedef ROOT::Math::SMatrix<double, 3, 3, ROOT::Math::MatRepSym<double, 3> > SMatrixSym3D;
   typedef ROOT::Math::SVector<double, 3> SVector3;
   struct trackVars {
@@ -53,7 +49,7 @@ class CMesonProducer : public edm::stream::EDProducer<> {
   };
     
 public:
-  explicit CMesonProducer(const edm::ParameterSet & iConfig);
+  explicit MesonProducer(const edm::ParameterSet & iConfig);
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   
@@ -69,17 +65,11 @@ private:
   trackVars getTrackVars(vector<const pat::PackedCandidate*> cands, reco::Vertex pv);
 
   int findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid);
-  int findMiniMCMatch(reco::VertexCompositeCandidate& candD0,
-		      vector<const pat::PackedCandidate*> cands_D0,
-		      Handle<edm::View<pat::PackedGenParticle>> packed,
-		      Handle<edm::View<reco::GenParticle>> pruned, int targetPdgId);
   
   edm::EDGetTokenT<edm::View<pat::Jet> > jetSrc_;
+  edm::EDGetTokenT<edm::View<pat::PackedCandidate> > pfSrc_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
   //edm::EDGetTokenT<edm::View<reco::GenParticle> > mcSrc_;
-  
-  edm::EDGetTokenT<edm::View<reco::GenParticle> > prunedGenToken_;
-  edm::EDGetTokenT<edm::View<pat::PackedGenParticle> > packedGenToken_;
   edm::ESHandle<TransientTrackBuilder> trackBuilder_;
 
   const float gPionMass = 0.1396;
@@ -118,26 +108,10 @@ private:
   float cosThetaXYZCut_;  
 };
 
-
-bool isAncestor(const reco::Candidate* ancestor, const reco::Candidate * particle)
-{
-//particle is already the ancestor
-        if(ancestor == particle ) return true;
-
-//otherwise loop on mothers, if any and return true if the ancestor is found
-        for(size_t i=0;i< particle->numberOfMothers();i++)
-        {
-                if(isAncestor(ancestor,particle->mother(i))) return true;
-        }
-//if we did not return yet, then particle and ancestor are not relatives
-        return false;
-}
-
-CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
-  jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
+MesonProducer::MesonProducer(const edm::ParameterSet & iConfig) :
+  jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))), 
+  pfSrc_(consumes<edm::View<pat::PackedCandidate> >(iConfig.getParameter<edm::InputTag>("pfLabel"))),
   vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel"))),
-  prunedGenToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("pruned"))),
-  packedGenToken_(consumes<edm::View<pat::PackedGenParticle> >(iConfig.getParameter<edm::InputTag>("packed"))),
   //mcSrc_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("mcLabel"))),
   doMatch_(iConfig.getParameter<bool>("doMCMatching")),
   applyCuts_(iConfig.getParameter<bool>("applySoftLeptonCut"))  
@@ -157,12 +131,12 @@ CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   cosThetaXYCut_ = iConfig.getParameter<double>("cosThetaXYCut");
   cosThetaXYZCut_ = iConfig.getParameter<double>("cosThetaXYZCut");
   
-  produces<nanoaod::FlatTable>("cmeson");
+  produces<nanoaod::FlatTable>("meson");
   produces<reco::VertexCompositeCandidateCollection>();
 }
 
 void
-CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
+MesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   bool runOnMC = !iEvent.isRealData();
   
@@ -174,16 +148,10 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(jetSrc_, jetHandle);
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",trackBuilder_);
 
+  Handle<edm::View<pat::PackedCandidate> > pfHandle;
+  iEvent.getByToken(pfSrc_, pfHandle);
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",trackBuilder_);
 
-  // Pruned particles are the one containing "important" stuff
-  Handle<edm::View<reco::GenParticle> > pruned;
-  iEvent.getByToken(prunedGenToken_,pruned);
-  
-  // Packed particles are all the status 1, so usable to remake jets
-  // The navigation from status 1 to pruned is possible (the other direction should be made by hand)
-  Handle<edm::View<pat::PackedGenParticle> > packed;
-  iEvent.getByToken(packedGenToken_,packed);
-  
   auto cmVxCand = make_unique<reco::VertexCompositeCandidateCollection>();
   vector<float> dca, angleXY, angleXYZ, trkChi2, trknHits, trkPt, trkipsigXY, trkipsigZ;
   vector<float> lxy, lxySig, l3D, l3DSig, jetDR, legDR, diffMass;
@@ -195,13 +163,16 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   // }
 
   int njet = 0;
-  for (const pat::Jet & aPatJet : *jetHandle){
-    if (aPatJet.pt() < 30 or abs(aPatJet.eta()) > 3 ) continue;
+  // for (const pat::Jet & aPatJet : *jetHandle){
+  //   if (aPatJet.pt() < 30 or abs(aPatJet.eta()) > 3 ) continue;
 
     vector< const pat::PackedCandidate * > jetDaughters, softlepCands;
     
-    for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
-      const pat::PackedCandidate * dauCand ( dynamic_cast<const pat::PackedCandidate*>(aPatJet.daughter(idx)));
+    // for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
+
+    for (auto& dauCand_ : *pfHandle) {
+      const pat::PackedCandidate * dauCand(&dauCand_);
+      // const pat::PackedCandidate * dauCand ( dynamic_cast<const pat::PackedCandidate*>(aPatJet.daughter(idx)));
       if ( dauCand->charge() == 0 ) continue;
       
       if ( dauCand->pt() < tkPtCut_ ) continue;
@@ -224,7 +195,6 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       if ( abs(dauCand->pdgId()) == 11  || abs(dauCand->pdgId())==13) softlepCands.emplace_back(dauCand);
     }
     unsigned int dau_size = jetDaughters.size();
-    if ( dau_size < 2 ) continue;
 
     // dont need to sort since all combinations are done.
     //sort(jetDaughters.begin(), jetDaughters.end(), [](const pat::PackedCandidate * a, const pat::PackedCandidate * b) {return a->pt() > b->pt(); }); 
@@ -254,7 +224,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_Jpsi = -5;
 	if (runOnMC){
-	  mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
+	  // mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
 	}
 	mcMatch.emplace_back(mc_Jpsi);
 	cmVxCand->emplace_back(JpsiCand);
@@ -277,14 +247,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	l3D.emplace_back(d3_Jpsi.first);
 	l3DSig.emplace_back(d3_Jpsi.second);
 	
-	jetDR.emplace_back(reco::deltaR( JpsiCand, aPatJet));
+	jetDR.emplace_back(0); // reco::deltaR( JpsiCand, aPatJet));
 	legDR.emplace_back(reco::deltaR( *lep1Cand, *lep2Cand));
 	diffMass.emplace_back(0);
 	
       }
     }
 
-    if ( applyCuts_ && softlepCands.size()==0  ) continue;
+    // if ( applyCuts_ && softlepCands.size()==0  ) continue;
     
     for ( unsigned int pion_idx = 0 ; pion_idx< dau_size ; ++pion_idx) {
       const pat::PackedCandidate * pionCand = jetDaughters[pion_idx];
@@ -295,7 +265,6 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	pat::PackedCandidate kaonCand(*jetDaughters[kaon_idx]);	
         if ( abs(kaonCand.pdgId()) == 13 or abs(kaonCand.pdgId()) == 11) continue;
         if ( pionCand->charge() * kaonCand.charge() != -1 ) continue;
-	
 
 	// for KS, only want to pick up one version, since we treat
 	// both mesons as pions, i.e. dont change identity
@@ -305,17 +274,16 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  float dca_KS = -2;
 	  float angleXY_KS = -2;
 	  float angleXYZ_KS = -2;
-	  vector<const pat::PackedCandidate*> cands_KS{pionCand, &kaonCand};	
+	  vector<const pat::PackedCandidate*> cands_KS{pionCand, &kaonCand};
 	  reco::VertexCompositeCandidate KSCand = fit(cands_KS, pv, pdgId_KS,
 						      dca_KS, angleXY_KS, angleXYZ_KS);
 	  
-	  if ( applyCuts_ ) KSCand.addDaughter( *softlepCands[0] );
+	  // if ( applyCuts_ ) KSCand.addDaughter( *softlepCands[0] );
 	  
 	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
 	  int mc_KS = -5;
 	  if (runOnMC) {
-	    if (!doMatch_) findMiniMCMatch(KSCand, cands_KS, packed, pruned, 310);
-	    else mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
+	    // mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
 	  mcMatch.emplace_back(mc_KS);
 	  
@@ -339,11 +307,12 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  l3D.emplace_back(d3_KS.first);
 	  l3DSig.emplace_back(d3_KS.second);
 	  
-	  jetDR.emplace_back(reco::deltaR( KSCand, aPatJet));
+	  jetDR.emplace_back(0); // reco::deltaR( KSCand, aPatJet));
 	  legDR.emplace_back(reco::deltaR( *pionCand, kaonCand));
 	  diffMass.emplace_back(0);
 	}
       dmeson:
+	continue;
         kaonCand.setMass(gKaonMass);
 	
 	float dca_D0 = -2;
@@ -353,14 +322,13 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	reco::VertexCompositeCandidate D0Cand = fit(cands_D0, pv, pdgId_D0,
 						    dca_D0, angleXY_D0, angleXYZ_D0);
 
-        if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
+        // if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
 
         if ( D0Cand.mass() < D0Min_ || D0Cand.mass() > D0Max_ ) continue;
 
 	int mc_D0 = -5;
 	if (runOnMC){
-	  if (!doMatch_) mc_D0 = findMiniMCMatch(D0Cand, cands_D0, packed, pruned, 421);
-	  else mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
+	  // mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
 	}
 	mcMatch.emplace_back(mc_D0);
 	
@@ -384,10 +352,9 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	l3D.emplace_back(d3_D0.first);
 	l3DSig.emplace_back(d3_D0.second);
 	
-	jetDR.emplace_back(reco::deltaR( D0Cand, aPatJet));
+	jetDR.emplace_back(0); // reco::deltaR( D0Cand, aPatJet));
 	legDR.emplace_back(reco::deltaR( *pionCand, kaonCand));
 	diffMass.emplace_back(0);
-	continue;
 	
         if ( dau_size < 3 ) continue;
 
@@ -404,14 +371,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 							 /*pion2Cand->charge()*pdgId_Dstar*/
 							 dca_Dstar, angleXY_Dstar, angleXYZ_Dstar);
 
-	  if ( applyCuts_ ) DstarCand.addDaughter( *softlepCands[0] );
+	  // if ( applyCuts_ ) DstarCand.addDaughter( *softlepCands[0] );
 	  
 	  float diffMass_Dstar = DstarCand.mass() - D0Cand.mass();
 	  if ( diffMass_Dstar < DstarDiffMin_ || diffMass_Dstar > DstarDiffMax_ ) continue;
 
 	  int mc_Dstar = -5;
 	  if (runOnMC){
-	    mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
+	    // mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
 	  }
 	  mcMatch.emplace_back(mc_Dstar);
 	  
@@ -435,44 +402,44 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  l3D.emplace_back(d3_Dstar.first);
 	  l3DSig.emplace_back(d3_Dstar.second);
 	
-	  jetDR.emplace_back(reco::deltaR( DstarCand, aPatJet));
+	  jetDR.emplace_back(0); // reco::deltaR( DstarCand, aPatJet));
 	  legDR.emplace_back(reco::deltaR( DstarCand, *pion2Cand));	  
 	  diffMass.emplace_back(diffMass_Dstar);
 	      
 	}
       }
     }
-    ++njet;
-  }
+  //   ++njet;
+  // }
   
-  auto cmesonTable = make_unique<nanoaod::FlatTable>(cmVxCand->size(),"cmeson",false);
+  auto mesonTable = make_unique<nanoaod::FlatTable>(cmVxCand->size(),"meson",false);
   // For SV we fill from here only stuff that cannot be created with the SimpleFlatTableProducer 
-  cmesonTable->addColumn<float>("dca",dca,"distance of closest approach cm",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("angleXY",angleXY,"2D angle between vertex and tracks",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("angleXYZ",angleXYZ,"3D angle between vertex and tracks",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<int>("nJet",nJet,"nJet of vertex cand",nanoaod::FlatTable::IntColumn);
-  cmesonTable->addColumn<int>("mcMatch",mcMatch,"mc matching",nanoaod::FlatTable::IntColumn);
+  mesonTable->addColumn<float>("dca",dca,"distance of closest approach cm",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("angleXY",angleXY,"2D angle between vertex and tracks",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("angleXYZ",angleXYZ,"3D angle between vertex and tracks",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<int>("nJet",nJet,"nJet of vertex cand",nanoaod::FlatTable::IntColumn);
+  mesonTable->addColumn<int>("mcMatch",mcMatch,"mc matching",nanoaod::FlatTable::IntColumn);
 
-  cmesonTable->addColumn<float>("trk_normalizedChi2",trkChi2,"trk chi2/ndof",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<int>("trk_nHits",trknHits,"trk nHits",nanoaod::FlatTable::IntColumn);
-  cmesonTable->addColumn<float>("trk_pt",trkPt,"trk Pt",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("trk_ipsigXY",trkipsigXY,"trk ipsigXY",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("trk_ipsigZ",trkipsigZ,"trk ipsigZ",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("trk_normalizedChi2",trkChi2,"trk chi2/ndof",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<int>("trk_nHits",trknHits,"trk nHits",nanoaod::FlatTable::IntColumn);
+  mesonTable->addColumn<float>("trk_pt",trkPt,"trk Pt",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("trk_ipsigXY",trkipsigXY,"trk ipsigXY",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("trk_ipsigZ",trkipsigZ,"trk ipsigZ",nanoaod::FlatTable::FloatColumn);
 
-  cmesonTable->addColumn<float>("lxy",lxy,"2D decay length in cm",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("lxySig",lxySig,"2D decay length sig in cm",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("l3D",l3D,"3D decay length in cm",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("l3DSig",l3DSig,"3D decay length sig in cm",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("jetDR",jetDR,"DR between jet",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("legDR",legDR,"DR between leg",nanoaod::FlatTable::FloatColumn);
-  cmesonTable->addColumn<float>("diffMass",diffMass,"diffMass",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("lxy",lxy,"2D decay length in cm",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("lxySig",lxySig,"2D decay length sig in cm",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("l3D",l3D,"3D decay length in cm",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("l3DSig",l3DSig,"3D decay length sig in cm",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("jetDR",jetDR,"DR between jet",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("legDR",legDR,"DR between leg",nanoaod::FlatTable::FloatColumn);
+  mesonTable->addColumn<float>("diffMass",diffMass,"diffMass",nanoaod::FlatTable::FloatColumn);
   
-  iEvent.put(move(cmesonTable),"cmeson");
+  iEvent.put(move(mesonTable),"meson");
   iEvent.put(move(cmVxCand));
   
 }
 
-reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandidate*> cands,
+reco::VertexCompositeCandidate MesonProducer::fit(vector<const pat::PackedCandidate*> cands,
 						   reco::Vertex pv, int pdgId,
 						   float &dca, float &angleXY, float &angleXYZ)
 {
@@ -512,23 +479,12 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   
   KalmanVertexFitter m_kvf(true);
   
-  TransientVertex tv = m_kvf.vertex(transientTracks);
+  TransientVertex tv = m_kvf.vertex(transientTracks);      
   if (!tv.isValid()) return reco::VertexCompositeCandidate();
   
   reco::Vertex theVtx = tv;
   // loose cut on chi2
   if (theVtx.normalizedChi2() > vtxChi2Cut_) return reco::VertexCompositeCandidate();
-
-  // if (theVtx.normalizedChi2() < 0)
-  //   std::cout << "-ve vtx: " << theVtx.normalizedChi2() << " chi2/ndof" << theVtx.chi2() << " / " << theVtx.ndof()
-  // 	      << ". trknc2 " << tt1.normalizedChi2() << " " << tt2.normalizedChi2() << " dca:" << dca << " " << tv.trackWeight(tt1) << " " << tv.trackWeight(tt2)
-  // 	      << ". (x,y,z) " << cxPt.x() << ", " << cxPt.y() << ", " << cxPt.z() << " " << theVtx.x() << ", " << theVtx.y() << ", " << theVtx.z()
-  // 	      << std::endl;
-  // else
-  //   std::cout << "+ve vtx: " << theVtx.normalizedChi2() << " chi2/ndof" << theVtx.chi2() << " / " << theVtx.ndof()
-  // 	      << ". trknc2 " << tt1.normalizedChi2() << " " << tt2.normalizedChi2() << " dca:" << dca << " " << tv.trackWeight(tt1) << " " << tv.trackWeight(tt2)
-  // 	      << ". (x,y,z) " << cxPt.x() << ", " << cxPt.y() << ", " << cxPt.z() << " " << theVtx.x() << ", " << theVtx.y() << ", " << theVtx.z()
-  // 	      << std::endl;    
   
   GlobalPoint vtxPos(theVtx.x(), theVtx.y(), theVtx.z());
 
@@ -573,7 +529,7 @@ reco::VertexCompositeCandidate CMesonProducer::fit(vector<const pat::PackedCandi
   return secVert;
 }
 
-CMesonProducer::trackVars CMesonProducer::getTrackVars(vector<const pat::PackedCandidate*> cands,
+MesonProducer::trackVars MesonProducer::getTrackVars(vector<const pat::PackedCandidate*> cands,
 						       reco::Vertex pv)
 {
   float normalizedChi2 = 0;
@@ -605,8 +561,8 @@ CMesonProducer::trackVars CMesonProducer::getTrackVars(vector<const pat::PackedC
   return tt;
 }
 
-CMesonProducer::SVector3
-CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+MesonProducer::SVector3
+MesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
 {
   float z = 0.;
   if (dim == 3) z = vertex.vz() - pv.position().z();
@@ -616,7 +572,7 @@ CMesonProducer::getDistanceVector(int dim, reco::VertexCompositeCandidate vertex
   return distanceVector;
 }
 
-pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
+pair<float, float> MesonProducer::getDistance(int dim, reco::VertexCompositeCandidate vertex,reco::Vertex pv)
 {
   SMatrixSym3D totalCov = vertex.vertexCovariance() + pv.covariance();
   SVector3 distVecXYZ = getDistanceVector(dim, vertex, pv);
@@ -626,52 +582,7 @@ pair<float, float> CMesonProducer::getDistance(int dim, reco::VertexCompositeCan
   return make_pair(distMagXYZ,sigmaDistMagXYZ);
 }
 
-int CMesonProducer::findMiniMCMatch(reco::VertexCompositeCandidate& candD0,
-				    vector<const pat::PackedCandidate*> cands_D0,
-				    Handle<edm::View<pat::PackedGenParticle>> packed,
-				    Handle<edm::View<reco::GenParticle>> pruned, int target)
-{
-  int match = 0;
-  vector<pat::PackedGenParticle> matches;
-  std::cout << "In match" << std::endl;
-  for (auto& c : cands_D0) {
-    std::cout << " Cand: " << std::endl;
-    for (auto& p : *packed) {
-      if (p.charge() != c->charge()) continue;
-      double dr = deltaR(p.eta(), p.phi(), c->eta(), c->phi());
-      if (dr < 0.03 && (fabs(p.pt() - c->pt()) / p.pt()) < 0.075) {
-	std::cout << " MATCH " << dr << std::endl;;
-	matches.push_back(p);
-      }
-    }
-  }
-
-  if (matches.size() == cands_D0.size()) { // found matching tracks
-    for (auto& pr : *pruned) {
-      if (abs(pr.pdgId()) == target) {
-	const Candidate * bMeson = &pr;
-	double dr = deltaR(pr.eta(), pr.phi(), candD0.eta(), candD0.phi());
-	if (dr > 0.5) continue; // require it at least be in the jet cone
-	std::cout << "  PdgID: " << bMeson->pdgId() << " pt " << bMeson->pt() << " eta: " << bMeson->eta() << " phi: " << bMeson->phi() << std::endl;
-	std::cout << "    found daugthers: " << std::endl;
-	for (auto& p : matches) {
-	  //get the pointer to the first survied ancestor of a given packed GenParticle in the prunedCollection
-	  const Candidate * motherInPrunedCollection = p.mother(0) ;
-	  if(motherInPrunedCollection != nullptr && isAncestor(bMeson , motherInPrunedCollection)) {
-	    match += 1;
-	    std::cout << "     DauPdgID: " << p.pdgId() << " pt " << p.pt() << " eta: " << p.eta() << " phi: " << p.phi() << std::endl;
-	  } else {
-	    std::cout << "     No match" << std::endl;
-	  }
-	}
-      }
-    }
-  }
-
-  return match;
-}
-
-int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid)
+int MesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*> cands, int pdgid)
 {
   if (!doMatch_) return -1;
   const reco::JetFlavourInfo & jetInfo =  aPatJet.jetFlavourInfo();
@@ -707,7 +618,7 @@ int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::Pack
 }
 
 void
-CMesonProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+MesonProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -715,4 +626,4 @@ CMesonProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   descriptions.addDefault(desc);
 }
 
-DEFINE_FWK_MODULE(CMesonProducer);
+DEFINE_FWK_MODULE(MesonProducer);

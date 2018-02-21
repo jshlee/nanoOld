@@ -2,12 +2,11 @@ import FWCore.ParameterSet.Config as cms
 from  PhysicsTools.NanoAOD.common_cff import *
 
 ##################### Tables for final output and docs ##########################
-cmesonTable = cms.EDProducer("CMesonProducer",
+mesonTable = cms.EDProducer("MesonProducer",
   jetLabel = cms.InputTag("slimmedJets"),
+  pfLabel = cms.InputTag("packedPFCandidates"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
   mcLabel  = cms.InputTag("prunedGenParticles"),
-  packed = cms.InputTag("packedGenParticles"),
-  pruned = cms.InputTag("prunedGenParticles"),
   applySoftLeptonCut = cms.bool(True),
   doMCMatching = cms.bool(False),
   # -- cuts on initial track collection --
@@ -38,10 +37,10 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   cosThetaXYZCut = cms.double(100),
 )
 
-cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("cmesonTable"),
+mesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("mesonTable"),
     cut = cms.string(""),  #DO NOT further cut here, use vertexTable.svCut
-    name = cms.string("cmeson"),
+    name = cms.string("meson"),
     singleton = cms.bool(False), # the number of entries is variable
     extension = cms.bool(True), 
     variables = cms.PSet(P4Vars,
@@ -53,13 +52,13 @@ cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
         pdgId=Var("pdgId()", int, doc = "pdgId"),
     ),
 )
-cmesonCandidateTable.variables.pt.precision=14
-cmesonCandidateTable.variables.phi.precision=14
-cmesonCandidateTable.variables.eta.precision=14
-cmesonCandidateTable.variables.mass.precision=14
+mesonCandidateTable.variables.pt.precision=14
+mesonCandidateTable.variables.phi.precision=14
+mesonCandidateTable.variables.eta.precision=14
+mesonCandidateTable.variables.mass.precision=14
 
 #before cross linking
-cmesonSequence = cms.Sequence()
+mesonSequence = cms.Sequence()
 #after cross linkining
-cmesonTables = cms.Sequence(cmesonTable+cmesonCandidateTable)
+mesonTables = cms.Sequence(mesonTable+mesonCandidateTable)
 
