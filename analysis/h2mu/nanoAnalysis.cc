@@ -75,13 +75,11 @@ void nanoAnalysis::Analysis()
   h_Event_Tot->Fill(0.5, b_Event_Total);
   h_cutFlow->Fill(0);
   b_Step = 0;
-
   //Run for MC
   if(m_isMC)
   {
     Int_t nvtx = Pileup_nTrueInt;
     b_puweight = m_pileUp->getWeight(nvtx);
-      
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
     b_weight = b_genweight * b_puweight;
@@ -98,7 +96,6 @@ void nanoAnalysis::Analysis()
   if (std::abs(PV_z) >= 24.) return;
   if (PV_npvs == 0) return;
   if (PV_ndof < 4) return;
-
   b_Step = 2;
   h_cutFlow->Fill(2);
 
@@ -128,9 +125,9 @@ void nanoAnalysis::Analysis()
   b_Dilep = b_Mu1 + b_Mu2;
   if (b_Dilep.M() < 12.) return;
 
-  b_mueffweight = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, 0)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, 0);
+ /* b_mueffweight = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, 0)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, 0);
   b_mueffweight_up = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, +1)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, +1);
-  b_mueffweight_dn = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, -1)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, -1);
+  b_mueffweight_dn = m_muonSF.getScaleFactor(13*b_Mu_Charge[0]*(-1), b_Mu1, 13, -1)*m_muonSF.getScaleFactor(13*b_Mu_Charge[0], b_Mu2, 13, -1); */
 
   b_Step = 5;
   h_cutFlow->Fill(5);
@@ -157,20 +154,16 @@ void nanoAnalysis::Loop()
   if (fChain == 0) return;
 
   Long64_t nentries = fChain->GetEntries();
-
   Long64_t nbytes = 0, nb = 0;
   float nPassTrig = 0;
   
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     //Prepare for new loop
     ResetBranch();
-
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
-    
     Analysis();
-    
     ALL->Fill();
   }
 }
@@ -183,12 +176,12 @@ int main(Int_t argc, Char_t** argv)
     RoccoR* rocCor = new RoccoR(env+"/src/nano/analysis/data/rcdata.2016.v3/");
     lumiTool* lumi = new lumiTool(env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt");
     pileUpTool* pileUp = new pileUpTool();
-    std::string dirName = env+("/src/nano/analysis/h2mu/Results/Nano_C_Test/")+argv[1];
-    std::string temp = argv[1];
+    std::string dirName = env+("/src/nano/analysis/h2mu/Results/")+argv[1]+"/"+argv[2];
+    std::string temp = argv[2];
     Bool_t isMC = false;
     Size_t found = temp.find("Run");
     if(found == std::string::npos) isMC = true;
-    for(Int_t i = 2; i < argc; i++)
+    for(Int_t i = 3; i < argc; i++)
     {
       TFile *f = TFile::Open(argv[i], "read");
     

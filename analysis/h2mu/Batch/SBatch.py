@@ -18,6 +18,7 @@ RunFiles = [
              # 'ZH_HToMuMu',
              # 'VBF_HToMuMu',
              # 'GG_HToMuMu',
+               'ttH',
              # "WWTo2L2Nu",
              # "WZTo3LNu_amcatnlo",
              # "WZTo2LQQ",
@@ -36,8 +37,8 @@ RunFiles = [
              # "SingleTbar_tW",
 #              "TTJets_DiLept",
 #              "TTJets_DiLept_Tune4",
-              'TTJets_aMC', 
-#              'DYJets',
+#              'TTJets_aMC', 
+              #'DYJets',
 #              'DYJets_MG_10to50',
 #              'DYJets_MG2',
 #              'DYJets_2J',
@@ -54,7 +55,8 @@ RunFiles = [
 #              'SingleMuon_Run2016H',
              # 'SingleMuon_Run2016H_v3',
               ]
-datadir = '{}/src/nano/analysis/data/dataset2/'.format(os.environ['CMSSW_BASE'])
+SetDir = "ttH"              
+datadir = '{}/src/nano/analysis/data/dataset/'.format(os.environ['CMSSW_BASE'])
 #version = os.environ["CMSSW_VERSION"]
 
 
@@ -70,7 +72,7 @@ for i in RunFiles:
         sys.exit()
     else: os.makedirs(Dirname)
 
-    Dirname_ = "%s/src/nano/analysis/h2mu/Results/Nano_C_Test/%s/"%(os.environ['CMSSW_BASE'],datasetName)
+    Dirname_ = "{}/src/nano/analysis/h2mu/Results/{}/{}/".format(os.environ['CMSSW_BASE'],SetDir,datasetName)
     if not os.path.isdir(Dirname_):
         os.makedirs(Dirname_)
 
@@ -114,7 +116,7 @@ queue""" .format(os.environ['CMSSW_BASE'],Dirname, count)
         fout.close()
         count += 1 
         #jobName = analysis+'_'+datasetName
-        subBatch = "condor_submit -batch-name {} -append 'arguments={} {}' {}".format(datasetName ,datasetName,FileNamesStr, jds)
+        subBatch = "condor_submit -batch-name {} -append 'arguments={} {} {}' {}".format(datasetName ,SetDir ,datasetName ,FileNamesStr ,jds)
         #print createbatch
         print subBatch 
             
