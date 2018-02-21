@@ -20,7 +20,8 @@
 #include "../src/pileUpTool.h"
 #include "../src/RoccoR.cc"
 #include "../src/lumiTool.h"
-#include "../src/ScaleFactorEvaluator.h"
+#include "../src/MuonScaleFactorEvaluator.h"
+#include "../src/ElecScaleFactorEvaluator.h"
 #include "../plugins/jsoncpp.cpp"
 //#include "../src/BTagCalibrationStandalone.cc"
 //#include "../src/BTagCalibrationStandalone.h"
@@ -42,25 +43,14 @@ private:
       TLorentzVector b_Dilep;
       TLorentzVector b_Mu1;
       TLorentzVector b_Mu2;
+
+      std::vector<TLorentzVector> b_Mu_tlv;
+      std::vector<TLorentzVector> b_El_tlv;
+      std::vector<TLorentzVector> b_Jet_tlv;
+      std::vector<TLorentzVector> b_bJet_tlv;
       
-      UInt_t b_Nu_Mu;
-      std::vector<Float_t> b_Mu_Pt;
-      std::vector<Float_t> b_Mu_Eta;
-      std::vector<Int_t> b_Mu_Charge;
-      std::vector<Float_t> b_Mu_Phi;
-      std::vector<Float_t> b_Mu_M;
-
-      UInt_t b_Nu_El;
-      std::vector<Float_t> b_El_Pt;
-      std::vector<Float_t> b_El_Eta;
-
-      UInt_t b_Nu_Jet;
-      std::vector<Float_t> b_Jet_Pt;
-      std::vector<Float_t> b_Jet_Eta;
       std::vector<Float_t> b_Jet_CSVV2;
-      std::vector<Float_t> b_Jet_M;
-      std::vector<Float_t> b_Jet_Phi;
-
+      
       Float_t b_genweight;
       Float_t b_puweight;
       Float_t b_weight;
@@ -83,9 +73,15 @@ private:
       pileUpTool* m_pileUp;
       lumiTool* m_lumi;
       RoccoR* m_rocCor;
+<<<<<<< HEAD
       ScaleFactorEvaluator m_muonSF;
       //BTagWeightEvaluator m_btagSF;
+=======
+      MuonScaleFactorEvaluator m_muonSF;
+      ElecScaleFactorEvaluator m_elecSF;
+>>>>>>> 7c031622d81b3f1744b62a980a054f3658ef295b
       Bool_t m_isMC;
+      std::vector<UInt_t> idxs;
       
       //Making output branch
       void MakeBranch(TTree* t);
@@ -94,7 +90,10 @@ private:
       void Analysis();
       //For Selection
       Bool_t LumiCheck();
-      void MuonSelection();
+      std::vector<TParticle> MuonSelection();
+      std::vector<TParticle> ElectronSelection();
+      std::vector<TParticle> JetSelection();
+      std::vector<TParticle> BtaggedSelection();
       Double_t roccoR(TLorentzVector m, Int_t &q, Int_t &nGen, Int_t &nTrackerLayers);
 public:
       //set output file
@@ -337,7 +336,11 @@ public:
       Bool_t          Photon_mvaID_WP90[7];   //[nPhoton]
       Bool_t          Photon_pixelSeed[7];   //[nPhoton]
       Int_t           Pileup_nPU;
+<<<<<<< HEAD
       Float_t           Pileup_nTrueInt;
+=======
+      Float_t         Pileup_nTrueInt;
+>>>>>>> 7c031622d81b3f1744b62a980a054f3658ef295b
       Float_t         PuppiMET_phi;
       Float_t         PuppiMET_pt;
       Float_t         PuppiMET_sumEt;
@@ -379,36 +382,36 @@ public:
       Float_t         SubJet_tau3[6];   //[nSubJet]
       Float_t         SubJet_tau4[6];   //[nSubJet]
       UInt_t          nTau;
-      Float_t         Tau_chargedIso[5];   //[nTau]
-      Float_t         Tau_dxy[5];   //[nTau]
-      Float_t         Tau_dz[5];   //[nTau]
-      Float_t         Tau_eta[5];   //[nTau]
-      Float_t         Tau_footprintCorr[5];   //[nTau]
-      Float_t         Tau_leadTkDeltaEta[5];   //[nTau]
-      Float_t         Tau_leadTkDeltaPhi[5];   //[nTau]
-      Float_t         Tau_leadTkPtOverTauPt[5];   //[nTau]
-      Float_t         Tau_mass[5];   //[nTau]
-      Float_t         Tau_neutralIso[5];   //[nTau]
-      Float_t         Tau_phi[5];   //[nTau]
-      Float_t         Tau_photonsOutsideSignalCone[5];   //[nTau]
-      Float_t         Tau_pt[5];   //[nTau]
-      Float_t         Tau_puCorr[5];   //[nTau]
-      Float_t         Tau_rawAntiEle[5];   //[nTau]
-      Float_t         Tau_rawIso[5];   //[nTau]
-      Float_t         Tau_rawMVAnewDM[5];   //[nTau]
-      Float_t         Tau_rawMVAoldDM[5];   //[nTau]
-      Float_t         Tau_rawMVAoldDMdR03[5];   //[nTau]
-      Int_t           Tau_charge[5];   //[nTau]
-      Int_t           Tau_decayMode[5];   //[nTau]
-      Int_t           Tau_jetIdx[5];   //[nTau]
-      Int_t           Tau_rawAntiEleCat[5];   //[nTau]
-      UChar_t         Tau_idAntiEle[5];   //[nTau]
-      UChar_t         Tau_idAntiMu[5];   //[nTau]
-      Bool_t          Tau_idDecayMode[5];   //[nTau]
-      Bool_t          Tau_idDecayModeNewDMs[5];   //[nTau]
-      UChar_t         Tau_idMVAnewDM[5];   //[nTau]
-      UChar_t         Tau_idMVAoldDM[5];   //[nTau]
-      UChar_t         Tau_idMVAoldDMdR03[5];   //[nTau]
+      Float_t         Tau_chargedIso[10];   //[nTau]
+      Float_t         Tau_dxy[10];   //[nTau]
+      Float_t         Tau_dz[10];   //[nTau]
+      Float_t         Tau_eta[10];   //[nTau]
+      Float_t         Tau_footprintCorr[10];   //[nTau]
+      Float_t         Tau_leadTkDeltaEta[10];   //[nTau]
+      Float_t         Tau_leadTkDeltaPhi[10];   //[nTau]
+      Float_t         Tau_leadTkPtOverTauPt[10];   //[nTau]
+      Float_t         Tau_mass[10];   //[nTau]
+      Float_t         Tau_neutralIso[10];   //[nTau]
+      Float_t         Tau_phi[10];   //[nTau]
+      Float_t         Tau_photonsOutsideSignalCone[10];   //[nTau]
+      Float_t         Tau_pt[10];   //[nTau]
+      Float_t         Tau_puCorr[10];   //[nTau]
+      Float_t         Tau_rawAntiEle[10];   //[nTau]
+      Float_t         Tau_rawIso[10];   //[nTau]
+      Float_t         Tau_rawMVAnewDM[10];   //[nTau]
+      Float_t         Tau_rawMVAoldDM[10];   //[nTau]
+      Float_t         Tau_rawMVAoldDMdR03[10];   //[nTau]
+      Int_t           Tau_charge[10];   //[nTau]
+      Int_t           Tau_decayMode[10];   //[nTau]
+      Int_t           Tau_jetIdx[10];   //[nTau]
+      Int_t           Tau_rawAntiEleCat[10];   //[nTau]
+      UChar_t         Tau_idAntiEle[10];   //[nTau]
+      UChar_t         Tau_idAntiMu[10];   //[nTau]
+      Bool_t          Tau_idDecayMode[10];   //[nTau]
+      Bool_t          Tau_idDecayModeNewDMs[10];   //[nTau]
+      UChar_t         Tau_idMVAnewDM[10];   //[nTau]
+      UChar_t         Tau_idMVAoldDM[10];   //[nTau]
+      UChar_t         Tau_idMVAoldDMdR03[10];   //[nTau]
       Float_t         TkMET_phi;
       Float_t         TkMET_pt;
       Float_t         TkMET_sumEt;
@@ -466,7 +469,7 @@ public:
       UChar_t         Jet_cleanmask[35];   //[nJet]
       UChar_t         Muon_cleanmask[10];   //[nMuon]
       UChar_t         Photon_cleanmask[7];   //[nPhoton]
-      UChar_t         Tau_cleanmask[5];   //[nTau]
+      UChar_t         Tau_cleanmask[10];   //[nTau]
       Float_t         SV_chi2[9];   //[nSV]
       Float_t         SV_eta[9];   //[nSV]
       Float_t         SV_mass[9];   //[nSV]
@@ -476,8 +479,8 @@ public:
       Float_t         SV_x[9];   //[nSV]
       Float_t         SV_y[9];   //[nSV]
       Float_t         SV_z[9];   //[nSV]
-      Int_t           Tau_genPartIdx[5];   //[nTau]
-      UChar_t         Tau_genPartFlav[5];   //[nTau]
+      Int_t           Tau_genPartIdx[10];   //[nTau]
+      UChar_t         Tau_genPartFlav[10];   //[nTau]
       Bool_t          L1simulation_step;
       Bool_t          HLTriggerFirstPath;
       Bool_t          HLT_AK8PFJet360_TrimMass30;
