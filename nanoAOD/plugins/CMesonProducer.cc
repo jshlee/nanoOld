@@ -106,8 +106,8 @@ private:
   const float D0Max_   = 2.0;
   const float DstarDiffMin_   = 0.14;
   const float DstarDiffMax_   = 0.16;
-  const float KSMin_   = 0.4;
-  const float KSMax_   = 0.6;
+  const float KSMin_   = 0.43;
+  const float KSMax_   = 0.57;
   //unsigned int maxNumPFCand_;
   bool doFullMatch_;
   bool applyCuts_;
@@ -293,15 +293,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_Jpsi = -5;
 	if (runOnMC){
-	  if (!doFullMatch_) mc_Jpsi = findMiniMCMatch(aPatJet, JpsiCand, cands_Jpsi, packed, pruned, pdgId_Jpsi);
-	  else mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
+	  // if (!doFullMatch_) mc_Jpsi = findMiniMCMatch(aPatJet, JpsiCand, cands_Jpsi, packed, pruned, pdgId_Jpsi);
+	  // else
+	    mc_Jpsi = findMCmatch(aPatJet, cands_Jpsi, pdgId_Jpsi);
 	}
 	fill(mc_Jpsi, JpsiCand, cands_Jpsi, angleXY_Jpsi, angleXYZ_Jpsi, dca_Jpsi);
       }
     }
 
-    if ( applyCuts_ && softlepCands.size()==0  ) continue;
-    
     for ( unsigned int pion_idx = 0 ; pion_idx< dau_size ; ++pion_idx) {
       const pat::PackedCandidate * pionCand = jetDaughters[pion_idx];
       if ( abs(pionCand->pdgId()) == 13 or abs(pionCand->pdgId()) == 11) continue;
@@ -325,13 +324,14 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  reco::VertexCompositeCandidate KSCand = fit(cands_KS, pv, pdgId_KS,
 						      dca_KS, angleXY_KS, angleXYZ_KS);
 	  
-	  if ( applyCuts_ ) KSCand.addDaughter( *softlepCands[0] );
+	  // if ( applyCuts_ ) KSCand.addDaughter( *softlepCands[0] );
 	  
 	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
 	  int mc_KS = -5;
 	  if (runOnMC) {
-	    if (!doFullMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
-	    else mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
+	    // if (!doFullMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
+	    // else
+	      mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
 	  fill(mc_KS, KSCand, cands_KS, angleXY_KS, angleXYZ_KS, dca_KS);
 	}
@@ -352,8 +352,9 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	int mc_D0 = -5;
 	if (runOnMC){
-	  if (!doFullMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
-	  else mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
+	  // if (!doFullMatch_) mc_D0 = findMiniMCMatch(aPatJet, D0Cand, cands_D0, packed, pruned, pdgId_D0);
+	  // else
+	    mc_D0 = findMCmatch(aPatJet, cands_D0, pdgId_D0);
 	}
 	fill(mc_D0, D0Cand, cands_D0, angleXY_D0, angleXYZ_D0, dca_D0);
 
@@ -372,15 +373,16 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 							 /*pion2Cand->charge()*pdgId_Dstar*/
 							 dca_Dstar, angleXY_Dstar, angleXYZ_Dstar);
 
-	  if ( applyCuts_ ) DstarCand.addDaughter( *softlepCands[0] );
+	  // if ( applyCuts_ ) DstarCand.addDaughter( *softlepCands[0] );
 	  
 	  float diffMass_Dstar = DstarCand.mass() - D0Cand.mass();
 	  if ( diffMass_Dstar < DstarDiffMin_ || diffMass_Dstar > DstarDiffMax_ ) continue;
 
 	  int mc_Dstar = -5;
 	  if (runOnMC){
-	    if (!doFullMatch_) mc_Dstar = findMiniMCMatch(aPatJet, DstarCand, cands_Dstar, packed, pruned, pdgId_Dstar);
-	    else mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
+	    // if (!doFullMatch_) mc_Dstar = findMiniMCMatch(aPatJet, DstarCand, cands_Dstar, packed, pruned, pdgId_Dstar);
+	    // else
+	      mc_Dstar = findMCmatch(aPatJet, cands_Dstar, pdgId_Dstar);
 	  }
 	  fill(mc_Dstar, DstarCand, cands_Dstar, angleXY_Dstar, angleXYZ_Dstar, dca_Dstar);
 	}
