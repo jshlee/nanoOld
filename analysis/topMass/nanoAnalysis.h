@@ -13,23 +13,28 @@
 #include <TFile.h>
 #include <TLorentzVector.h>
 #include <TParticle.h>
-#include <TH1.h>
+#include <TH1D.h>
 #include <vector>
 
 #include "../src/RoccoR.cc"
 #include "../src/pileUpTool.h"
 #include "../plugins/jsoncpp.cpp"
+#include "../src/lumiTool.h"
 
 // Header file for the classes stored in the TTree if any.
 
 class nanoAnalysis {
   //Output Variables
+private:
   TFile* m_output;      
   //Tree
   TTree* m_tree;
       
   //histogram
-  TH1D *h_nevents, *h_genweights, *h_weights, *h_cutFlow;
+  TH1D* h_nevents;
+  TH1D* h_genweights;
+  TH1D* h_weights;
+  TH1D* h_cutFlow;
       
   //Variables
   TLorentzVector b_lep1, b_lep2, b_dilep, b_jet1, b_jet2;
@@ -45,7 +50,7 @@ class nanoAnalysis {
   TH1D* hist_mc;
   Bool_t m_isMC;
   pileUpTool *m_pileUp;
-
+  lumiTool* m_lumi;
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
 
@@ -53,17 +58,25 @@ class nanoAnalysis {
   void mcAnalysis();
   
   //Making output branch
+  void MakeBranch(TTree* t);
   void resetBranch();
 
   //For Selection
   Bool_t lumiCheck();
   std::vector<TParticle> muonSelection();
   Double_t roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers);
-  
+  enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU }; 
+  std::vector<TParticle> elecSelection();
+  std::vector<TLorentzVector> recoleps;
+  std::vector<TParticle> jetSelection();
+  std::vector<TParticle> bjetSelection();
+
+  std::vector<int>  idxs; 
  public :
   //set output file
   void setOutput(std::string outputName);
-  
+  void LoadModules(pileUpTool* pileUp, lumiTool* lumi); 
+
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -2090,36 +2103,7 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
     f->GetObject("Events",tree);
 
   }
-  //Get Modules
-  m_pileUp = new pileUpTool();  
-  std::string env = std::getenv("CMSSW_BASE");
-  std::string temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
-  m_rocCor = new RoccoR(temp);
-  
-  //Get LumiMap
-  if(!m_isMC)
-    {
-      temp = env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt";
-      std::ifstream file(temp.c_str());
-      Json::Value root;
-      Json::Reader reader;
-      if(!reader.parse(file, root, true))
-	{
-	  std::cout  << "Failed to parse configuration\n" << reader.getFormattedErrorMessages();
-	}
-      auto member = root.getMemberNames();
-      for(std::string s : member){
-	std::vector<std::array<UInt_t, 2>> lumiVector;
-        for(int i = 0; i < root[s].size(); i++){
-          std::array<UInt_t, 2> lumiArray;
-          lumiArray[0] = root[s][i][0].asUInt();
-          lumiArray[1] = root[s][i][1].asUInt();
-          lumiVector.push_back(lumiArray);
-        }
-	lumiMap[std::stoi(s)] = lumiVector;
-      }
-      file.close();
-    }
+    
 
   Init(tree);
 }
