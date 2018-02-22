@@ -100,6 +100,7 @@ private:
   const int pdgId_D0 = 421;
   const int pdgId_Dstar = 413;
   const int pdgId_KS = 310;
+  const int pdgId_Lambda = 3122;
   const float jpsiMin_ = 2.5;
   const float jpsiMax_ = 3.4;
   const float D0Min_   = 1.7;
@@ -108,6 +109,8 @@ private:
   const float DstarDiffMax_   = 0.16;
   const float KSMin_   = 0.43;
   const float KSMax_   = 0.57;
+  const float LambdaMin_   = 0.9;
+  const float LambdaMax_   = 1.16;
   //unsigned int maxNumPFCand_;
   bool doFullMatch_;
   bool applyCuts_;
@@ -325,16 +328,36 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 						      dca_KS, angleXY_KS, angleXYZ_KS);
 	  
 	  // if ( applyCuts_ ) KSCand.addDaughter( *softlepCands[0] );
-	  
-	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto dmeson;
+	  if ( KSCand.mass() < KSMin_ || KSCand.mass() > KSMax_ ) goto lambda;
 	  int mc_KS = -5;
 	  if (runOnMC) {
 	    // if (!doFullMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
 	    // else
-	      mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
+	    mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS, mcHandle);
 	  }
 	  fill(mc_KS, KSCand, cands_KS, angleXY_KS, angleXYZ_KS, dca_KS);
 	}
+      lambda:
+	kaonCand.setMass(gProtonMass);
+	kaonCand.setPdgId(kaonCand.charge()*pdgId_p);
+	float dca_Lambda = -2;
+	float angleXY_Lambda = -2;
+	float angleXYZ_Lambda = -2;
+	vector<const pat::PackedCandidate*> cands_Lambda{pionCand, &kaonCand};	
+	reco::VertexCompositeCandidate LambdaCand = fit(cands_Lambda, pv, pdgId_Lambda,
+							dca_Lambda, angleXY_Lambda, angleXYZ_Lambda);
+	
+	// if ( applyCuts_ ) LambdaCand.addDaughter( *softlepCands[0] );
+
+	int mc_Lambda = -5;
+	if ( LambdaCand.mass() < LambdaMin_ || LambdaCand.mass() > LambdaMax_ ) goto dmeson;
+	if (runOnMC) {
+	  // if (!doFullMatch_) mc_Lambda = findMiniMCMatch(aPatJet, LambdaCand, cands_Lambda, packed, pruned, pdgId_Lambda);
+	  // else
+	  mc_Lambda = findMCmatch(aPatJet, cands_Lambda, pdgId_Lambda, mcHandle);
+	}
+	fill(mc_Lambda, LambdaCand, cands_Lambda, angleXY_Lambda, angleXYZ_Lambda, dca_Lambda);
+
       dmeson:
         kaonCand.setMass(gKaonMass);
         kaonCand.setPdgId(kaonCand.charge()*pdgId_Kp);
