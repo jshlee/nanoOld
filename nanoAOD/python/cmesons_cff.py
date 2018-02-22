@@ -18,8 +18,8 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   # Pt of track >
   tkPtCut = cms.double(0.),
   # Track impact parameter significance >
-  tkIPSigXYCut = cms.double(100),
-  tkIPSigZCut = cms.double(100),
+  tkIPSigXYCut = cms.double(100000),
+  tkIPSigZCut = cms.double(100000),
   
   # -- cuts on the vertex --
   # Vertex chi2 <
