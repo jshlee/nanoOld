@@ -95,12 +95,14 @@ private:
   const float gJpsiMass = 3.096;
   const float gD0Mass = 1.865;
   const float gDstarMass = 2.010;
+  const float gProtonMass = 0.938272;
   const int pdgId_Kp = 321;
   const int pdgId_Jpsi = 443;
   const int pdgId_D0 = 421;
   const int pdgId_Dstar = 413;
   const int pdgId_KS = 310;
   const int pdgId_Lambda = 3122;
+  const int pdgId_p = 2122;
   const float jpsiMin_ = 2.5;
   const float jpsiMax_ = 3.4;
   const float D0Min_   = 1.7;
@@ -148,8 +150,8 @@ bool isAncestor(const reco::Candidate* ancestor, const reco::Candidate * particl
 CMesonProducer::CMesonProducer(const edm::ParameterSet & iConfig) :
   jetSrc_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
   vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel"))),
-  prunedGenToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("pruned"))),
-  packedGenToken_(consumes<edm::View<pat::PackedGenParticle> >(iConfig.getParameter<edm::InputTag>("packed"))),
+  // prunedGenToken_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("pruned"))),
+  // packedGenToken_(consumes<edm::View<pat::PackedGenParticle> >(iConfig.getParameter<edm::InputTag>("packed"))),
   //mcSrc_(consumes<edm::View<reco::GenParticle> >(iConfig.getParameter<edm::InputTag>("mcLabel"))),
   doFullMatch_(iConfig.getParameter<bool>("doFullMCMatching")),
   applyCuts_(iConfig.getParameter<bool>("applySoftLeptonCut"))  
@@ -188,13 +190,13 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
   // Pruned particles are the one containing "important" stuff
-  Handle<edm::View<reco::GenParticle> > pruned;
-  iEvent.getByToken(prunedGenToken_,pruned);
+  // Handle<edm::View<reco::GenParticle> > pruned;
+  // iEvent.getByToken(prunedGenToken_,pruned);
   
   // Packed particles are all the status 1, so usable to remake jets
   // The navigation from status 1 to pruned is possible (the other direction should be made by hand)
-  Handle<edm::View<pat::PackedGenParticle> > packed;
-  iEvent.getByToken(packedGenToken_,packed);
+  // Handle<edm::View<pat::PackedGenParticle> > packed;
+  // iEvent.getByToken(packedGenToken_,packed);
   
   auto cmVxCand = make_unique<reco::VertexCompositeCandidateCollection>();
   vector<float> dca, angleXY, angleXYZ, trkChi2, trknHits, trkPt, trkipsigXY, trkipsigZ;
@@ -317,7 +319,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	// for KS, only want to pick up one version, since we treat
 	// both mesons as pions, i.e. dont change identity
-	if (kaon_idx < pion_idx) goto dmeson;
+	if (kaon_idx < pion_idx) goto lambda;
 
 	{ // jump over variable definitions, so they must be in a separate block
 	  float dca_KS = -2;
@@ -333,7 +335,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if (runOnMC) {
 	    // if (!doFullMatch_) mc_KS = findMiniMCMatch(aPatJet, KSCand, cands_KS, packed, pruned, pdgId_KS);
 	    // else
-	    mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS, mcHandle);
+	    mc_KS = findMCmatch(aPatJet, cands_KS, pdgId_KS);
 	  }
 	  fill(mc_KS, KSCand, cands_KS, angleXY_KS, angleXYZ_KS, dca_KS);
 	}
@@ -354,7 +356,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if (runOnMC) {
 	  // if (!doFullMatch_) mc_Lambda = findMiniMCMatch(aPatJet, LambdaCand, cands_Lambda, packed, pruned, pdgId_Lambda);
 	  // else
-	  mc_Lambda = findMCmatch(aPatJet, cands_Lambda, pdgId_Lambda, mcHandle);
+	  mc_Lambda = findMCmatch(aPatJet, cands_Lambda, pdgId_Lambda);
 	}
 	fill(mc_Lambda, LambdaCand, cands_Lambda, angleXY_Lambda, angleXYZ_Lambda, dca_Lambda);
 
@@ -369,7 +371,7 @@ CMesonProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	reco::VertexCompositeCandidate D0Cand = fit(cands_D0, pv, pdgId_D0,
 						    dca_D0, angleXY_D0, angleXYZ_D0);
 
-        if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
+        // if ( applyCuts_ ) D0Cand.addDaughter( *softlepCands[0] );
 
         if ( D0Cand.mass() < D0Min_ || D0Cand.mass() > D0Max_ ) continue;
 
@@ -664,6 +666,7 @@ int CMesonProducer::findMiniMCMatch(const pat::Jet & aPatJet,
 
 int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::PackedCandidate*>& cands, int pdgid)
 {
+  if (!doFullMatch_) return -1;
   const reco::JetFlavourInfo & jetInfo =  aPatJet.jetFlavourInfo();
   if (abs(jetInfo.getHadronFlavour()) != 5) return -1;
   if (abs(jetInfo.getPartonFlavour()) != 5) return -1;
