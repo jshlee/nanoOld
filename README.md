@@ -4,7 +4,6 @@ quick setup for analysis
 scram p -n nanoAOD CMSSW CMSSW_9_4_2
 cd nanoAOD/src
 cmsenv
-(You have to fork jshlee/nano.git, already)
 git clone git@github.com:mygitid/myrepository.git 
 scram b -j 20
 ```
