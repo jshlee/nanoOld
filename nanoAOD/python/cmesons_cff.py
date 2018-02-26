@@ -6,7 +6,10 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
   mcLabel  = cms.InputTag("prunedGenParticles"),
+  packed = cms.InputTag("packedGenParticles"),
+  pruned = cms.InputTag("prunedGenParticles"),
   applySoftLeptonCut = cms.bool(True),
+  doFullMCMatching = cms.bool(False),
   # -- cuts on initial track collection --
   # Track normalized Chi2 <
   tkChi2Cut = cms.double(100),
@@ -15,8 +18,8 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   # Pt of track >
   tkPtCut = cms.double(0.),
   # Track impact parameter significance >
-  tkIPSigXYCut = cms.double(100),
-  tkIPSigZCut = cms.double(100),
+  tkIPSigXYCut = cms.double(100000),
+  tkIPSigZCut = cms.double(100000),
   
   # -- cuts on the vertex --
   # Vertex chi2 <
