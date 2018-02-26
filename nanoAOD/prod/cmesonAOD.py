@@ -19,6 +19,9 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('PhysicsTools.PatAlgos.slimming.metFilterPaths_cff')
+process.load('Configuration.StandardSequences.PATMC_cff')
+process.load('PhysicsTools.NanoAOD.nano_cff')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -60,26 +63,39 @@ process.NANOAODSIMoutput = cms.OutputModule("NanoAODOutputModule",
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
-from PhysicsTools.PatAlgos.slimming.puppiForMET_cff import makePuppies
-makePuppies( process );
-process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
-process.load('PhysicsTools.PatAlgos.slimming.primaryVertexAssociation_cfi')
-process.load('PhysicsTools.PatAlgos.slimming.packedPFCandidates_cfi')
-process.load('PhysicsTools.PatAlgos.slimming.slimmedJets_cfi')
-process.packedPFCandidates.inputVertices = cms.InputTag("offlinePrimaryVertices")
-process.packedPFCandidates.PuppiNoLepSrc = cms.InputTag("puppi")
-process.slimmedJets.src = cms.InputTag("patJets")
+#from PhysicsTools.PatAlgos.slimming.puppiForMET_cff import makePuppies
+#makePuppies( process );
+#process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
+#process.load('PhysicsTools.PatAlgos.slimming.primaryVertexAssociation_cfi')
+#process.load('PhysicsTools.PatAlgos.slimming.packedPFCandidates_cfi')
+#process.load('PhysicsTools.PatAlgos.slimming.slimmedJets_cfi')
+#process.packedPFCandidates.inputVertices = cms.InputTag("offlinePrimaryVertices")
+#process.packedPFCandidates.PuppiNoLepSrc = cms.InputTag("puppi")
+#process.slimmedJets.src = cms.InputTag("patJets")
+
 process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load('nano.nanoAOD.cmesons_cff')
 process.cmesonTable.vertexLabel = cms.InputTag("offlinePrimaryVertices")
 process.cmesonTable.mcLabel  = cms.InputTag("genParticles")
+process.cmesonTable.doFullMCMatching  = cms.bool(True)
 
-process.p = cms.Path(process.makePatJets
-                         +process.primaryVertexAssociation+process.puppi
-                         +process.packedPFCandidates
-                         +process.slimmedJets
-                         +process.cmesonTables+process.cmesonCandidateTable)
+process.p = cms.Path(#process.makePatJets+
+                         #process.primaryVertexAssociation+process.puppi
+                         #+process.packedPFCandidates
+                         #+process.slimmedJets
+                         process.cmesonTables+process.cmesonCandidateTable)
+
+process.nanoAOD_step = cms.Path(process.nanoSequenceMC)
+process.endjob_step = cms.EndPath(process.endOfProcess)
 process.NANOAODSIMoutput_step = cms.EndPath(process.NANOAODSIMoutput)
 
 # Schedule definition
-process.schedule = cms.Schedule(process.p,process.NANOAODSIMoutput_step)
+process.schedule = cms.Schedule(process.p,process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
+
+from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
+associatePatAlgosToolsTask(process)
+from PhysicsTools.PatAlgos.slimming.miniAOD_tools import miniAOD_customizeAllMC
+process = miniAOD_customizeAllMC(process)
+from PhysicsTools.NanoAOD.nano_cff import nanoAOD_customizeMC
+process = nanoAOD_customizeMC(process)
+
