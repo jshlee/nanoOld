@@ -22,7 +22,7 @@ datalumi = 36814 #35.9fb-1
 #datalumi = 8360.481454 #35.9fb-1
 version = os.environ['CMSSW_VERSION']
 
-rootfileDir = "%s/src/nano/analysis/h2mu/Results/Nano_C_Test/results_merged/tth2mu_"% os.environ['CMSSW_BASE']
+rootfileDir = "%s/src/nano/analysis/topMass/Results/results_merged/topmass_"% os.environ['CMSSW_BASE']
 
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
 #rootfileDir = "%s/src/CATTools/CatAnalyzer/test/results_merged/h2muAnalyzer_" % os.environ['CMSSW_BASE']
@@ -66,7 +66,7 @@ mcfilelist = [
 #              "SingleTbar_tW",
              # "TTJets_DiLept",
              # "TTJets_DiLept_Tune4",
-               'TTJets_aMC',
+               'TT_powheg',
                'DYJets',
              # 'DYJets_MG_10to50',
              # 'DYJets_MG2',
@@ -78,7 +78,7 @@ mcfilelist = [
 #mcfilelist = ['VBF_HToMuMu','WW','WZ','ZZ','TT_powheg','DYJets','DYJets_10to50']#,'WJets']
 #mcfilelist = [ 'TTJets_aMC']
 rdfilelist = [
-              'SingleMuon_Run2016',#mumu
+              'DoubleMuon_Run2016',#mumu
              # 'SingleMuon_Run2016',#mumu
               #'SingleMuon_Run2015C',
              #'SingleMuon_Run2015D'
