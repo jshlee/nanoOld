@@ -13,23 +13,31 @@
 #include <TFile.h>
 #include <TLorentzVector.h>
 #include <TParticle.h>
-#include <TH1.h>
+#include <TH1D.h>
 #include <vector>
 
 #include "../src/RoccoR.cc"
 #include "../src/pileUpTool.h"
+#include "../src/ScaleFactorEvaluator.h"
+#include "../src/TopTriggerSF.h"
+#include "../src/pileUpTool.h"
 #include "../plugins/jsoncpp.cpp"
+#include "../src/lumiTool.h"
 
 // Header file for the classes stored in the TTree if any.
 
 class nanoAnalysis {
   //Output Variables
+private:
   TFile* m_output;      
   //Tree
   TTree* m_tree;
       
   //histogram
-  TH1D *h_nevents, *h_genweights, *h_weights, *h_cutFlow;
+  TH1D* h_nevents;
+  TH1D* h_genweights;
+  TH1D* h_weights;
+  TH1D* h_cutFlow;
       
   //Variables
   TLorentzVector b_lep1, b_lep2, b_dilep, b_jet1, b_jet2;
@@ -38,6 +46,7 @@ class nanoAnalysis {
 
   int b_nvertex, b_step, b_channel, b_njet, b_nbjet;
   bool b_step1, b_step2, b_step3, b_step4, b_step5, b_step6, b_step7;  
+  float b_tri_SL, b_tri_DL;
   float b_met, b_weight, b_genweight, b_puweight;
   
   // Tools
@@ -45,7 +54,7 @@ class nanoAnalysis {
   TH1D* hist_mc;
   Bool_t m_isMC;
   pileUpTool *m_pileUp;
-
+  lumiTool* m_lumi;
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
 
@@ -53,17 +62,24 @@ class nanoAnalysis {
   void mcAnalysis();
   
   //Making output branch
+  void MakeBranch(TTree* t);
   void resetBranch();
 
   //For Selection
   Bool_t lumiCheck();
   std::vector<TParticle> muonSelection();
   Double_t roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers);
-  
+  enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU }; 
+  std::vector<TParticle> elecSelection();
+  std::vector<TLorentzVector> recoleps;
+  std::vector<TParticle> jetSelection();
+  std::vector<TParticle> bjetSelection();
+
  public :
   //set output file
   void setOutput(std::string outputName);
-  
+  void LoadModules(pileUpTool* pileUp, lumiTool* lumi); 
+
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -244,37 +260,37 @@ class nanoAnalysis {
   Float_t         MET_significance;
   Float_t         MET_sumEt;
   UInt_t          nMuon;
-  Float_t         Muon_dxy[5];   //[nMuon]
-  Float_t         Muon_dxyErr[5];   //[nMuon]
-  Float_t         Muon_dz[5];   //[nMuon]
-  Float_t         Muon_dzErr[5];   //[nMuon]
-  Float_t         Muon_eta[5];   //[nMuon]
-  Float_t         Muon_ip3d[5];   //[nMuon]
-  Float_t         Muon_mass[5];   //[nMuon]
-  Float_t         Muon_miniPFRelIso_all[5];   //[nMuon]
-  Float_t         Muon_miniPFRelIso_chg[5];   //[nMuon]
-  Float_t         Muon_pfRelIso03_all[5];   //[nMuon]
-  Float_t         Muon_pfRelIso03_chg[5];   //[nMuon]
-  Float_t         Muon_pfRelIso04_all[5];   //[nMuon]
-  Float_t         Muon_phi[5];   //[nMuon]
-  Float_t         Muon_pt[5];   //[nMuon]
-  Float_t         Muon_ptErr[5];   //[nMuon]
-  Float_t         Muon_segmentComp[5];   //[nMuon]
-  Float_t         Muon_sip3d[5];   //[nMuon]
-  Float_t         Muon_mvaTTH[5];   //[nMuon]
-  Int_t           Muon_charge[5];   //[nMuon]
-  Int_t           Muon_jetIdx[5];   //[nMuon]
-  Int_t           Muon_nStations[5];   //[nMuon]
-  Int_t           Muon_nTrackerLayers[5];   //[nMuon]
-  Int_t           Muon_pdgId[5];   //[nMuon]
-  Int_t           Muon_tightCharge[5];   //[nMuon]
-  Bool_t          Muon_globalMu[5];   //[nMuon]
-  UChar_t         Muon_highPtId[5];   //[nMuon]
-  Bool_t          Muon_isPFcand[5];   //[nMuon]
-  Bool_t          Muon_mediumId[5];   //[nMuon]
-  Bool_t          Muon_softId[5];   //[nMuon]
-  Bool_t          Muon_tightId[5];   //[nMuon]
-  Bool_t          Muon_trackerMu[5];   //[nMuon]
+  Float_t         Muon_dxy[10];   //[nMuon]
+  Float_t         Muon_dxyErr[10];   //[nMuon]
+  Float_t         Muon_dz[10];   //[nMuon]
+  Float_t         Muon_dzErr[10];   //[nMuon]
+  Float_t         Muon_eta[10];   //[nMuon]
+  Float_t         Muon_ip3d[10];   //[nMuon]
+  Float_t         Muon_mass[10];   //[nMuon]
+  Float_t         Muon_miniPFRelIso_all[10];   //[nMuon]
+  Float_t         Muon_miniPFRelIso_chg[10];   //[nMuon]
+  Float_t         Muon_pfRelIso03_all[10];   //[nMuon]
+  Float_t         Muon_pfRelIso03_chg[10];   //[nMuon]
+  Float_t         Muon_pfRelIso04_all[10];   //[nMuon]
+  Float_t         Muon_phi[10];   //[nMuon]
+  Float_t         Muon_pt[10];   //[nMuon]
+  Float_t         Muon_ptErr[10];   //[nMuon]
+  Float_t         Muon_segmentComp[10];   //[nMuon]
+  Float_t         Muon_sip3d[10];   //[nMuon]
+  Float_t         Muon_mvaTTH[10];   //[nMuon]
+  Int_t           Muon_charge[10];   //[nMuon]
+  Int_t           Muon_jetIdx[10];   //[nMuon]
+  Int_t           Muon_nStations[10];   //[nMuon]
+  Int_t           Muon_nTrackerLayers[10];   //[nMuon]
+  Int_t           Muon_pdgId[10];   //[nMuon]
+  Int_t           Muon_tightCharge[10];   //[nMuon]
+  Bool_t          Muon_globalMu[10];   //[nMuon]
+  UChar_t         Muon_highPtId[10];   //[nMuon]
+  Bool_t          Muon_isPFcand[10];   //[nMuon]
+  Bool_t          Muon_mediumId[10];   //[nMuon]
+  Bool_t          Muon_softId[10];   //[nMuon]
+  Bool_t          Muon_tightId[10];   //[nMuon]
+  Bool_t          Muon_trackerMu[10];   //[nMuon]
   UInt_t          nPhoton;
   Float_t         Photon_eCorr[7];   //[nPhoton]
   Float_t         Photon_energyErr[7];   //[nPhoton]
@@ -299,7 +315,7 @@ class nanoAnalysis {
   Bool_t          Photon_mvaID_WP90[7];   //[nPhoton]
   Bool_t          Photon_pixelSeed[7];   //[nPhoton]
   Int_t           Pileup_nPU;
-  Int_t           Pileup_nTrueInt;
+  Float_t         Pileup_nTrueInt;
   Float_t         PuppiMET_phi;
   Float_t         PuppiMET_pt;
   Float_t         PuppiMET_sumEt;
@@ -418,15 +434,15 @@ class nanoAnalysis {
   Int_t           Jet_genJetIdx[35];   //[nJet]
   Int_t           Jet_hadronFlavour[35];   //[nJet]
   Int_t           Jet_partonFlavour[35];   //[nJet]
-  Int_t           Muon_genPartIdx[5];   //[nMuon]
-  UChar_t         Muon_genPartFlav[5];   //[nMuon]
+  Int_t           Muon_genPartIdx[10];   //[nMuon]
+  UChar_t         Muon_genPartFlav[10];   //[nMuon]
   Int_t           Photon_genPartIdx[7];   //[nPhoton]
   UChar_t         Photon_genPartFlav[7];   //[nPhoton]
   Float_t         MET_fiducialGenPhi;
   Float_t         MET_fiducialGenPt;
   UChar_t         Electron_cleanmask[6];   //[nElectron]
   UChar_t         Jet_cleanmask[35];   //[nJet]
-  UChar_t         Muon_cleanmask[5];   //[nMuon]
+  UChar_t         Muon_cleanmask[10];   //[nMuon]
   UChar_t         Photon_cleanmask[7];   //[nPhoton]
   UChar_t         Tau_cleanmask[5];   //[nTau]
   Float_t         SV_chi2[9];   //[nSV]
@@ -2090,36 +2106,7 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
     f->GetObject("Events",tree);
 
   }
-  //Get Modules
-  m_pileUp = new pileUpTool();  
-  std::string env = std::getenv("CMSSW_BASE");
-  std::string temp = env+"/src/nano/analysis/data/rcdata.2016.v3/";
-  m_rocCor = new RoccoR(temp);
-  
-  //Get LumiMap
-  if(!m_isMC)
-    {
-      temp = env+"/src/nano/analysis/data/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt";
-      std::ifstream file(temp.c_str());
-      Json::Value root;
-      Json::Reader reader;
-      if(!reader.parse(file, root, true))
-	{
-	  std::cout  << "Failed to parse configuration\n" << reader.getFormattedErrorMessages();
-	}
-      auto member = root.getMemberNames();
-      for(std::string s : member){
-	std::vector<std::array<UInt_t, 2>> lumiVector;
-        for(int i = 0; i < root[s].size(); i++){
-          std::array<UInt_t, 2> lumiArray;
-          lumiArray[0] = root[s][i][0].asUInt();
-          lumiArray[1] = root[s][i][1].asUInt();
-          lumiVector.push_back(lumiArray);
-        }
-	lumiMap[std::stoi(s)] = lumiVector;
-      }
-      file.close();
-    }
+    
 
   Init(tree);
 }
