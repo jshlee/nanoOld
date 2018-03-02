@@ -30,11 +30,23 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("Event_No", &b_Event_No, "Event_No/I");
   t->Branch("Step", &b_Step, "Step/I");
   t->Branch("Dilep", "TLorentzVector", &b_Dilep);
+  t->Branch("Quadlep", "TLorentzVector", &b_Quadlep);
   t->Branch("Mu1", "TLorentzVector", &b_Mu1);
   t->Branch("Mu2", "TLorentzVector", &b_Mu2);
+  t->Branch("lep1", "TLorentzVector", &b_lep1);
+  t->Branch("lep2", "TLorentzVector", &b_lep2);
   t->Branch("genweight", &b_genweight, "genweight/F");
   t->Branch("puweight", &b_puweight, "puweight/F");
+  t->Branch("weight", &b_weight, "weight/F");
   t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
+  t->Branch("channel", &b_channel, "channel/I");
+  t->Branch("charge", &b_charge, "charge/I");
+  t->Branch("Lcharge", &b_Lcharge, "Lcharge/I");
+  t->Branch("nlep", &b_nlep, "nlep/I");
+  t->Branch("nmuon", &b_nmuon, "nmuon/I");
+  t->Branch("nelec", &b_nelec, "nelec/I");
+  t->Branch("njet", &b_njet, "njet/I");
+  t->Branch("nbjet", &b_nbjet, "nbjet/I");
   // t->Branch("mueffweight", &b_mueffweight, "mueffweight/F");
   // t->Branch("mueffweight_up", &b_mueffweight_up, "mueffweight_up/F");
   // t->Branch("mueffweight_dn", &b_mueffweight_dn, "mueffweight_dn/F");
@@ -47,11 +59,20 @@ void nanoAnalysis::ResetBranch()
   b_Dilep.SetPtEtaPhiM(0,0,0,0);
   b_Mu1.SetPtEtaPhiM(0,0,0,0);
   b_Mu2.SetPtEtaPhiM(0,0,0,0);
+  b_lep1.SetPtEtaPhiM(0,0,0,0);
+  b_lep2.SetPtEtaPhiM(0,0,0,0);
   b_Mu_tlv.clear();
   b_El_tlv.clear();
   b_Jet_tlv.clear();
   b_bJet_tlv.clear();
   b_Event_Total = 1;
+  b_channel = -1;
+  b_nlep = 0;
+  b_nmuon = 0;
+  b_nelec = 0;
+  b_charge = 0;
+  b_Lcharge = 0;         
+
 }
 
 void nanoAnalysis::LoadModules(pileUpTool* pileUp, lumiTool* lumi, RoccoR* rocCor)
@@ -90,48 +111,21 @@ void nanoAnalysis::Analysis()
   if (PV_ndof < 4) return;
   b_Step = 2;
   h_cutFlow->Fill(2);
+  
 
   auto muons = MuonSelection();
-  auto electrons = ElectronSelection();
+  auto elecs = ElectronSelection();
   auto jets = JetSelection();
   auto bjets = BtaggedSelection();
   
-  if(muons.size() < 2) return;
+  if(muons.size() < 2)
+  {  
+     return;
+  }
+
   b_Step = 3;
   h_cutFlow->Fill(3);
-
-  TParticle mu1;
-  TParticle mu2;
-
-  Bool_t charge = false;
-  for(Int_t i = 0; i < muons.size(); i++)
-  {
-    if( (b_Mu_tlv[0].Pt() > 26) || (b_Mu_tlv[0].Pt() > 26) )
-    {
-      if( ( muons[0].GetPdgCode() * muons[i].GetPdgCode() ) < 0 )
-      {
-        b_Mu1 = b_Mu_tlv[0];
-        b_Mu2 = b_Mu_tlv[i];
-        charge = true;
-        mu1 = muons[0];
-        mu2 = muons[i];
-        break;
-      }
-    }
-  }
-  if(!charge) return;
-  b_Step = 4;
-  h_cutFlow->Fill(4);
-  b_Dilep = b_Mu1 + b_Mu2;
-  if (b_Dilep.M() < 12.) return;
-
-  // b_mueffweight = m_muonSF.getScaleFactor(mu1, 13, 0)*m_muonSF.getScaleFactor(mu2, 13, 0);
-  // b_mueffweight_up = m_muonSF.getScaleFactor(mu1, 13, +1)*m_muonSF.getScaleFactor(mu2, 13, +1);
-  // b_mueffweight_dn = m_muonSF.getScaleFactor(mu1, 13, -1)*m_muonSF.getScaleFactor(mu2, 13, -1);
-
-  b_Step = 5;
-  h_cutFlow->Fill(5);
-
+  
   Bool_t IsoMu24 = false;
   Bool_t IsoTkMu24 = false;
   for (Int_t i = 0; i < nTrigObj; ++i){
@@ -141,11 +135,178 @@ void nanoAnalysis::Analysis()
     if (bits & 0x2) IsoMu24 = true;
     if (bits & 0x8) IsoTkMu24 = true;	
   }
-  if (!(IsoMu24 || IsoTkMu24)) return;
+  if (!(IsoMu24 || IsoTkMu24))
+  {
+    keep = true;
+    return;
+  }
+  b_Step = 4;
+  h_cutFlow->Fill(4);
+
+  
+  TParticle mu1;
+  TParticle mu2;
+
+  for(Int_t i = 0; i < muons.size(); i++)
+  {
+    if( (b_Mu_tlv[0].Pt() > 26) || (b_Mu_tlv[0].Pt() > 26) )
+    {
+      if( ( muons[0].GetPdgCode() * muons[i].GetPdgCode() ) < 0 )
+      {
+        b_Mu1 = b_Mu_tlv[0];
+        b_Mu2 = b_Mu_tlv[i];
+        b_charge = 1;
+        mu1 = muons[0];
+        mu2 = muons[i];
+        break;
+      }
+    }
+  }
+
+  if (b_charge==0)
+  {
+     keep = true;
+     return;
+  }
+  b_Step = 5;
+  h_cutFlow->Fill(5);
+
+  b_Dilep = b_Mu1 + b_Mu2;
+  if (b_Dilep.M() < 12.)
+  {
+     keep = true;
+     return;
+  }
   b_Step = 6;
   h_cutFlow->Fill(6);
 
+  b_njet = jets.size();
+  b_nbjet = bjets.size();
+  b_nlep = muons.size() + elecs.size(); 
+  b_nmuon = muons.size(); 
+  b_nelec = elecs.size(); 
+  
+
+  if (muons.size() + elecs.size() == 4)        
+  {
+
+    Int_t mulpdg;
+
+    if (muons.size() == 2)
+    {
+      elecs[0].Momentum(b_lep1);
+      elecs[1].Momentum(b_lep2);
+      mulpdg = elecs[0].GetPdgCode()*elecs[1].GetPdgCode();
+      b_channel = CH_ELEL;
+    }
+
+    if (muons.size() == 3)
+    {
+      for (Int_t i = 1; i < muons.size(); i++)
+      {
+        if (muons[i].Pt() != b_Mu2.Pt())
+        {
+          mulpdg = muons[i].GetPdgCode()*elecs[0].GetPdgCode();
+          muons[i].Momentum(b_lep1);
+          break;
+        }
+      }
+      elecs[0].Momentum(b_lep2);
+      b_channel = CH_MUEL;
+    }
+    
+    if(muons.size() == 4)
+    {
+      for (Int_t i = 1; i < muons.size(); i++)
+      {
+        if (muons[i].Pt() != b_Mu2.Pt())
+        {
+          mulpdg = muons[i].GetPdgCode()*muons[3].GetPdgCode();
+          muons[i].Momentum(b_lep1);
+         break;
+        }
+      }
+      muons[3].Momentum(b_lep2);
+      b_channel = CH_MUMU;
+    } 
+    // b_mueffweight = m_muonSF.getScaleFactor(mu1, 13, 0)*m_muonSF.getScaleFactor(mu2, 13, 0);
+    // b_mueffweight_up = m_muonSF.getScaleFactor(mu1, 13, +1)*m_muonSF.getScaleFactor(mu2, 13, +1);
+    // b_mueffweight_dn = m_muonSF.getScaleFactor(mu1, 13, -1)*m_muonSF.getScaleFactor(mu2, 13, -1);
+     
+    b_Quadlep = b_lep1 + b_lep2 + b_Mu1 + b_Mu2;
+       
+    if (mulpdg < 0)
+    {
+      b_Lcharge = 1;         
+    }
+  }
+    
+/*  
+  if (muons.size() + elecs.size() != 4)        
+  {
+     keep = true;
+     return;
+  }
+  b_Step = 7;
+  h_cutFlow->Fill(7);
+
+  Int_t mulpdg;
+  if (muons.size() == 2)
+  {
+    elecs[0].Momentum(b_lep1);
+    elecs[1].Momentum(b_lep2);
+    mulpdg = elecs[0].GetPdgCode()*elecs[1].GetPdgCode();
+    b_channel = CH_ELEL;
+  }
+
+  if (muons.size() == 3)
+  {
+    for (Int_t i = 1; i < muons.size(); i++)
+    {
+      if (muons[i].Pt() != b_Mu2.Pt())
+      {
+        mulpdg = muons[i].GetPdgCode()*elecs[0].GetPdgCode();
+        muons[i].Momentum(b_lep1);
+        break;
+      }
+    }
+    elecs[0].Momentum(b_lep2);
+    b_channel = CH_MUEL;
+  }
+  
+  if(muons.size() == 4)
+  {
+    for (Int_t i = 1; i < muons.size(); i++)
+    {
+      if (muons[i].Pt() != b_Mu2.Pt())
+      {
+        mulpdg = muons[i].GetPdgCode()*muons[3].GetPdgCode();
+        muons[i].Momentum(b_lep1);
+        break;
+      }
+    }
+    muons[3].Momentum(b_lep2);
+    b_channel = CH_MUMU;
+  }
+  // b_mueffweight = m_muonSF.getScaleFactor(mu1, 13, 0)*m_muonSF.getScaleFactor(mu2, 13, 0);
+  // b_mueffweight_up = m_muonSF.getScaleFactor(mu1, 13, +1)*m_muonSF.getScaleFactor(mu2, 13, +1);
+  // b_mueffweight_dn = m_muonSF.getScaleFactor(mu1, 13, -1)*m_muonSF.getScaleFactor(mu2, 13, -1);
+  
+  b_Quadlep = b_lep1 + b_lep2 + b_Mu1 + b_Mu2;
+    
+  if (mulpdg > 0)
+  {
+     b_lep_charge = 1; 
+     keep = true;
+     return;
+  }
+*/
+
+  b_Step = 7;
+  h_cutFlow->Fill(7);
+  
   b_Event_No = 1;
+  keep = true;
 }
 
 
@@ -163,8 +324,12 @@ void nanoAnalysis::Loop()
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
+    keep = false; 
     Analysis();
-    ALL->Fill();
+    if (keep)
+    {
+      ALL->Fill();
+    }
   }
 }
 
@@ -220,14 +385,14 @@ vector<TParticle> nanoAnalysis::MuonSelection()
   vector<TParticle> muons;
   for(UInt_t i = 0; i < nMuon; i++)
   {
-    if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i] || Muon_pfRelIso04_all[i] > 0.25) continue;
+    if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i] || Muon_pfRelIso04_all[i] > 0.25) continue;   //<~~~~~~~~~~~~~ Higgs Muon pf isolation > 0.25;  top > 0.15
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
     mom = mom * roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
 
-    if (mom.Pt() < 20) continue;
+    if (mom.Pt() < 10) continue;
     else if (abs(mom.Eta()) > 2.4) continue;
-    
+   
     auto muon = TParticle();
     muon.SetPdgCode(13*Muon_charge[i]*-1);
     muon.SetMomentum(mom);
@@ -245,8 +410,11 @@ vector<TParticle> nanoAnalysis::ElectronSelection()
   for(UInt_t i = 0; i < nElectron; i++)
   {
     flag = false;
-    if( Electron_pt[i] < 10 || abs(Electron_eta[i]) > 2.5 ) continue;
-    if( Electron_pfRelIso03_all[i] > 0.15 || Electron_cutBased[i] < 3 ) continue;
+    if( Electron_pt[i] < 10 || abs(Electron_eta[i]) > 2.5 ) continue;                                  //<~~~~~~~~~~~~~~ Higgs Electron pt == 10; Higgs Electron eta > 2.5  
+    //if( Electron_pfRelIso03_all[i] > 0.15 || Electron_cutBased[i] < 3 ) continue;                      //<~~~~~~~~~~~~~~ Top doesn't use isolation? 
+    if (Electron_cutBased[i] < 3) continue;
+    float el_scEta = Electron_deltaEtaSC[i] + Electron_eta[i];
+    if ( std::abs(el_scEta) > 1.4442 &&  std::abs(el_scEta) < 1.566 ) continue;
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
 
@@ -277,9 +445,11 @@ vector<TParticle> nanoAnalysis::JetSelection()
   for(UInt_t i = 0; i < nJet; i++)
   {
     flag = false;
-    auto JET_LOOSE = (1<<0);
-    if(Jet_pt[i] < 30 || abs(Jet_eta[i]) > 4.7) continue;
-    if( Jet_jetId[i] & JET_LOOSE == 0 ) continue;
+   // auto JET_LOOSE = (1<<0);
+   // if(Jet_pt[i] < 30 || abs(Jet_eta[i]) > 2.4) continue;                       //<~~~~~~~~~~~~ Higgs Jet eta > 4.7;
+    if(Jet_pt[i] < 30 || abs(Jet_eta[i]) > 4.7) continue;                       //<~~~~~~~~~~~~ Higgs Jet eta > 4.7;
+   //if( Jet_jetId[i] & JET_LOOSE == 0 ) continue;
+    if (Jet_jetId[i] < 1) continue;
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
 
@@ -308,7 +478,7 @@ vector<TParticle> nanoAnalysis::BtaggedSelection()
   for (UInt_t i = 0; i < nJet; i++)
   {
     if (Jet_btagCSVV2[i] < 0.8484) continue;
-    if (Jet_pt[i] < 20 || abs(Jet_eta[i]) > 2.4) continue;
+    if (Jet_pt[i] < 20 || abs(Jet_eta[i]) > 2.4) continue;           //<~~~~~~~~~~~~~~~~~~~~ higgs 
     
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);

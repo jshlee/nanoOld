@@ -41,6 +41,7 @@ private:
       
       //Variables
       TLorentzVector b_Dilep;
+      TLorentzVector b_Quadlep;
       TLorentzVector b_Mu1;
       TLorentzVector b_Mu2;
 
@@ -64,22 +65,25 @@ private:
       
       Int_t b_Nu_BJet;
       Int_t b_Nu_NonBJet;
+      Int_t b_charge;
+      Int_t b_Lcharge;
+
+      TLorentzVector b_lep1, b_lep2;
       
       //Step and Cutflow
       TH1D* h_cutFlow;
       Int_t b_Step;
-      
+     
+      //Channel
+      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet;
+      Bool_t keep;
+
       //Tools
       pileUpTool* m_pileUp;
       lumiTool* m_lumi;
       RoccoR* m_rocCor;
-<<<<<<< HEAD
-      ScaleFactorEvaluator m_muonSF;
-      //BTagWeightEvaluator m_btagSF;
-=======
       MuonScaleFactorEvaluator m_muonSF;
       ElecScaleFactorEvaluator m_elecSF;
->>>>>>> 7c031622d81b3f1744b62a980a054f3658ef295b
       Bool_t m_isMC;
       std::vector<UInt_t> idxs;
       
@@ -90,6 +94,7 @@ private:
       void Analysis();
       //For Selection
       Bool_t LumiCheck();
+      enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU };
       std::vector<TParticle> MuonSelection();
       std::vector<TParticle> ElectronSelection();
       std::vector<TParticle> JetSelection();
@@ -336,11 +341,7 @@ public:
       Bool_t          Photon_mvaID_WP90[7];   //[nPhoton]
       Bool_t          Photon_pixelSeed[7];   //[nPhoton]
       Int_t           Pileup_nPU;
-<<<<<<< HEAD
-      Float_t           Pileup_nTrueInt;
-=======
       Float_t         Pileup_nTrueInt;
->>>>>>> 7c031622d81b3f1744b62a980a054f3658ef295b
       Float_t         PuppiMET_phi;
       Float_t         PuppiMET_pt;
       Float_t         PuppiMET_sumEt;
