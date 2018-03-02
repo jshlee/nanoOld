@@ -29,7 +29,8 @@ process.maxEvents = cms.untracked.PSet(
 #process.maxEvents.input = cms.untracked.int32(1000)
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/aod_ttbar.root'),
+    #fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/aod_ttbar.root'),
+    fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/AODSIM.root'),
     secondaryFileNames = cms.untracked.vstring()
 )
 
