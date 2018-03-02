@@ -1,5 +1,5 @@
 #define nanoAnalysis_cxx
-#include "nanoAnalysis.h"
+#include "nano/analysis/src/nanoAnalysis.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
@@ -128,7 +128,7 @@ void nanoAnalysis::Analysis()
   
   Bool_t IsoMu24 = false;
   Bool_t IsoTkMu24 = false;
-  for (Int_t i = 0; i < nTrigObj; ++i){
+  for (UInt_t i = 0; i < nTrigObj; ++i){
     if (TrigObj_id[i] != 13) continue;
     if (TrigObj_pt[i] < 24) continue;
     Int_t bits = TrigObj_filterBits[i];
@@ -147,7 +147,7 @@ void nanoAnalysis::Analysis()
   TParticle mu1;
   TParticle mu2;
 
-  for(Int_t i = 0; i < muons.size(); i++)
+  for(UInt_t i = 0; i < muons.size(); i++)
   {
     if( (b_Mu_tlv[0].Pt() > 26) || (b_Mu_tlv[0].Pt() > 26) )
     {
@@ -190,7 +190,7 @@ void nanoAnalysis::Analysis()
   if (muons.size() + elecs.size() == 4)        
   {
 
-    Int_t mulpdg;
+    Int_t mulpdg = -1;
 
     if (muons.size() == 2)
     {
@@ -202,7 +202,7 @@ void nanoAnalysis::Analysis()
 
     if (muons.size() == 3)
     {
-      for (Int_t i = 1; i < muons.size(); i++)
+      for (UInt_t i = 1; i < muons.size(); i++)
       {
         if (muons[i].Pt() != b_Mu2.Pt())
         {
@@ -217,7 +217,7 @@ void nanoAnalysis::Analysis()
     
     if(muons.size() == 4)
     {
-      for (Int_t i = 1; i < muons.size(); i++)
+      for (UInt_t i = 1; i < muons.size(); i++)
       {
         if (muons[i].Pt() != b_Mu2.Pt())
         {
@@ -316,7 +316,6 @@ void nanoAnalysis::Loop()
 
   Long64_t nentries = fChain->GetEntries();
   Long64_t nbytes = 0, nb = 0;
-  float nPassTrig = 0;
   
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     //Prepare for new loop
