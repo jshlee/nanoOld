@@ -21,7 +21,7 @@ lumiTool::lumiTool(string fileName)
   ifstream file(fileName.c_str());
   string temp;
   Size_t found1;
-  Size_t found2;
+  //Size_t found2;
   vector<array<UInt_t, 2>> lumiVector;
   array<UInt_t, 2> lumiArray;
   UInt_t run;
