@@ -6,6 +6,8 @@ from ROOT import TLorentzVector
 ROOT.gROOT.SetBatch(True)
 
 json_used = 'Golden'
+#datalumi =  33.274297927#35.9fb-1
+#datalumi = 36.814 #35.9fb-#1
 datalumi = 35.920 #35.9fb-1
 CMS_lumi.lumi_sqrtS = "%.2f fb^{-1}, #sqrt{s} = 13 TeV "%(datalumi)
 datalumi = datalumi*1000
@@ -13,41 +15,44 @@ version = os.environ['CMSSW_VERSION']
 
 mcfilelist = [
                'TT_powheg',
-               'WJets',
-               "SingleTop_tW",
-               "SingleTbar_tW",
-               'ZZ',
-               'WW',
-               'WZ',
+              # 'WJets',
+              # "SingleTop_tW",
+              # "SingleTbar_tW",
+              # 'ZZ',
+              # 'WW',
+              # 'WZ',
                'DYJets',
-               'DYJets_10to50',
+              # 'DYJets_10to50',
              ]
 rdfilelist = ['MuonEG_Run2016','DoubleEG_Run2016','DoubleMuon_Run2016']
+#rdfilelist = ['DoubleMuon_Run2016']
 
 
-rootfileDir = "%s/src/nano/analysis/topMass/Results/results_merged/ttbar_"% os.environ['CMSSW_BASE']
+#rootfileDir = "%s/src/nano/analysis/topMass/Results/results_merged/ttbar_"% os.environ['CMSSW_BASE']
+rootfileDir = "/cms/scratch/jdj0715/nanoAOD/src/nano/analysis/topMass/Results/results_merged/ttbar_"
 
 channel_name = ['MuEl', 'ElEl', 'MuMu']
 
+#datasets = json.load(open("/cms/scratch/dayoung/nanoAOD/src/nano/analysis/data/dataset/dataset.json"))
 datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.environ['CMSSW_BASE']))
 
 #defalts
 step = 5
 channel = 3
 cut = 'dilep.M() > 20'
-#weight = 'genweight*puweight'
-weight = 'genweight'
-#plotvar = 'met'
+weight = 'genweight*puweight'
+#weight = 'genweight'
+#plotvar ='nbjet'
 plotvar = 'dilep.M()'
 binning = [60, 20, 320]
-x_name = 'mass [GeV]'
+x_name = ' dilepton mass [GeV]'
 y_name = 'Events'
 dolog = False
 tname = "event"
 
 #get input
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:j:a:s",["cut","weight","binning","plotvar","x_name","y_name","json_used","dolog", "channel", "step"])
+    opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:j:a:s:",["cut","weight","binning","plotvar","x_name","y_name","json_used","dolog", "channel", "step"])
 except getopt.GetoptError:          
     print 'Usage : ./topDraw.py -c <cut> -w <weight> -b <binning> -p <plotvar> -x <x_name> -y <y_name> -j <json_used> -d <dolog>'
     sys.exit(2)

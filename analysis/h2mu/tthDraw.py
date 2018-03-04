@@ -22,7 +22,7 @@ datalumi = 36814 #35.9fb-1
 #datalumi = 8360.481454 #35.9fb-1
 version = os.environ['CMSSW_VERSION']
 
-rootfileDir = "%s/src/nano/analysis/h2mu/Results/Nano_C_Test/results_merged/tth2mu_"% os.environ['CMSSW_BASE']
+rootfileDir = "/cms/scratch/yckang/nanoAOD/src/nano/analysis/h2mu/Results/Test_d/results_merged/tth2mu_"
 
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
 #rootfileDir = "%s/src/CATTools/CatAnalyzer/test/results_merged/h2muAnalyzer_" % os.environ['CMSSW_BASE']
@@ -36,6 +36,7 @@ mcfilelist = [
 #              'VBF_HToMuMu',
 #              'GG_HToMuMu',
              # 'ttH_nonbb',
+	     # 'ttH',
              # 'GluGluToZZTo2mu2tau',
              # 'GluGluToZZTo2e2mu',
              # 'GluGluToZZTo4mu',
@@ -58,7 +59,7 @@ mcfilelist = [
 #              "WWZ",
 #              "WZZ",
 #              "ZZZ",
-             # "ttZToLLNuNu",
+             # "TTZToLLNuNu",
              # "ttWToLNu",
              # "SingleTop_tW_noHadron",
              # "SingleTbar_tW_noHadron",
@@ -84,18 +85,18 @@ rdfilelist = [
              #'SingleMuon_Run2015D'
              ]
 
-datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.environ['CMSSW_BASE']))
+datasets = json.load(open("/cms/scratch/daniel/nanoAOD/src/nano/analysis/data/dataset/dataset.json"))
 #cut_step = "(step>=5)"
 #cut = 'lep1.Pt()>60&&lep2.Pt()>60&&dilep.M()>60&&step>=5'
 #cut = 'dilep.M()>60&&step>4&&filtered&&MVA_BDT>-0.0246'
-cut = 'Dilep.M()>60'
+cut = 'Dilep.M()>60&&Step>=6'
 #cut = 'filtered==1&&%s&&%s'%(cut_step,emu_pid)
 #cut = 'channel==2'
 print cut
 #weight = 'genweight*puweight*mueffweight*eleffweight*tri'
 #weight = 'weight*(mueffweight)'
-#weight = 'genweight*puweight'
-weight = 'genweight'
+weight = 'genweight*puweight'
+#weight = 'genweight'
 #plotvar = 'met'
 plotvar = 'Dilep.M()'
 binning = [150, 50, 200]#[150, 50, 200]
@@ -103,9 +104,9 @@ binning = [150, 50, 200]#[150, 50, 200]
 x_name = 'Invariant Mass'
 y_name = 'Events'
 dolog = True
-f_name = 'Dilep_M_C_Test'
-#minp = 0.05
-#maxp = 1000000000
+f_name = 'Dilep_M_Hadronic_2'
+minp = 0.05
+maxp = 1000000000
 try:
     opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:f:j:",["cut","weight","binning","plotvar","x_name","y_name","f_name","json_used","dolog"])
 except getopt.GetoptError:          
@@ -169,7 +170,7 @@ for imc,mcname in enumerate(mcfilelist):
     print rfname
     tfile = ROOT.TFile(rfname)
     #wentries = tfile.Get("genweight").Integral()
-    wentries = tfile.Get("genweight").Integral()
+    wentries = tfile.Get("weight").Integral()
     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Wentires: %s"%(wentries)
     #wentries = tfile.Get("Events").Integral(0,1)
     #print wentries
@@ -214,8 +215,8 @@ for imc,mcname in enumerate(mcfilelist):
 print "rdfname: %s\n tname: %s\n binning: %s\n plotvar: %s\n cut: %s\n"%(rdfname, tname, binning, plotvar, cut)
 #rdhist = makeTH1(rdfname, tname, 'data', binning, plotvar, tcut+'&&(Dilep.M()<120||Dilep.M()>130)')
 rdhist = makeTH1(rdfname, tname, 'data', binning, plotvar, cut+'&&(Dilep.M()<120||Dilep.M()>130)')
-#rdhist.SetMinimum(minp)  
-#rdhist.SetMaximum(maxp)
+rdhist.SetMinimum(minp)  
+rdhist.SetMaximum(maxp)
 canv = drawTH1(f_name, CMS_lumi, mchistList, rdhist, x_name, y_name,dolog)
 canv.SaveAs(f_name+".png")            
 """

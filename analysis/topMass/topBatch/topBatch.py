@@ -10,7 +10,7 @@ username = os.environ['USER']
 analysis = 'TT'
 
 #pythonCfg = 'tth2mu.py'
-pythonCfg = 'ttbarC.py'
+#pythonCfg = 'ttbarC.py'
 
 RunFiles = [
              # 'WMinusH_HToMuMu',
@@ -38,12 +38,12 @@ RunFiles = [
 #              "TTJets_DiLept_Tune4",
              'TT_powheg', 
              'DYJets',
-             'SingleTbar_tW',
-             'SingleTop_tW',
-             'WJets',
-             'WW',
-             'WZ',
-             'ZZ',
+            # 'SingleTbar_tW',
+            # 'SingleTop_tW',
+            # 'WJets',
+            # 'WW',
+            # 'WZ',
+            # 'ZZ',
              'DYJets_10to50', 
              'DoubleMuon_Run2016B',
              'DoubleMuon_Run2016C',
@@ -60,7 +60,6 @@ RunFiles = [
              'DoubleEG_Run2016G',
              'DoubleEG_Run2016H',
              'MuonEG_Run2016B',
-             'MuonEG_Run2016Bv1',
              'MuonEG_Run2016C',
              'MuonEG_Run2016D',
              'MuonEG_Run2016E',
@@ -70,6 +69,7 @@ RunFiles = [
               ]
 
 datadir = '{}/src/nano/analysis/data/dataset/'.format(os.environ['CMSSW_BASE'])
+#datadir = '/cms/scratch/jdj0715/nanoAOD/src/nano/analysis/data/dataset/'
 #version = os.environ["CMSSW_VERSION"]
 
 
