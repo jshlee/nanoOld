@@ -24,7 +24,7 @@ vector<TParticle> nanoAnalysis::muonSelection()
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
 
-    //mom *= roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
+   // mom *= roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
     
     auto muon = TParticle();
     muon.SetPdgCode(13*Muon_charge[i]*-1);
@@ -43,7 +43,7 @@ vector<TParticle> nanoAnalysis::elecSelection()
     if (Electron_pt[i] < 20) continue;
     if (std::abs(Electron_eta[i]) > 2.4) continue;
     if (Electron_cutBased[i] < 3) continue;
-    if (Electron_pfRelIso03_all[i] > 0.0571) continue;
+    //if (Muon_pfRelIso04_all[i] > 0.12) continue;
     float el_scEta = Electron_deltaEtaSC[i] + Electron_eta[i];
     if ( std::abs(el_scEta) > 1.4442 &&  std::abs(el_scEta) < 1.566 ) continue;
     TLorentzVector mom;
@@ -76,7 +76,6 @@ vector<TParticle> nanoAnalysis::jetSelection()
     auto jet = TParticle();
     jet.SetMomentum(mom);
     jets.push_back(jet);
-    idxs.push_back(i);
   }
   return jets;
 }
@@ -85,10 +84,13 @@ vector<TParticle> nanoAnalysis::jetSelection()
 vector<TParticle> nanoAnalysis::bjetSelection()
 {
   vector<TParticle> bjets; 
-  for (int idx : idxs ){
-    if (Jet_btagCSVV2[idx] < 0.8484) continue;
+  for (UInt_t i = 0; i < nJet; ++i ){
+    if (Jet_pt[i] < 30) continue;
+    if (std::abs(Jet_eta[i]) > 2.4) continue;
+    if (Jet_jetId[i] < 1) continue;
+    if (Jet_btagCSVV2[i] < 0.8484) continue;
     TLorentzVector mom;
-    mom.SetPtEtaPhiM(Jet_pt[idx], Jet_eta[idx], Jet_phi[idx], Jet_mass[idx]);
+    mom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
     auto bjet = TParticle();
     bjet.SetMomentum(mom);
     bjets.push_back(bjet);
@@ -110,7 +112,6 @@ void nanoAnalysis::analysis()
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
     b_weight = b_genweight * b_puweight;
-    h_weights->Fill(0.5, b_weight); //ori
   }
   else
   {
@@ -118,12 +119,12 @@ void nanoAnalysis::analysis()
     b_genweight = 0;
     if (!(m_lumi->LumiCheck(run, luminosityBlock))) return;
   }
-  h_nevents->Fill(0.5,b_genweight*b_puweight); //try
+  h_nevents->Fill(0.5,b_genweight*b_puweight); 
     
   h_cutFlow->Fill(1);
 
   if (std::abs(PV_z) >= 24.) return;
-  //if (PV_npvs == 0) return;
+  if (PV_npvs == 0) return;
   if (PV_ndof < 4) return;
 
   h_cutFlow->Fill(2);
@@ -135,41 +136,33 @@ void nanoAnalysis::analysis()
   h_cutFlow->Fill(3);
 
   int mulpdg;
-  if (muons.size() == 2 && muons[0].Pt() > 25 && muons[1].Pt() > 25 ) {
+  if (muons.size() == 2){
       muons[0].Momentum(b_lep1);
       muons[1].Momentum(b_lep2);
       mulpdg = muons[0].GetPdgCode()*muons[1].GetPdgCode();
       b_channel = CH_MUMU;
   }
   
-  if (muons.size() == 1 && elecs.size() == 1 && muons[0].Pt() > 25 && elecs[0].Pt() > 25){
+  if (muons.size() == 1 && elecs.size() == 1){
       muons[0].Momentum(b_lep1);
       elecs[0].Momentum(b_lep2);
       mulpdg = muons[0].GetPdgCode()*elecs[0].GetPdgCode();
       b_channel = CH_MUEL;
   }
-/*
-  if (elecs.size() != 2 && elecs.size() == 1 && elecs.pt() > 25){
-      elecs[0].Momentum(b_lep1);
-      elecs[1].Momentum(b_lep2);
-      mulpdg = elecs[0].GetPdgCode()*elecs[i].GetPdgCode();
-      b_channel = CH_EL;
-  }
-*/
-  if (elecs.size() == 2 && elecs[0].Pt() > 25){
+  if (elecs.size() == 2){
       elecs[0].Momentum(b_lep1);
       elecs[1].Momentum(b_lep2);
       mulpdg = elecs[0].GetPdgCode()*elecs[1].GetPdgCode();
       b_channel = CH_ELEL;
   }
 
-  
-
   //vector<TLorentzVector> recoleps;
   recoleps.push_back(b_lep1);
   recoleps.push_back(b_lep2);
 
   b_dilep = b_lep1 + b_lep2;
+
+
   
   auto jets = jetSelection();
   auto bjets = bjetSelection();
@@ -199,8 +192,12 @@ void nanoAnalysis::analysis()
   */
    
   if (b_channel == CH_MUMU){
-    if ((!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ)
-      && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ)) return;
+    if ((!HLT_IsoMu24) && (!HLT_IsoTkMu24)) return;
+    
+    /*if (m_isMC){
+      if ((!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ)
+        && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ)) return;
+    }*/
   }
 
   if (b_channel == CH_MUEL){
@@ -210,6 +207,9 @@ void nanoAnalysis::analysis()
   if (b_channel == CH_ELEL){
     if (!HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) return;
   }
+
+  b_tri_SL = b_tri_DL = 0;
+
   b_met = MET_pt;
   b_njet = jets.size();
   b_nbjet = bjets.size();
@@ -274,30 +274,22 @@ int main(int argc, char* argv[])
     std::cerr << "Usage: " << argv[0] << " data set txt file" << std::endl;
     return 1;
   }
-
   TChain * chain = new TChain("Events","");
   string filename;
   ifstream infile;
   infile.open(argv[1]);
-
   while(!infile.eof()){
     getline(infile,filename);
     if (filename.find('#') != string::npos) continue;
     if (filename.empty()) continue;
-
     cout<< "Opening File: "<<filename << endl;
     chain->Add(TString(filename+"/Events"));
-
   }
   infile.close();
-
-
   nanoAnalysis t(chain, true);
   t.setOutput("tree.root");
   t.Loop();
-
   return 0;
-
 }
 */
 
@@ -378,6 +370,9 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("step5", &b_step5, "step5/O");
   t->Branch("step6", &b_step6, "step6/O");
   t->Branch("step7", &b_step7, "step7/O");
+  
+  t->Branch("tri_SL", &b_tri_SL, "tri_SL/F");
+  t->Branch("tri_DL", &b_tri_DL, "tri_DL/F");
 
   m_tree->Branch("lep1", "TLorentzVector", &b_lep1);
   m_tree->Branch("lep1_pid", &b_lep1_pid, "lep1_pid/I");    
@@ -394,13 +389,6 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("puweight", &b_puweight, "puweight/F");
   t->Branch("genweight", &b_genweight, "genweight/F");
   t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
-  t->Branch("ncmeson", &ncmeson, "ncmeson/I");
-  t->Branch("cmeson_dca", &cmeson_dca, "cmeson_dca/F");
-  t->Branch("cmeson_angleXY", &cmeson_angleXY, "cmeson_angleXY/F");
-  t->Branch("cmeson_lxy", &cmeson_lxy, "cmeson_lxy/F");
-  t->Branch("cmeson_l3D", &cmeson_l3D, "cmeson_l3D/F");
-  t->Branch("cmeson_jetDR", &cmeson_jetDR, "cmeson_jetDR/F");
-  t->Branch("cmeson_legDR", &cmeson_legDR, "cmeson_legDR/F");
 }
 
 
@@ -412,18 +400,17 @@ void nanoAnalysis::resetBranch()
   //b_jet1.SetPtEtaPhiM(0,0,0,0);
   //b_jet2.SetPtEtaPhiM(0,0,0,0);
   recoleps.clear();
-  idxs.clear();
   b_lep1_pid = 0; b_lep2_pid = 0;
   b_jet1_CSVInclV2 = -1; b_jet2_CSVInclV2 = -1;
-   
+  b_tri_SL = 0; b_tri_DL = 0;
 
   b_nvertex = 0; b_step = -1; b_channel = 0; b_njet = 0; b_nbjet = 0;
   b_step1 = 0; b_step2 = 0; b_step3 = 0; b_step4 = 0; b_step5 = 0; b_step6 = 0; b_step7 = 0;
-  b_met = 0; b_weight = 1; b_genweight = 1; b_puweight = 1;
+  b_met = -9; b_weight = 1; b_genweight = 1; b_puweight = 1;
 }
 
 
-
+/*
 Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLayers)
 {
   Float_t u1 = gRandom->Rndm();
@@ -443,3 +430,4 @@ Double_t nanoAnalysis::roccoR(TLorentzVector m, int q, int nGen, int nTrackerLay
   }
   return 1.0;
 }
+*/
