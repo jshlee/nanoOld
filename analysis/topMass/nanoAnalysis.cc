@@ -112,6 +112,7 @@ void nanoAnalysis::analysis()
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
     b_weight = b_genweight * b_puweight;
+
   }
   else
   {
@@ -192,12 +193,11 @@ void nanoAnalysis::analysis()
   */
    
   if (b_channel == CH_MUMU){
-    if ((!HLT_IsoMu24) && (!HLT_IsoTkMu24)) return;
-    
-    /*if (m_isMC){
-      if ((!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ)
-        && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ)) return;
-    }*/
+    //if ((!HLT_IsoMu24) && (!HLT_IsoTkMu24)) return;
+    b_mueffweight = m_muonSF.getScaleFactor(muons[0], 13, 0)*m_muonSF.getScaleFactor(muons[1], 13, 0);
+    b_mueffweight_up = m_muonSF.getScaleFactor(muons[0], 13, +1)*m_muonSF.getScaleFactor(muons[1], 13, +1);
+    b_mueffweight_dn = m_muonSF.getScaleFactor(muons[0], 13, -1)*m_muonSF.getScaleFactor(muons[1], 13, -1);
+    if ((!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL) && (!HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ)) return;  
   }
 
   if (b_channel == CH_MUEL){
@@ -205,6 +205,10 @@ void nanoAnalysis::analysis()
       && (!HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) && (!HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ)) return;
   }
   if (b_channel == CH_ELEL){
+    b_eleffweight = m_elecSF.getScaleFactor(elecs[0], 11, 0)*m_elecSF.getScaleFactor(elecs[1], 11, 0);
+    b_eleffweight_up = m_elecSF.getScaleFactor(elecs[0], 11, +1)*m_elecSF.getScaleFactor(elecs[1], 11, +1);
+    b_eleffweight_dn = m_elecSF.getScaleFactor(elecs[0], 11, -1)*m_elecSF.getScaleFactor(elecs[1], 11, -1);
+    //if (!HLT_Ele27_WPTight_Gsf) return;
     if (!HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ) return;
   }
 
@@ -388,6 +392,13 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("weight", &b_weight, "weight/F");
   t->Branch("puweight", &b_puweight, "puweight/F");
   t->Branch("genweight", &b_genweight, "genweight/F");
+  t->Branch("mueffweight",    &b_mueffweight,    "mueffweight/F");
+  t->Branch("mueffweight_up", &b_mueffweight_up, "mueffweight_up/F");
+  t->Branch("mueffweight_dn", &b_mueffweight_dn, "mueffweight_dn/F");
+  t->Branch("eleffweight",    &b_eleffweight,    "eleffweight/F");
+  t->Branch("eleffweight_up", &b_eleffweight_up, "eleffweight_up/F");
+  t->Branch("eleffweight_dn", &b_eleffweight_dn, "eleffweight_dn/F");
+
   t->Branch("PV_npvs", &PV_npvs, "PV_npvs/I");
 }
 
@@ -407,6 +418,8 @@ void nanoAnalysis::resetBranch()
   b_nvertex = 0; b_step = -1; b_channel = 0; b_njet = 0; b_nbjet = 0;
   b_step1 = 0; b_step2 = 0; b_step3 = 0; b_step4 = 0; b_step5 = 0; b_step6 = 0; b_step7 = 0;
   b_met = -9; b_weight = 1; b_genweight = 1; b_puweight = 1;
+  b_mueffweight = 1;b_mueffweight_up = 1;b_mueffweight_dn = 1;
+  b_eleffweight = 1;b_eleffweight_up = 1;b_eleffweight_dn = 1;
 }
 
 

@@ -18,7 +18,8 @@
 
 #include "../src/RoccoR.cc"
 #include "../src/pileUpTool.h"
-#include "../src/ScaleFactorEvaluator.h"
+#include "../src/MuonScaleFactorEvaluator.h"
+#include "../src/ElecScaleFactorEvaluator.h"
 #include "../plugins/jsoncpp.cpp"
 #include "../src/lumiTool.h"
 
@@ -45,14 +46,16 @@ private:
   int b_nvertex, b_step, b_channel, b_njet, b_nbjet;
   bool b_step1, b_step2, b_step3, b_step4, b_step5, b_step6, b_step7;  
   float b_tri_SL, b_tri_DL;
-  float b_met, b_weight, b_genweight, b_puweight;
+  float b_met, b_weight, b_genweight, b_puweight, b_mueffweight, b_mueffweight_up, b_mueffweight_dn, b_eleffweight, b_eleffweight_up, b_eleffweight_dn;
   
   // Tools
   RoccoR* m_rocCor;
   TH1D* hist_mc;
   Bool_t m_isMC;
-  pileUpTool *m_pileUp;
+  pileUpTool* m_pileUp;
   lumiTool* m_lumi;
+  MuonScaleFactorEvaluator m_muonSF;
+  ElecScaleFactorEvaluator m_elecSF;
   //LumiMap
   std::map<UInt_t, std::vector<std::array<UInt_t, 2>>> lumiMap;
 
