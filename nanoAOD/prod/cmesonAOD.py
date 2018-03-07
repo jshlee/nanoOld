@@ -22,6 +22,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 #process.load('PhysicsTools.PatAlgos.slimming.metFilterPaths_cff')
 process.load('Configuration.StandardSequences.PATMC_cff')
 #process.load('PhysicsTools.NanoAOD.nano_cff')
+process.load('PhysicsTools.NanoAOD.genparticles_cff')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -58,6 +59,10 @@ process.NANOAODSIMoutput = cms.OutputModule("NanoAODOutputModule",
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+#get all genparticles
+from  PhysicsTools.NanoAOD.common_cff import *
+process.genParticleTable.src = cms.InputTag("genParticles")
+process.genParticleTable.variables.mass = Var("mass", float,precision=8,doc="Mass")
 
 from PhysicsTools.PatAlgos.slimming.puppiForMET_cff import makePuppies
 makePuppies( process );
@@ -79,7 +84,7 @@ process.p = cms.Path(process.makePatJets+
                          process.primaryVertexAssociation+process.puppi
                          +process.packedPFCandidates
                          +process.slimmedJets
-                         +process.cmesonTables+process.cmesonCandidateTable)
+                         +process.cmesonTables+process.cmesonCandidateTable+process.genParticleTable)
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.NANOAODSIMoutput_step = cms.EndPath(process.NANOAODSIMoutput)
