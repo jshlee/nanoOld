@@ -16,8 +16,8 @@ void nanoAnalysis::SetOutput(string outputName)
 {
   m_output = TFile::Open(outputName.c_str(), "recreate");
 
-  ALL = new TTree("nEvent", "nEvent");
-  MakeBranch(ALL);
+  m_tree = new TTree("events", "events");
+  MakeBranch(m_tree);
   
   h_Event_Tot = new TH1D("Event_total", "Event_total" ,1,0,1);
   h_genweights = new TH1D("genweight", "genweight" , 1,0,1);
@@ -47,6 +47,11 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("nelec", &b_nelec, "nelec/I");
   t->Branch("njet", &b_njet, "njet/I");
   t->Branch("nbjet", &b_nbjet, "nbjet/I");
+  t->Branch("trig_m", &b_trig_m, "trig_m/O");
+  t->Branch("trig_e", &b_trig_e, "trig_e/O");
+  t->Branch("trig_mm", &b_trig_mm, "trig_mm/O");
+  t->Branch("trig_em", &b_trig_em, "trig_em/O");
+  t->Branch("trig_ee", &b_trig_ee, "trig_ee/O");
   // t->Branch("mueffweight", &b_mueffweight, "mueffweight/F");
   // t->Branch("mueffweight_up", &b_mueffweight_up, "mueffweight_up/F");
   // t->Branch("mueffweight_dn", &b_mueffweight_dn, "mueffweight_dn/F");
@@ -83,230 +88,62 @@ void nanoAnalysis::LoadModules(pileUpTool* pileUp, lumiTool* lumi, RoccoR* rocCo
   m_pileUp = pileUp;
 }
 
-void nanoAnalysis::Analysis()
+bool nanoAnalysis::Analysis()
 {
   h_Event_Tot->Fill(0.5, b_Event_Total);
   h_cutFlow->Fill(0);
-  b_Step = 0;
   //Run for MC
-  if(m_isMC)
-  {
+  if(m_isMC){
     Int_t nvtx = Pileup_nTrueInt;
     b_puweight = m_pileUp->getWeight(nvtx);
     b_genweight = genWeight;
     h_genweights->Fill(0.5, b_genweight);
     b_weight = b_genweight * b_puweight;
     h_weight->Fill(0.5, b_weight);
-  } else
-  {
+  }
+  else {
     b_puweight = 1;
     b_genweight = 0;
-    if(!(m_lumi->LumiCheck(run, luminosityBlock))) return;
+    if(!(m_lumi->LumiCheck(run, luminosityBlock))) return false;
   }
-  b_Step = 1;
   h_cutFlow->Fill(1);
 
-  if (abs(PV_z) >= 24.) return;
-  if (PV_npvs == 0) return;
-  if (PV_ndof < 4) return;
-  b_Step = 2;
+  if (abs(PV_z) >= 24.) return false;
+  if (PV_npvs == 0) return false;
+  if (PV_ndof < 4) return false;
   h_cutFlow->Fill(2);
   
-
+  auto looseMuons = LooseMuonSelection();
+  auto looseElecs = LooseElectronSelection(looseMuons);
   auto muons = MuonSelection();
   auto elecs = ElectronSelection();
-  auto jets = JetSelection();
-  auto bjets = BtaggedSelection();
+  auto jets = JetSelection(looseMuons);
+  auto bjets = BJetSelection(looseMuons);
   
-  if(muons.size() < 2)
-  {  
-     return;
-  }
+  if (looseMuons.size() + looseElecs.size() < 2) return false;
 
-  b_Step = 3;
-  h_cutFlow->Fill(3);
+  b_trig_m = HLT_IsoTkMu24 || HLT_IsoMu24;
+  b_trig_e = HLT_Ele27_WPTight_Gsf;  
+  b_trig_mm = HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL || HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL
+    || HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ || HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ;
+  b_trig_em = HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL || HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL
+    || HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ || HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ;
+  b_trig_ee = HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ;
   
-  Bool_t IsoMu24 = false;
-  Bool_t IsoTkMu24 = false;
-  for (UInt_t i = 0; i < nTrigObj; ++i){
-    if (TrigObj_id[i] != 13) continue;
-    if (TrigObj_pt[i] < 24) continue;
-    Int_t bits = TrigObj_filterBits[i];
-    if (bits & 0x2) IsoMu24 = true;
-    if (bits & 0x8) IsoTkMu24 = true;	
-  }
-  if (!(IsoMu24 || IsoTkMu24))
-  {
-    keep = true;
-    return;
-  }
-  b_Step = 4;
-  h_cutFlow->Fill(4);
+  // make all the variables that you need to save here
+
+
+
+  // do ttH analysis
+  // ttH uses loose leptons
 
   
-  TParticle mu1;
-  TParticle mu2;
+  // do top analysis
 
-  for(UInt_t i = 0; i < muons.size(); i++)
-  {
-    if( (b_Mu_tlv[0].Pt() > 26) || (b_Mu_tlv[0].Pt() > 26) )
-    {
-      if( ( muons[0].GetPdgCode() * muons[i].GetPdgCode() ) < 0 )
-      {
-        b_Mu1 = b_Mu_tlv[0];
-        b_Mu2 = b_Mu_tlv[i];
-        b_charge = 1;
-        mu1 = muons[0];
-        mu2 = muons[i];
-        break;
-      }
-    }
-  }
 
-  if (b_charge==0)
-  {
-     keep = true;
-     return;
-  }
-  b_Step = 5;
-  h_cutFlow->Fill(5);
 
-  b_Dilep = b_Mu1 + b_Mu2;
-  if (b_Dilep.M() < 12.)
-  {
-     keep = true;
-     return;
-  }
-  b_Step = 6;
-  h_cutFlow->Fill(6);
-
-  b_njet = jets.size();
-  b_nbjet = bjets.size();
-  b_nlep = muons.size() + elecs.size(); 
-  b_nmuon = muons.size(); 
-  b_nelec = elecs.size(); 
   
-
-  if (muons.size() + elecs.size() == 4)        
-  {
-
-    Int_t mulpdg = -1;
-
-    if (muons.size() == 2)
-    {
-      elecs[0].Momentum(b_lep1);
-      elecs[1].Momentum(b_lep2);
-      mulpdg = elecs[0].GetPdgCode()*elecs[1].GetPdgCode();
-      b_channel = CH_ELEL;
-    }
-
-    if (muons.size() == 3)
-    {
-      for (UInt_t i = 1; i < muons.size(); i++)
-      {
-        if (muons[i].Pt() != b_Mu2.Pt())
-        {
-          mulpdg = muons[i].GetPdgCode()*elecs[0].GetPdgCode();
-          muons[i].Momentum(b_lep1);
-          break;
-        }
-      }
-      elecs[0].Momentum(b_lep2);
-      b_channel = CH_MUEL;
-    }
-    
-    if(muons.size() == 4)
-    {
-      for (UInt_t i = 1; i < muons.size(); i++)
-      {
-        if (muons[i].Pt() != b_Mu2.Pt())
-        {
-          mulpdg = muons[i].GetPdgCode()*muons[3].GetPdgCode();
-          muons[i].Momentum(b_lep1);
-         break;
-        }
-      }
-      muons[3].Momentum(b_lep2);
-      b_channel = CH_MUMU;
-    } 
-    // b_mueffweight = m_muonSF.getScaleFactor(mu1, 13, 0)*m_muonSF.getScaleFactor(mu2, 13, 0);
-    // b_mueffweight_up = m_muonSF.getScaleFactor(mu1, 13, +1)*m_muonSF.getScaleFactor(mu2, 13, +1);
-    // b_mueffweight_dn = m_muonSF.getScaleFactor(mu1, 13, -1)*m_muonSF.getScaleFactor(mu2, 13, -1);
-     
-    b_Quadlep = b_lep1 + b_lep2 + b_Mu1 + b_Mu2;
-       
-    if (mulpdg < 0)
-    {
-      b_Lcharge = 1;         
-    }
-  }
-    
-/*  
-  if (muons.size() + elecs.size() != 4)        
-  {
-     keep = true;
-     return;
-  }
-  b_Step = 7;
-  h_cutFlow->Fill(7);
-
-  Int_t mulpdg;
-  if (muons.size() == 2)
-  {
-    elecs[0].Momentum(b_lep1);
-    elecs[1].Momentum(b_lep2);
-    mulpdg = elecs[0].GetPdgCode()*elecs[1].GetPdgCode();
-    b_channel = CH_ELEL;
-  }
-
-  if (muons.size() == 3)
-  {
-    for (Int_t i = 1; i < muons.size(); i++)
-    {
-      if (muons[i].Pt() != b_Mu2.Pt())
-      {
-        mulpdg = muons[i].GetPdgCode()*elecs[0].GetPdgCode();
-        muons[i].Momentum(b_lep1);
-        break;
-      }
-    }
-    elecs[0].Momentum(b_lep2);
-    b_channel = CH_MUEL;
-  }
-  
-  if(muons.size() == 4)
-  {
-    for (Int_t i = 1; i < muons.size(); i++)
-    {
-      if (muons[i].Pt() != b_Mu2.Pt())
-      {
-        mulpdg = muons[i].GetPdgCode()*muons[3].GetPdgCode();
-        muons[i].Momentum(b_lep1);
-        break;
-      }
-    }
-    muons[3].Momentum(b_lep2);
-    b_channel = CH_MUMU;
-  }
-  // b_mueffweight = m_muonSF.getScaleFactor(mu1, 13, 0)*m_muonSF.getScaleFactor(mu2, 13, 0);
-  // b_mueffweight_up = m_muonSF.getScaleFactor(mu1, 13, +1)*m_muonSF.getScaleFactor(mu2, 13, +1);
-  // b_mueffweight_dn = m_muonSF.getScaleFactor(mu1, 13, -1)*m_muonSF.getScaleFactor(mu2, 13, -1);
-  
-  b_Quadlep = b_lep1 + b_lep2 + b_Mu1 + b_Mu2;
-    
-  if (mulpdg > 0)
-  {
-     b_lep_charge = 1; 
-     keep = true;
-     return;
-  }
-*/
-
-  b_Step = 7;
-  h_cutFlow->Fill(7);
-  
-  b_Event_No = 1;
-  keep = true;
+  return true;
 }
 
 
@@ -323,13 +160,13 @@ void nanoAnalysis::Loop()
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
-    keep = false; 
-    Analysis();
-    if (keep)
-    {
-      ALL->Fill();
+
+    bool keep = Analysis();
+    if (keep){
+      m_tree->Fill();
     }
   }
+  
 }
 
 int main(Int_t argc, Char_t** argv)
@@ -378,55 +215,47 @@ int main(Int_t argc, Char_t** argv)
   return 0;
 }
 
-//Object Selection
-vector<TParticle> nanoAnalysis::MuonSelection()
+//Object Selections
+vector<TParticle> nanoAnalysis::LooseMuonSelection()
 {
   vector<TParticle> muons;
   for(UInt_t i = 0; i < nMuon; i++)
   {
-    if (!Muon_trackerMu[i] || !Muon_globalMu[i] || !Muon_tightId[i] || Muon_pfRelIso04_all[i] > 0.25) continue;   //<~~~~~~~~~~~~~ Higgs Muon pf isolation > 0.25;  top > 0.15
+    if (Muon_pt[i] < 10) continue;
+    if (abs(Muon_eta[i]) > 2.4) continue;
+    if (!Muon_trackerMu[i]) continue;
+    if (!Muon_globalMu[i]) continue;
+    if (!Muon_tightId[i]) continue;
+    if (Muon_pfRelIso04_all[i] > 0.25) continue;
+    
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
     mom = mom * roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
-
-    if (mom.Pt() < 10) continue;
-    else if (abs(mom.Eta()) > 2.4) continue;
    
     auto muon = TParticle();
     muon.SetPdgCode(13*Muon_charge[i]*-1);
     muon.SetMomentum(mom);
-
-    b_Mu_tlv.push_back(mom);
     muons.push_back(muon);
   }
   return muons;
 }
 
-vector<TParticle> nanoAnalysis::ElectronSelection()
+vector<TParticle> nanoAnalysis::LooseElectronSelection(vector<TParticle> leptons)
 {
   vector<TParticle> electrons;
-  Bool_t flag;
   for(UInt_t i = 0; i < nElectron; i++)
   {
-    flag = false;
-    if( Electron_pt[i] < 10 || abs(Electron_eta[i]) > 2.5 ) continue;                                  //<~~~~~~~~~~~~~~ Higgs Electron pt == 10; Higgs Electron eta > 2.5  
-    //if( Electron_pfRelIso03_all[i] > 0.15 || Electron_cutBased[i] < 3 ) continue;                      //<~~~~~~~~~~~~~~ Top doesn't use isolation? 
+    if ( Electron_pt[i] < 10) continue;
+    if (abs(Electron_eta[i]) > 2.5 ) continue; //<~~~~~~~~~~~~~~ Higgs Electron pt == 10; Higgs Electron eta > 2.5  
+    //if( Electron_pfRelIso03_all[i] > 0.15 || Electron_cutBased[i] < 3 ) continue; //<~~~~~~~~~~~~~~ Top doesn't use isolation? 
     if (Electron_cutBased[i] < 3) continue;
     float el_scEta = Electron_deltaEtaSC[i] + Electron_eta[i];
     if ( std::abs(el_scEta) > 1.4442 &&  std::abs(el_scEta) < 1.566 ) continue;
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
 
-    for(UInt_t j = 0; j < b_Mu_tlv.size(); j++)
-    {
-      if(b_Mu_tlv[j].DeltaR(mom) < 0.3)
-      {
-        flag = true;
-        break;
-      }
-    }
-    if(flag) continue;
-
+    if (hasOverLap(mom, leptons)) continue;
+    
     auto elec = TParticle();
     elec.SetPdgCode(11*Electron_charge[i]*-1);
     elec.SetMomentum(mom);
@@ -436,55 +265,104 @@ vector<TParticle> nanoAnalysis::ElectronSelection()
   }
   return electrons;
 }
+// for top selection
+vector<TParticle> nanoAnalysis::MuonSelection()
+{
+  vector<TParticle> muons;
+  for(UInt_t i = 0; i < nMuon; i++)
+  {
+    if (Muon_pt[i] < 10) continue;
+    if (abs(Muon_eta[i]) > 2.4) continue;
+    if (!Muon_trackerMu[i]) continue;
+    if (!Muon_globalMu[i]) continue;
+    if (!Muon_tightId[i]) continue;
+    if (Muon_pfRelIso04_all[i] > 0.25) continue;
+    
+    TLorentzVector mom;
+    mom.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
+    mom = mom * roccoR(mom, Muon_charge[i], Muon_genPartIdx[i], Muon_nTrackerLayers[i]);
+   
+    auto muon = TParticle();
+    muon.SetPdgCode(13*Muon_charge[i]*-1);
+    muon.SetMomentum(mom);
+    muons.push_back(muon);
+  }
+  return muons;
+}
 
-vector<TParticle> nanoAnalysis::JetSelection()
+vector<TParticle> nanoAnalysis::ElectronSelection()
+{
+  vector<TParticle> electrons;
+  for(UInt_t i = 0; i < nElectron; i++)
+  {
+    if ( Electron_pt[i] < 10) continue;
+    if (abs(Electron_eta[i]) > 2.5 ) continue; //<~~~~~~~~~~~~~~ Higgs Electron pt == 10; Higgs Electron eta > 2.5  
+    //if( Electron_pfRelIso03_all[i] > 0.15 || Electron_cutBased[i] < 3 ) continue; //<~~~~~~~~~~~~~~ Top doesn't use isolation? 
+    if (Electron_cutBased[i] < 3) continue;
+    float el_scEta = Electron_deltaEtaSC[i] + Electron_eta[i];
+    if ( std::abs(el_scEta) > 1.4442 &&  std::abs(el_scEta) < 1.566 ) continue;
+    TLorentzVector mom;
+    mom.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
+
+    auto elec = TParticle();
+    elec.SetPdgCode(11*Electron_charge[i]*-1);
+    elec.SetMomentum(mom);
+
+    electrons.push_back(elec);
+  }
+  return electrons;
+}
+
+bool nanoAnalysis::hasOverLap(TLorentzVector cand, vector<TParticle> objects)
+{
+  for (auto obj: objects){
+    TLorentzVector mom;
+    obj.Momentum(mom);
+    if (cand.DeltaR(mom) < 0.4){
+      return true;
+    }
+  }
+  return false;
+}
+
+vector<TParticle> nanoAnalysis::JetSelection(vector<TParticle> leptons)
 {
   vector<TParticle> jets;
-  Bool_t flag;
   for(UInt_t i = 0; i < nJet; i++)
   {
-    flag = false;
-   // auto JET_LOOSE = (1<<0);
-   // if(Jet_pt[i] < 30 || abs(Jet_eta[i]) > 2.4) continue;                       //<~~~~~~~~~~~~ Higgs Jet eta > 4.7;
-    if(Jet_pt[i] < 30 || abs(Jet_eta[i]) > 4.7) continue;                       //<~~~~~~~~~~~~ Higgs Jet eta > 4.7;
-   //if( Jet_jetId[i] & JET_LOOSE == 0 ) continue;
+    if (Jet_pt[i] < 30) continue;
+    if (abs(Jet_eta[i]) > 4.7) continue; //<~~~~~~~~~~~~ Higgs Jet eta > 4.7;
+
     if (Jet_jetId[i] < 1) continue;
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
-
-    for(UInt_t j = 0; j < b_Mu_tlv.size(); j++)
-    {
-      if(b_Mu_tlv[j].DeltaR(mom) < 0.4)
-      {
-        flag = true;
-        break;
-      }
-    }
-    if(flag) continue;
-
+    
+    if (hasOverLap(mom, leptons)) continue;
+    
     auto jet = TParticle();
     jet.SetMomentum(mom);
 
-    b_Jet_tlv.push_back(mom);
     jets.push_back(jet);
   }
   return jets;
 }
 
-vector<TParticle> nanoAnalysis::BtaggedSelection()
+vector<TParticle> nanoAnalysis::BJetSelection(vector<TParticle> leptons)
 {
   vector<TParticle> bJets;
   for (UInt_t i = 0; i < nJet; i++)
   {
     if (Jet_btagCSVV2[i] < 0.8484) continue;
-    if (Jet_pt[i] < 20 || abs(Jet_eta[i]) > 2.4) continue;           //<~~~~~~~~~~~~~~~~~~~~ higgs 
+    if (Jet_pt[i] < 20) continue;
+    if (abs(Jet_eta[i]) > 2.4) continue;
     
     TLorentzVector mom;
     mom.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
+
+    if (hasOverLap(mom, leptons)) continue;
+    
     auto bjet = TParticle();
     bjet.SetMomentum(mom);
-
-    b_bJet_tlv.push_back(mom);
     bJets.push_back(bjet);
   }
   return bJets;
