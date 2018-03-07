@@ -5,7 +5,7 @@ from array import array
 
 # TTree
 f = ROOT.TFile("1.root", "recreate")
-Cme = ROOT.TTree("Event_C", "CEvent_C")
+Cme = ROOT.TTree("Event_C", "Event_C")
 
 
 # Variables
