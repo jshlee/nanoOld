@@ -32,7 +32,7 @@ private:
       TFile* m_output;
       
       //Tree
-      TTree* ALL;
+      TTree* m_tree;
       
       //histogram
       TH1D* h_Event_Tot;
@@ -40,43 +40,28 @@ private:
       TH1D* h_weight;
       
       //Variables
-      TLorentzVector b_Dilep;
-      TLorentzVector b_Quadlep;
-      TLorentzVector b_Mu1;
-      TLorentzVector b_Mu2;
+      TLorentzVector b_Dilep, b_Quadlep, b_Mu1, b_Mu2;
+      TLorentzVector b_lep1, b_lep2;
 
-      std::vector<TLorentzVector> b_Mu_tlv;
-      std::vector<TLorentzVector> b_El_tlv;
-      std::vector<TLorentzVector> b_Jet_tlv;
-      std::vector<TLorentzVector> b_bJet_tlv;
+      std::vector<TLorentzVector> b_Mu_tlv, b_El_tlv, b_Jet_tlv, b_bJet_tlv;
       
       std::vector<Float_t> b_Jet_CSVV2;
       
-      Float_t b_genweight;
-      Float_t b_puweight;
-      Float_t b_weight;
+      Float_t b_genweight, b_puweight, b_weight;
+      Float_t b_mueffweight, b_mueffweight_up, b_mueffweight_dn;
 
-      Float_t b_mueffweight;
-      Float_t b_mueffweight_up;
-      Float_t b_mueffweight_dn;
-
-      Int_t b_Event_No;
-      Int_t b_Event_Total;
-      
-      Int_t b_Nu_BJet;
-      Int_t b_Nu_NonBJet;
-      Int_t b_charge;
-      Int_t b_Lcharge;
-
-      TLorentzVector b_lep1, b_lep2;
-      
+      Int_t b_Event_No, b_Event_Total;
+            
       //Step and Cutflow
       TH1D* h_cutFlow;
       Int_t b_Step;
      
       //Channel
-      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet;
+      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet, b_charge, b_Lcharge;
       Bool_t keep;
+      //triggers
+      Bool_t b_trig_m, b_trig_e, b_trig_mm, b_trig_em, b_trig_ee;
+
 
       //Tools
       pileUpTool* m_pileUp;
@@ -90,14 +75,20 @@ private:
       void MakeBranch(TTree* t);
       void ResetBranch();
 
-      void Analysis();
+      bool Analysis();
       //For Selection
       Bool_t LumiCheck();
       enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU };
+
+      bool hasOverLap(TLorentzVector cand, vector<TParticle> objects);
+      
+      std::vector<TParticle> LooseMuonSelection();
+      std::vector<TParticle> LooseElectronSelection(vector<TParticle>);
       std::vector<TParticle> MuonSelection();
       std::vector<TParticle> ElectronSelection();
-      std::vector<TParticle> JetSelection();
-      std::vector<TParticle> BtaggedSelection();
+      std::vector<TParticle> JetSelection(std::vector<TParticle>);
+      std::vector<TParticle> BJetSelection(std::vector<TParticle>);
+      
       Double_t roccoR(TLorentzVector m, Int_t &q, Int_t &nGen, Int_t &nTrackerLayers);
 public:
       //set output file
