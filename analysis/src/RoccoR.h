@@ -1,3 +1,5 @@
+#ifndef RoccoR_h
+#define RoccoR_h
 #include "TRandom3.h"
 #include "TMath.h"
 
@@ -219,3 +221,4 @@ class RoccoR{
     private:
 	std::vector<std::vector<RocOne> > RC;
 };
+#endif

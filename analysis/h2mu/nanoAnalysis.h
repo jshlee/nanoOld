@@ -15,11 +15,16 @@
 // Header file for the classes stored in the TTree if any.
 #include <TH1D.h>
 #include <TLorentzVector.h>
+#include <TParticle.h>
 
 #include "../src/pileUpTool.h"
 #include "../src/RoccoR.cc"
 #include "../src/lumiTool.h"
+#include "../src/MuonScaleFactorEvaluator.h"
+#include "../src/ElecScaleFactorEvaluator.h"
 #include "../plugins/jsoncpp.cpp"
+//#include "../src/BTagCalibrationStandalone.cc"
+//#include "../src/BTagCalibrationStandalone.h"
 
 class nanoAnalysis {
 private: 
@@ -36,46 +41,51 @@ private:
       
       //Variables
       TLorentzVector b_Dilep;
+      TLorentzVector b_Quadlep;
       TLorentzVector b_Mu1;
       TLorentzVector b_Mu2;
+
+      std::vector<TLorentzVector> b_Mu_tlv;
+      std::vector<TLorentzVector> b_El_tlv;
+      std::vector<TLorentzVector> b_Jet_tlv;
+      std::vector<TLorentzVector> b_bJet_tlv;
       
-      UInt_t b_Nu_Mu;
-      Float_t b_Mu_Pt[5];
-      Float_t b_Mu_Eta[5];
-      Float_t b_Mu_Charge[5];
-      Float_t b_Mu_Phi[5];
-      Float_t b_Mu_M[5];
-
-      UInt_t b_Nu_El;
-      Float_t b_El_Pt[6];
-      Float_t b_El_Eta[6];
-
-      UInt_t b_Nu_Jet;
-      Float_t b_Jet_Pt[35];
-      Float_t b_Jet_Eta[35];
-      Float_t b_Jet_CSVV2[35];
-      Float_t b_Jet_M[35];
-      Float_t b_Jet_Phi[35];
-
+      std::vector<Float_t> b_Jet_CSVV2;
+      
       Float_t b_genweight;
       Float_t b_puweight;
       Float_t b_weight;
+
+      Float_t b_mueffweight;
+      Float_t b_mueffweight_up;
+      Float_t b_mueffweight_dn;
 
       Int_t b_Event_No;
       Int_t b_Event_Total;
       
       Int_t b_Nu_BJet;
       Int_t b_Nu_NonBJet;
+      Int_t b_charge;
+      Int_t b_Lcharge;
+
+      TLorentzVector b_lep1, b_lep2;
       
       //Step and Cutflow
       TH1D* h_cutFlow;
       Int_t b_Step;
-      
+     
+      //Channel
+      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet;
+      Bool_t keep;
+
       //Tools
       pileUpTool* m_pileUp;
       lumiTool* m_lumi;
       RoccoR* m_rocCor;
+      MuonScaleFactorEvaluator m_muonSF;
+      ElecScaleFactorEvaluator m_elecSF;
       Bool_t m_isMC;
+      std::vector<UInt_t> idxs;
       
       //Making output branch
       void MakeBranch(TTree* t);
@@ -84,7 +94,11 @@ private:
       void Analysis();
       //For Selection
       Bool_t LumiCheck();
-      void MuonSelection();
+      enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU };
+      std::vector<TParticle> MuonSelection();
+      std::vector<TParticle> ElectronSelection();
+      std::vector<TParticle> JetSelection();
+      std::vector<TParticle> BtaggedSelection();
       Double_t roccoR(TLorentzVector m, Int_t &q, Int_t &nGen, Int_t &nTrackerLayers);
 public:
       //set output file
@@ -272,37 +286,37 @@ public:
       Float_t         MET_significance;
       Float_t         MET_sumEt;
       UInt_t          nMuon;
-      Float_t         Muon_dxy[5];   //[nMuon]
-      Float_t         Muon_dxyErr[5];   //[nMuon]
-      Float_t         Muon_dz[5];   //[nMuon]
-      Float_t         Muon_dzErr[5];   //[nMuon]
-      Float_t         Muon_eta[5];   //[nMuon]
-      Float_t         Muon_ip3d[5];   //[nMuon]
-      Float_t         Muon_mass[5];   //[nMuon]
-      Float_t         Muon_miniPFRelIso_all[5];   //[nMuon]
-      Float_t         Muon_miniPFRelIso_chg[5];   //[nMuon]
-      Float_t         Muon_pfRelIso03_all[5];   //[nMuon]
-      Float_t         Muon_pfRelIso03_chg[5];   //[nMuon]
-      Float_t         Muon_pfRelIso04_all[5];   //[nMuon]
-      Float_t         Muon_phi[5];   //[nMuon]
-      Float_t         Muon_pt[5];   //[nMuon]
-      Float_t         Muon_ptErr[5];   //[nMuon]
-      Float_t         Muon_segmentComp[5];   //[nMuon]
-      Float_t         Muon_sip3d[5];   //[nMuon]
-      Float_t         Muon_mvaTTH[5];   //[nMuon]
-      Int_t           Muon_charge[5];   //[nMuon]
-      Int_t           Muon_jetIdx[5];   //[nMuon]
-      Int_t           Muon_nStations[5];   //[nMuon]
-      Int_t           Muon_nTrackerLayers[5];   //[nMuon]
-      Int_t           Muon_pdgId[5];   //[nMuon]
-      Int_t           Muon_tightCharge[5];   //[nMuon]
-      Bool_t          Muon_globalMu[5];   //[nMuon]
-      UChar_t         Muon_highPtId[5];   //[nMuon]
-      Bool_t          Muon_isPFcand[5];   //[nMuon]
-      Bool_t          Muon_mediumId[5];   //[nMuon]
-      Bool_t          Muon_softId[5];   //[nMuon]
-      Bool_t          Muon_tightId[5];   //[nMuon]
-      Bool_t          Muon_trackerMu[5];   //[nMuon]
+      Float_t         Muon_dxy[10];   //[nMuon]
+      Float_t         Muon_dxyErr[10];   //[nMuon]
+      Float_t         Muon_dz[10];   //[nMuon]
+      Float_t         Muon_dzErr[10];   //[nMuon]
+      Float_t         Muon_eta[10];   //[nMuon]
+      Float_t         Muon_ip3d[10];   //[nMuon]
+      Float_t         Muon_mass[10];   //[nMuon]
+      Float_t         Muon_miniPFRelIso_all[10];   //[nMuon]
+      Float_t         Muon_miniPFRelIso_chg[10];   //[nMuon]
+      Float_t         Muon_pfRelIso03_all[10];   //[nMuon]
+      Float_t         Muon_pfRelIso03_chg[10];   //[nMuon]
+      Float_t         Muon_pfRelIso04_all[10];   //[nMuon]
+      Float_t         Muon_phi[10];   //[nMuon]
+      Float_t         Muon_pt[10];   //[nMuon]
+      Float_t         Muon_ptErr[10];   //[nMuon]
+      Float_t         Muon_segmentComp[10];   //[nMuon]
+      Float_t         Muon_sip3d[10];   //[nMuon]
+      Float_t         Muon_mvaTTH[10];   //[nMuon]
+      Int_t           Muon_charge[10];   //[nMuon]
+      Int_t           Muon_jetIdx[10];   //[nMuon]
+      Int_t           Muon_nStations[10];   //[nMuon]
+      Int_t           Muon_nTrackerLayers[10];   //[nMuon]
+      Int_t           Muon_pdgId[10];   //[nMuon]
+      Int_t           Muon_tightCharge[10];   //[nMuon]
+      Bool_t          Muon_globalMu[10];   //[nMuon]
+      UChar_t         Muon_highPtId[10];   //[nMuon]
+      Bool_t          Muon_isPFcand[10];   //[nMuon]
+      Bool_t          Muon_mediumId[10];   //[nMuon]
+      Bool_t          Muon_softId[10];   //[nMuon]
+      Bool_t          Muon_tightId[10];   //[nMuon]
+      Bool_t          Muon_trackerMu[10];   //[nMuon]
       UInt_t          nPhoton;
       Float_t         Photon_eCorr[7];   //[nPhoton]
       Float_t         Photon_energyErr[7];   //[nPhoton]
@@ -327,7 +341,7 @@ public:
       Bool_t          Photon_mvaID_WP90[7];   //[nPhoton]
       Bool_t          Photon_pixelSeed[7];   //[nPhoton]
       Int_t           Pileup_nPU;
-      Int_t           Pileup_nTrueInt;
+      Float_t         Pileup_nTrueInt;
       Float_t         PuppiMET_phi;
       Float_t         PuppiMET_pt;
       Float_t         PuppiMET_sumEt;
@@ -369,36 +383,36 @@ public:
       Float_t         SubJet_tau3[6];   //[nSubJet]
       Float_t         SubJet_tau4[6];   //[nSubJet]
       UInt_t          nTau;
-      Float_t         Tau_chargedIso[5];   //[nTau]
-      Float_t         Tau_dxy[5];   //[nTau]
-      Float_t         Tau_dz[5];   //[nTau]
-      Float_t         Tau_eta[5];   //[nTau]
-      Float_t         Tau_footprintCorr[5];   //[nTau]
-      Float_t         Tau_leadTkDeltaEta[5];   //[nTau]
-      Float_t         Tau_leadTkDeltaPhi[5];   //[nTau]
-      Float_t         Tau_leadTkPtOverTauPt[5];   //[nTau]
-      Float_t         Tau_mass[5];   //[nTau]
-      Float_t         Tau_neutralIso[5];   //[nTau]
-      Float_t         Tau_phi[5];   //[nTau]
-      Float_t         Tau_photonsOutsideSignalCone[5];   //[nTau]
-      Float_t         Tau_pt[5];   //[nTau]
-      Float_t         Tau_puCorr[5];   //[nTau]
-      Float_t         Tau_rawAntiEle[5];   //[nTau]
-      Float_t         Tau_rawIso[5];   //[nTau]
-      Float_t         Tau_rawMVAnewDM[5];   //[nTau]
-      Float_t         Tau_rawMVAoldDM[5];   //[nTau]
-      Float_t         Tau_rawMVAoldDMdR03[5];   //[nTau]
-      Int_t           Tau_charge[5];   //[nTau]
-      Int_t           Tau_decayMode[5];   //[nTau]
-      Int_t           Tau_jetIdx[5];   //[nTau]
-      Int_t           Tau_rawAntiEleCat[5];   //[nTau]
-      UChar_t         Tau_idAntiEle[5];   //[nTau]
-      UChar_t         Tau_idAntiMu[5];   //[nTau]
-      Bool_t          Tau_idDecayMode[5];   //[nTau]
-      Bool_t          Tau_idDecayModeNewDMs[5];   //[nTau]
-      UChar_t         Tau_idMVAnewDM[5];   //[nTau]
-      UChar_t         Tau_idMVAoldDM[5];   //[nTau]
-      UChar_t         Tau_idMVAoldDMdR03[5];   //[nTau]
+      Float_t         Tau_chargedIso[10];   //[nTau]
+      Float_t         Tau_dxy[10];   //[nTau]
+      Float_t         Tau_dz[10];   //[nTau]
+      Float_t         Tau_eta[10];   //[nTau]
+      Float_t         Tau_footprintCorr[10];   //[nTau]
+      Float_t         Tau_leadTkDeltaEta[10];   //[nTau]
+      Float_t         Tau_leadTkDeltaPhi[10];   //[nTau]
+      Float_t         Tau_leadTkPtOverTauPt[10];   //[nTau]
+      Float_t         Tau_mass[10];   //[nTau]
+      Float_t         Tau_neutralIso[10];   //[nTau]
+      Float_t         Tau_phi[10];   //[nTau]
+      Float_t         Tau_photonsOutsideSignalCone[10];   //[nTau]
+      Float_t         Tau_pt[10];   //[nTau]
+      Float_t         Tau_puCorr[10];   //[nTau]
+      Float_t         Tau_rawAntiEle[10];   //[nTau]
+      Float_t         Tau_rawIso[10];   //[nTau]
+      Float_t         Tau_rawMVAnewDM[10];   //[nTau]
+      Float_t         Tau_rawMVAoldDM[10];   //[nTau]
+      Float_t         Tau_rawMVAoldDMdR03[10];   //[nTau]
+      Int_t           Tau_charge[10];   //[nTau]
+      Int_t           Tau_decayMode[10];   //[nTau]
+      Int_t           Tau_jetIdx[10];   //[nTau]
+      Int_t           Tau_rawAntiEleCat[10];   //[nTau]
+      UChar_t         Tau_idAntiEle[10];   //[nTau]
+      UChar_t         Tau_idAntiMu[10];   //[nTau]
+      Bool_t          Tau_idDecayMode[10];   //[nTau]
+      Bool_t          Tau_idDecayModeNewDMs[10];   //[nTau]
+      UChar_t         Tau_idMVAnewDM[10];   //[nTau]
+      UChar_t         Tau_idMVAoldDM[10];   //[nTau]
+      UChar_t         Tau_idMVAoldDMdR03[10];   //[nTau]
       Float_t         TkMET_phi;
       Float_t         TkMET_pt;
       Float_t         TkMET_sumEt;
@@ -446,17 +460,17 @@ public:
       Int_t           Jet_genJetIdx[35];   //[nJet]
       Int_t           Jet_hadronFlavour[35];   //[nJet]
       Int_t           Jet_partonFlavour[35];   //[nJet]
-      Int_t           Muon_genPartIdx[5];   //[nMuon]
-      UChar_t         Muon_genPartFlav[5];   //[nMuon]
+      Int_t           Muon_genPartIdx[10];   //[nMuon]
+      UChar_t         Muon_genPartFlav[10];   //[nMuon]
       Int_t           Photon_genPartIdx[7];   //[nPhoton]
       UChar_t         Photon_genPartFlav[7];   //[nPhoton]
       Float_t         MET_fiducialGenPhi;
       Float_t         MET_fiducialGenPt;
       UChar_t         Electron_cleanmask[6];   //[nElectron]
       UChar_t         Jet_cleanmask[35];   //[nJet]
-      UChar_t         Muon_cleanmask[5];   //[nMuon]
+      UChar_t         Muon_cleanmask[10];   //[nMuon]
       UChar_t         Photon_cleanmask[7];   //[nPhoton]
-      UChar_t         Tau_cleanmask[5];   //[nTau]
+      UChar_t         Tau_cleanmask[10];   //[nTau]
       Float_t         SV_chi2[9];   //[nSV]
       Float_t         SV_eta[9];   //[nSV]
       Float_t         SV_mass[9];   //[nSV]
@@ -466,8 +480,8 @@ public:
       Float_t         SV_x[9];   //[nSV]
       Float_t         SV_y[9];   //[nSV]
       Float_t         SV_z[9];   //[nSV]
-      Int_t           Tau_genPartIdx[5];   //[nTau]
-      UChar_t         Tau_genPartFlav[5];   //[nTau]
+      Int_t           Tau_genPartIdx[10];   //[nTau]
+      UChar_t         Tau_genPartFlav[10];   //[nTau]
       Bool_t          L1simulation_step;
       Bool_t          HLTriggerFirstPath;
       Bool_t          HLT_AK8PFJet360_TrimMass30;
@@ -2111,9 +2125,9 @@ nanoAnalysis::nanoAnalysis(TTree *tree, Bool_t flag) : fChain(0), m_isMC(flag)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
   if (tree == 0) {
-    TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
+    TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/xrootd/store/group/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
     if (!f || !f->IsOpen()) {
-      f = TFile::Open("/home/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
+      f = TFile::Open("/xrootd/store/group/nanoAOD/run2_2016v3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6_ext2-v1/180117_180123/0000/nanoAOD_111.root");
     }
     f->GetObject("Events",tree);
 

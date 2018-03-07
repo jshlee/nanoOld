@@ -670,16 +670,17 @@ int CMesonProducer::findMCmatch(const pat::Jet & aPatJet, vector<const pat::Pack
   const reco::JetFlavourInfo & jetInfo =  aPatJet.jetFlavourInfo();
   if (abs(jetInfo.getHadronFlavour()) != 5) return -1;
   if (abs(jetInfo.getPartonFlavour()) != 5) return -1;
-  
+  int matches = -1;
+
   const GenParticleRefVector & cHads = jetInfo.getcHadrons();
-  int matches = 0;
   for( reco::GenParticleRefVector::const_iterator im = cHads.begin(); im!=cHads.end(); ++im) {
     const reco::GenParticle& part = **im;
-    //cout << " cHads " << part.pt() << " " <<part.eta() << " " <<part.pdgId() << " " <<part.status()<< endl;
 
-    if (abs(part.pdgId()) != pdgid) continue;
-
-    if (part.numberOfDaughters() != cands.size()) continue;
+    if (abs(part.pdgId()) != abs(pdgid)) continue;
+    //cout << " cHads " << part.pt() << " " <<part.eta() << " " <<part.pdgId() << " " <<part.numberOfDaughters()<< endl;
+    matches = 0;
+    
+    //if (part.numberOfDaughters() != cands.size()) continue;
     
     for( unsigned int idx = 0 ; idx < part.numberOfDaughters() ; ++idx) {
       const reco::Candidate *dauCand = part.daughter(idx);
