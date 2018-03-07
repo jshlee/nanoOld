@@ -134,11 +134,11 @@ bool nanoAnalysis::Analysis()
 
 
 
-  // do ttH analysis
+  // do ttH analysis steps here
   // ttH uses loose leptons
 
   
-  // do top analysis
+  // do top analysis steps here
 
 
 
