@@ -97,6 +97,7 @@ bkgTree.Branch("cme_pdgId", cme_pdgId, "cme_pdgId/I")
 
 events = ROOT.TChain("Events")
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0000/nanoAOD_*.root")
+
 for iev, event in enumerate(events):
 
     if event.ncmeson == 0:
