@@ -96,11 +96,16 @@ bkgTree.Branch("cme_pdgId", cme_pdgId, "cme_pdgId/I")
 
 
 events = ROOT.TChain("Events")
+<<<<<<< HEAD
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0000/nanoAOD_8*.root")
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0001/nanoAOD_12*.root")
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0003/nanoAOD_37*.root")
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0005/nanoAOD_55*.root")
 events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0007/nanoAOD_70*.root")
+=======
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0000/nanoAOD_*.root")
+
+>>>>>>> 486555a475ab426bea81328300f501a8c786d3da
 for iev, event in enumerate(events):
 
     if event.ncmeson == 0:
