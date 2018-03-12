@@ -107,7 +107,19 @@ def setDefTH1Style(th1, x_name, y_name):
     ROOT.gStyle.cd()
     return th1
     
-def drawTH1(name, cmsLumi, mclist, data, x_name, y_name, doLog=False, doRatio=True, ratioRange=0.45, legx=0.68, legfontsize=0.030):
+def drawTH1(name, cmsLumi, mclist, x_name, y_name, doLog=False, doRatio=True, ratioRange=0.45, legx=0.68, legfontsize=0.030):
+    
+    canv = makeCanvas(name, False)
+    pads = [canv]
+    pads = rootplotcore.divide_canvas(canv,0)
+    pads[0].cd()
+    setMargins(pads[0], False)
+    if doLog:
+        pads[0].SetLogy()
+    
+    hs = ROOT.THStack("mcstack", "mcstack")    
+    
+    
     leg = ROOT.TLegend(legx,0.68,legx+0.2,0.91)
     leg.SetBorderSize(0)
     #leg.SetNColumns(2)
@@ -116,79 +128,67 @@ def drawTH1(name, cmsLumi, mclist, data, x_name, y_name, doLog=False, doRatio=Tr
     leg.SetLineColor(0)
     leg.SetFillColor(0)
     leg.SetFillStyle(0)
-    leg.AddEntry(data,"Data","lp")
     
-    hs = ROOT.THStack("mcstack", "mcstack")    
-    hratio = mclist[0].Clone("hratio")
-    hratio.Reset()
 
     leghist = []
     for i, mc in enumerate(mclist):
         hnew = mc.Clone("hnew"+mc.GetName())
         hnew.Sumw2(False)
         hs.Add(hnew)
-        hratio.Add(mc)
+        #hratio.Add(mc)
         inversed = mclist[len(mclist)-1-i]
         if not any(inversed.GetTitle() == s for s in leghist):
             leg.AddEntry(inversed, inversed.GetTitle(), "f")
             leghist.append(inversed.GetTitle())
                         
     #hratio = hs.GetStack().Last()
-    hratio.Divide(data,hratio,1.,1.,"B")
+    #hratio.Divide(data,hratio,1.,1.,"B")
 
     tdrstyle.setTDRStyle()
 
-    setDefTH1Style(data, x_name, y_name)
-    data.SetName('data')
-    data.SetMaximum(data.GetMaximum()*1.8)
+    hs.Draw()
+    setDefTH1Style(hs, x_name, y_name)
+    #data.SetName('data')
+    #data.SetMaximum(data.GetMaximum()*1.8)
+    hs.SetMaximum(hs.GetMaximum()*1.8)
     if doLog:
-        data.SetMaximum(data.GetMaximum()*100)
+        hs.SetMaximum(hs.GetMaximum()*100)
         #data.SetMinimum(10**-3)
     else:
-        data.GetYaxis().SetTitleSize(0.04)
-        data.GetYaxis().SetLabelSize(0.024)
-        data.GetYaxis().SetTitleOffset(1.35)
-        
+        hs.GetYaxis().SetTitleSize(0.04)
+        hs.GetYaxis().SetLabelSize(0.024)
+        hs.GetYaxis().SetTitleOffset(1.35)
+    
+    leg.Draw("same")
     ratio_fraction = 0
-    if doRatio:
-        ratio_fraction = 0.3        
-        data.GetXaxis().SetLabelSize(0)
-        data.GetXaxis().SetTitleSize(0)
-        setDefTH1Style(hratio, x_name, "Data/MC")
-        hratio.GetYaxis().CenterTitle()
-        hratio.GetYaxis().SetNdivisions(5)
+    #if doRatio:
+    #    ratio_fraction = 0.3        
+    #    data.GetXaxis().SetLabelSize(0)
+    #    data.GetXaxis().SetTitleSize(0)
+    #    setDefTH1Style(hratio, x_name, "Data/MC")
+    #    hratio.GetYaxis().CenterTitle()
+    #    hratio.GetYaxis().SetNdivisions(5)
             
-    canv = makeCanvas(name, doRatio)
-    pads=[canv]
-    pads = rootplotcore.divide_canvas(canv, ratio_fraction)
 
-    pads[0].cd()
-    setMargins(pads[0], doRatio)
-    if doLog:
-        pads[0].SetLogy()
-
-    data.Draw()
-    hs.Draw("same")
-    data.Draw("esamex0")
     leg.Draw("same")
     
-    pads[0].Update()
+    #pads[0].Update()
 
-    if doRatio:
-        pads[1].cd()
-        pads[1].SetGridy()
-        setMargins(pads[1], doRatio)
-        hratio.SetLineColor(1)
-        hratio.Draw("e")
-        hratio.SetMaximum(1.+ratioRange)
-        hratio.SetMinimum(1.-ratioRange)
+    #if doRatio:
+    #    pads[1].cd()
+    #    pads[1].SetGridy()
+    #    setMargins(pads[1], doRatio)
+    #    hratio.SetLineColor(1)
+    #    hratio.Draw("e")
+    #    hratio.SetMaximum(1.+ratioRange)
+    #    hratio.SetMinimum(1.-ratioRange)
 
-    for p in pads:
-        p.RedrawAxis()
-        p.Modified()
-        p.Update()
+    #for p in pads:
+    #    p.RedrawAxis()
+    #    p.Modified()
+    #    p.Update()
 
-    canv.cd()
+    #canv.cd()
 
     #iPos = 0 # in frame
     iPos = 11 # out frame
