@@ -3,7 +3,7 @@ from ROOT import *
 from array import array
 
 # TTree
-f = ROOT.TFile("tmva_class_example.root", "recreate")
+f = ROOT.TFile("tmva_class_example2.root", "recreate")
 sigTree = ROOT.TTree("TreeS", "TreeS")
 bkgTree = ROOT.TTree("TreeB", "TreeB")
 
@@ -53,9 +53,9 @@ sigTree.Branch("cme_l3DSig", cme_l3DSig, "cme_l3DSig/F")
 sigTree.Branch("cme_jetDR", cme_jetDR, "cme_jetDR/F")
 sigTree.Branch("cme_legDR", cme_legDR, "cme_legDR/F")
 sigTree.Branch("cme_diffMass", cme_diffMass, "cme_diffMass/F")
-sigTree.Branch("cme_nJet", cme_nJet, "cme_nJet/F")
-sigTree.Branch("cme_mcMatch", cme_mcMatch, "cme_mcMatch/F")
-sigTree.Branch("cme_trk_nHits", cme_trk_nHits, "cme_trk_nHits/F")
+sigTree.Branch("cme_nJet", cme_nJet, "cme_nJet/I")
+sigTree.Branch("cme_mcMatch", cme_mcMatch, "cme_mcMatch/I")
+sigTree.Branch("cme_trk_nHits", cme_trk_nHits, "cme_trk_nHits/I")
 sigTree.Branch("cme_chi2", cme_chi2, "cme_chi2/F")
 sigTree.Branch("cme_eta", cme_eta, "cme_eta/F")
 sigTree.Branch("cme_mass", cme_mass, "cme_mass/F")
@@ -81,9 +81,9 @@ bkgTree.Branch("cme_l3DSig", cme_l3DSig, "cme_l3DSig/F")
 bkgTree.Branch("cme_jetDR", cme_jetDR, "cme_jetDR/F")
 bkgTree.Branch("cme_legDR", cme_legDR, "cme_legDR/F")
 bkgTree.Branch("cme_diffMass", cme_diffMass, "cme_diffMass/F")
-bkgTree.Branch("cme_nJet", cme_nJet, "cme_nJet/F")
-bkgTree.Branch("cme_mcMatch", cme_mcMatch, "cme_mcMatch/F")
-bkgTree.Branch("cme_trk_nHits", cme_trk_nHits, "cme_trk_nHits/F")
+bkgTree.Branch("cme_nJet", cme_nJet, "cme_nJet/I")
+bkgTree.Branch("cme_mcMatch", cme_mcMatch, "cme_mcMatch/I")
+bkgTree.Branch("cme_trk_nHits", cme_trk_nHits, "cme_trk_nHits/I")
 bkgTree.Branch("cme_chi2", cme_chi2, "cme_chi2/F")
 bkgTree.Branch("cme_eta", cme_eta, "cme_eta/F")
 bkgTree.Branch("cme_mass", cme_mass, "cme_mass/F")
@@ -96,7 +96,11 @@ bkgTree.Branch("cme_pdgId", cme_pdgId, "cme_pdgId/I")
 
 
 events = ROOT.TChain("Events")
-events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0000/nanoAOD_*.root")
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0000/nanoAOD_8*.root")
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0001/nanoAOD_12*.root")
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0003/nanoAOD_37*.root")
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0005/nanoAOD_55*.root")
+events.Add("/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180307_072216/0007/nanoAOD_70*.root")
 for iev, event in enumerate(events):
 
     if event.ncmeson == 0:

@@ -167,9 +167,20 @@ int TMVAClassification( TString myMethodList = "" )
    // Define the input variables that shall be used for the MVA training
    // note that you may also use variable expressions, such as: "3*var1/var2*abs(var3)"
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
+   dataloader->AddVariable( "cme_lxy", 'F' );
+   dataloader->AddVariable( "cme_l3D", 'F' );
+   dataloader->AddVariable( "cme_jetDR", 'F' );
+   dataloader->AddVariable( "cme_legDR", 'F' );
+   
    dataloader->AddVariable( "cme_dca", 'F' );
    dataloader->AddVariable( "cme_angleXY", 'F' );
    dataloader->AddVariable( "cme_angleXYZ", 'F' );
+   dataloader->AddVariable( "cme_trk_normalizedChi2", 'F' );
+   dataloader->AddVariable( "cme_trk_pt", 'F' );
+   dataloader->AddVariable( "cme_trk_ipsigXY", 'F' );
+   dataloader->AddVariable( "cme_trk_ipsigZ", 'F' );
+   
+   dataloader->AddVariable( "cme_trk_nHits", 'I' );
 
    // global event weights per tree (see below for setting event-wise weights)
    Double_t signalWeight     = 1.0;
@@ -225,8 +236,8 @@ int TMVAClassification( TString myMethodList = "" )
    //dataloader->SetBackgroundWeightExpression( "weight" );
 
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycuts = ""; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
-   TCut mycutb = ""; // for example: TCut mycutb = "abs(var1)<0.5";
+   TCut mycuts = "cme_pdgId==421"; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
+   TCut mycutb = "cme_pdgId==421"; // for example: TCut mycutb = "abs(var1)<0.5";
 
    // Tell the dataloader how to use the training and testing events
    //
@@ -240,7 +251,7 @@ int TMVAClassification( TString myMethodList = "" )
    //    dataloader->PrepareTrainingAndTestTree( mycut,
    //         "NSigTrain=3000:NBkgTrain=3000:NSigTest=3000:NBkgTest=3000:SplitMode=Random:!V" );
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
-                                        "nTrain_Signal=1000:nTrain_Background=1000:SplitMode=Random:NormMode=NumEvents:!V" );
+                                       "nTrain_Signal=1000:nTrain_Background=1000:SplitMode=Random:NormMode=NumEvents:!V" );
 
    // ### Book MVA methods
    //

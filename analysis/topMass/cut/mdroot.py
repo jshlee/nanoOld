@@ -9,7 +9,7 @@ Cme = ROOT.TTree("Event_C", "Event_C")
 
 
 # Variables
-#event_no = array("i",[0])
+event_no = array("i",[0])
 cme_dca = array("f",[0])
 cme_angleXY = array("f",[0])
 cme_angleXYZ = array("f",[0])
@@ -39,7 +39,7 @@ cme_pdgId = array("i",[0])
 
 
 # Branches
-#Cme.Branch("event_no", event_no, "event_no/I")
+Cme.Branch("event_no", event_no, "event_no/I")
 Cme.Branch("cme_dca", cme_dca, "cme_dca/F")
 Cme.Branch("cme_angleXY", cme_angleXY, "cme_angleXY/F")
 Cme.Branch("cme_angleXYZ", cme_angleXYZ, "cme_angleXYZ/F")
@@ -81,6 +81,7 @@ samples = [cmesondir0, cmesondir1, cmesondir3]
 
 #hlsit = []
 ncme = 0
+event_no[0] = 0
 for j, sampledir in enumerate(samples):
     #nevents = 0
     filelist = [l for l in os.listdir(sampledir) if "root" in l]
