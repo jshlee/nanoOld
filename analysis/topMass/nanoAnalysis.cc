@@ -296,10 +296,8 @@ void nanoAnalysis::Loop()
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry); nbytes += nb;
-    bool keep = analysis();
-    if (keep){
-      m_tree->Fill();
-    }
+    analysis();
+    m_tree->Fill();
   }
 }
 
@@ -312,7 +310,8 @@ int main(int argc, char* argv[])
 
   if(argc != 1)
   {
-    std::string dirName = env+("/src/nano/analysis/topMass/Results/")+argv[1];
+    //std::string dirName = env+("/src/nano/analysis/topMass/Results/")+argv[1];
+    std::string dirName = "root://cms-xrdr.sdfarm.kr:1094///xrd/store/user/dayoung/nanoAOD/"+std::string(argv[1]);
     std::string temp = argv[1];
     
     Bool_t isDL = false;
@@ -459,6 +458,7 @@ void nanoAnalysis::resetBranch()
   //b_jet1.SetPtEtaPhiM(0,0,0,0);
   //b_jet2.SetPtEtaPhiM(0,0,0,0);
   recoleps.clear();
+  b_csvweights.clear();
   b_lep1_pid = 0; b_lep2_pid = 0;
   b_jet1_CSVInclV2 = -1; b_jet2_CSVInclV2 = -1;
 
