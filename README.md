@@ -1,7 +1,7 @@
 # nanoAOD setup
 quick setup for analysis
 ```
-scram p -n nanoAOD CMSSW CMSSW_9_4_2
+scram p -n nanoAOD CMSSW CMSSW_9_4_4
 cd nanoAOD/src
 cmsenv
 git clone git@github.com:jshlee/nano.git 
@@ -15,7 +15,7 @@ run with  --customise nano/nanoAOD/nano_cff.customise
  - added additional muon variables
 
 ```
-scram p -n nanoAOD CMSSW CMSSW_9_4_2
+scram p -n nanoAOD CMSSW CMSSW_9_4_4
 cd nanoAOD/src
 cmsenv
 git-cms-init -q

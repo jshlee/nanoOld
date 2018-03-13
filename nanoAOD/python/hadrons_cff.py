@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from  PhysicsTools.NanoAOD.common_cff import *
 
 ##################### Tables for final output and docs ##########################
-cmesonTable = cms.EDProducer("CMesonProducer",
+hadTable = cms.EDProducer("HadronProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
   mcLabel  = cms.InputTag("prunedGenParticles"),
@@ -38,10 +38,10 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   cosThetaXYZCut = cms.double(100),
 )
 
-cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("cmesonTable"),
+hadCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("hadTable"),
     cut = cms.string(""),  #DO NOT further cut here, use vertexTable.svCut
-    name = cms.string("cmeson"),
+    name = cms.string("had"),
     singleton = cms.bool(False), # the number of entries is variable
     extension = cms.bool(True), 
     variables = cms.PSet(P4Vars,
@@ -53,10 +53,10 @@ cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
         pdgId=Var("pdgId()", int, doc = "pdgId"),
     ),
 )
-cmesonCandidateTable.variables.pt.precision=14
-cmesonCandidateTable.variables.phi.precision=14
-cmesonCandidateTable.variables.eta.precision=14
-cmesonCandidateTable.variables.mass.precision=14
+hadCandidateTable.variables.pt.precision=14
+hadCandidateTable.variables.phi.precision=14
+hadCandidateTable.variables.eta.precision=14
+hadCandidateTable.variables.mass.precision=14
 
-cmesonTables = cms.Sequence(cmesonTable+cmesonCandidateTable)
+hadTables = cms.Sequence(hadTable+hadCandidateTable)
 
