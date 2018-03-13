@@ -23,8 +23,7 @@
 #include "MuonScaleFactorEvaluator.h"
 #include "ElecScaleFactorEvaluator.h"
 #include "json.h"
-//#include "BTagCalibrationStandalone.cc"
-//#include "BTagCalibrationStandalone.h"
+#include "BTagWeightEvaluator.h"
 
 class nanoAnalysis {
 private: 
@@ -40,18 +39,22 @@ private:
       TH1D* h_weight;
       
       //Variables
-      TLorentzVector b_Dilep, b_Quadlep, b_Mu1, b_Mu2;
+      TLorentzVector b_Dilep, b_Mu1, b_Mu2;
       TLorentzVector b_lep1, b_lep2;
 
       std::vector<TLorentzVector> b_Mu_tlv, b_El_tlv, b_Jet_tlv, b_bJet_tlv;
       
-      std::vector<Float_t> b_Jet_CSVV2;
+      std::vector<Float_t> b_CSVv2;
+      std::vector<Float_t> b_csvweights;
       
       Float_t b_genweight, b_puweight, b_weight;
       Float_t b_mueffweight, b_mueffweight_up, b_mueffweight_dn;
+      Float_t b_btagweight;
 
       Int_t b_Event_No, b_Event_Total;
-            
+      
+      Float_t b_Met_phi;
+      Float_t b_Met;
       //Step and Cutflow
       TH1D* h_cutFlow;
       Int_t b_Step;
@@ -60,8 +63,8 @@ private:
       Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet, b_charge, b_Lcharge;
       Bool_t keep;
       //triggers
-      Bool_t b_trig_m, b_trig_e, b_trig_mm, b_trig_em, b_trig_ee;
-
+      Bool_t b_trig_m, b_trig_m2,  b_trig_e, b_trig_mm, b_trig_em, b_trig_ee;
+      Int_t b_FL, b_FH, b_SL;
 
       //Tools
       pileUpTool* m_pileUp;
@@ -69,6 +72,7 @@ private:
       RoccoR* m_rocCor;
       MuonScaleFactorEvaluator m_muonSF;
       ElecScaleFactorEvaluator m_elecSF;
+      BTagWeightEvaluator m_btagSF;
       std::vector<UInt_t> idxs;
       
       //Making output branch
@@ -84,6 +88,8 @@ private:
       
       std::vector<TParticle> LooseMuonSelection();
       std::vector<TParticle> LooseElectronSelection(vector<TParticle>);
+      std::vector<TParticle> LooseJetSelection(std::vector<TParticle>);
+      std::vector<TParticle> LooseBJetSelection(std::vector<TParticle>);
       std::vector<TParticle> MuonSelection();
       std::vector<TParticle> ElectronSelection();
       std::vector<TParticle> JetSelection(std::vector<TParticle>);
