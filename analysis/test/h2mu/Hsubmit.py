@@ -50,10 +50,10 @@ if User_input =="BDT":
 
 if User_input == "valid":
 
-    std_cut = 'Dilep.M()>60&&Step>6'
+    std_cut = 'Dilep.M()>60&&charge==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [75,50,200] -p 'Dilep.M()' -x 'm(\mu^+\mu^-)(GeV)' -y 'Event' -f 'Dilept_M' -j 'Golden' -d 'True' -min '0.005' -max '1000000000000' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
-    std_cut = 'Dilep.M()>12&&Step>6'
+    std_cut = 'Dilep.M()>12&&charge==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [60,0,300] -p 'Dilep.Pt()' -x 'p_T(\mu^+\mu^-)(GeV)' -y 'Event' -f 'Dilept_Pt' -j 'Golden' -d 'True' -min '0.005' -max '1000000000000' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [45,0,200] -p 'Mu1.Pt()' -x '\[p_T(\mu_1)(GeV)\]' -y 'Event' -f 'lept1_Pt' -j 'Golden' -d 'True' -min '0.005' -max '1000000000000' > /dev/null &"%(std_cut, weight)
@@ -91,10 +91,10 @@ if User_input == "valid":
 
 if User_input == "FL":
 
-    std_cut = 'Dilep.M()>60&&Step>6&&FL==1&&njet>=1&&nbjet>=1'
+    std_cut = 'Dilep.M()>60&&charge==1&&FL==1&&njet>=1&&nbjet>=1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [75,50,200] -p 'Dilep.M()' -x 'm(\mu^+\mu^-)(GeV)' -y 'Event' -f 'FL_Dilept_M' -j 'Golden' -d 'True' -min '0.0005' -max '100' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
-    std_cut = 'Dilep.M()>12&&Step>6&&FL==1&&njet>=1&&nbjet>=1'
+    std_cut = 'Dilep.M()>12&&charge==1&&FL==1&&njet>=1&&nbjet>=1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [60,0,300] -p 'Dilep.Pt()' -x 'p_T(\mu^+\mu^-)(GeV)' -y 'Event' -f 'FL_Dilept_Pt' -j 'Golden' -d 'True' -min '0.0005' -max '100' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [45,0,200] -p 'Mu1.Pt()' -x '\[p_T(\mu_1)(GeV)\]' -y 'Event' -f 'FL_lept1_Pt' -j 'Golden' -d 'True' -min '0.0005' -max '100' > /dev/null &"%(std_cut, weight)
@@ -132,10 +132,10 @@ if User_input == "FL":
 
 if User_input == "FH":
 
-    std_cut = 'Dilep.M()>60&&Step>6&&FH==1'
+    std_cut = 'Dilep.M()>60&&charge==1&&FH==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [75,50,200] -p 'Dilep.M()' -x 'm(\mu^+\mu^-)(GeV)' -y 'Event' -f 'FH_Dilept_M' -j 'Golden' -d 'True' -min '0.005' -max '10000000000' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
-    std_cut = 'Dilep.M()>12&&Step>6&&FH==1'
+    std_cut = 'Dilep.M()>12&&charge==1&&FH==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [60,0,300] -p 'Dilep.Pt()' -x 'p_T(\mu^+\mu^-)(GeV)' -y 'Event' -f 'FH_Dilept_Pt' -j 'Golden' -d 'True' -min '0.005' -max '10000000000' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [45,0,200] -p 'Mu1.Pt()' -x '\[p_T(\mu_1)(GeV)\]' -y 'Event' -f 'FH_lept1_Pt' -j 'Golden' -d 'True' -min '0.005' -max '10000000000' > /dev/null &"%(std_cut, weight)
@@ -173,10 +173,10 @@ if User_input == "FH":
 
 if User_input == "SL":
 
-    std_cut = 'Dilep.M()>60&&Step>6&&SL==1'
+    std_cut = 'Dilep.M()>60&&charge==1&&SL==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [75,50,200] -p 'Dilep.M()' -x 'm(\mu^+\mu^-)(GeV)' -y 'Event' -f 'SL_Dilept_M' -j 'Golden' -d 'True' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
-    std_cut = 'Dilep.M()>12&&Step>6&&SL==1'
+    std_cut = 'Dilep.M()>12&&charge==1&&SL==1'
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [60,0,300] -p 'Dilep.Pt()' -x 'p_T(\mu^+\mu^-)(GeV)' -y 'Event' -f 'SL_Dilept_Pt' -j 'Golden' -d 'True' > /dev/null &"%(std_cut, weight)
     lst.append(cmd)   
     cmd ="./tthDraw.py -c '%s' -w '%s' -b [45,0,200] -p 'Mu1.Pt()' -x '\[p_T(\mu_1)(GeV)\]' -y 'Event' -f 'SL_lept1_Pt' -j 'Golden' -d 'True' > /dev/null &"%(std_cut, weight)

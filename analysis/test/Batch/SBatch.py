@@ -13,49 +13,52 @@ analysis = 'TT'
 pythonCfg = 'tth2muC.py'
 
 RunFiles = [
-             # 'WMinusH_HToMuMu',
-             # 'WPlusH_HToMuMu',
-             # 'ZH_HToMuMu',
-             # 'VBF_HToMuMu',
-             # 'GG_HToMuMu',
-               'ttH',
-             # "WWTo2L2Nu",
-             # "WZTo3LNu_amcatnlo",
-             # "WZTo2LQQ",
-             # "ZZTo2L2Nu",
-             # "ZZTo2L2Q",
-              "ZZTo4L_powheg",
-              "WWW",
-              "WWZ",
-              "WZZ",
-              "ZZZ",
-              "TTZToLLNuNu",
-#              "ttWToLNu",
-             # "SingleTop_tW_noHadron",
-             # "SingleTbar_tW_noHadron",
-             # "SingleTop_tW",
-             # "SingleTbar_tW",
-#              "TTJets_DiLept",
-#              "TTJets_DiLept_Tune4",
-              'TTJets_aMC', 
-              'DYJets',
-#              'DYJets_MG_10to50',
-#              'DYJets_MG2',
-#              'DYJets_2J',
-#              'DYJets_1J',
-#              'DYJets_0J',
-#              'DYJets_10to50', 
-              'SingleMuon_Run2016B',
-              'SingleMuon_Run2016Bv1',
-              'SingleMuon_Run2016C',
-              'SingleMuon_Run2016D',
-              'SingleMuon_Run2016E',
-              'SingleMuon_Run2016F',
-              'SingleMuon_Run2016G',
-              'SingleMuon_Run2016H',
-             # 'SingleMuon_Run2016H_v3',
+    #         # 'WMinusH_HToMuMu',
+    #         # 'WPlusH_HToMuMu',
+    #         # 'ZH_HToMuMu',
+    #         # 'VBF_HToMuMu',
+    #         # 'GG_HToMuMu',
+    #           'ttH',
+    #         # "WWTo2L2Nu",
+    #         # "WZTo3LNu_amcatnlo",
+    #         # "WZTo2LQQ",
+    #         # "ZZTo2L2Nu",
+    #         # "ZZTo2L2Q",
+    #          "ZZTo4L_powheg",
+    #          "WWW",
+    #          "WWZ",
+    #          "WZZ",
+    #          "ZZZ",
+    #          "TTZToLLNuNu",
+              "ZZ",
+              "WZ",
+              "WW",
+#   #           "ttWToLNu",
+    #         # "SingleTop_tW_noHadron",
+    #         # "SingleTbar_tW_noHadron",
+    #         # "SingleTop_tW",
+    #         # "SingleTbar_tW",
+#   #           "TTJets_DiLept",
+#   #           "TTJets_DiLept_Tune4",
+    #          'TTJets_aMC', 
+    #          'DYJets',
+#   #           'DYJets_MG_10to50',
+#   #           'DYJets_MG2',
+#   #           'DYJets_2J',
+#   #           'DYJets_1J',
+#   #           'DYJets_0J',
+#   #           'DYJets_10to50', 
+    #          'SingleMuon_Run2016B',
+    #          'SingleMuon_Run2016Bv1',
+    #          'SingleMuon_Run2016C',
+    #          'SingleMuon_Run2016D',
+    #          'SingleMuon_Run2016E',
+    #          'SingleMuon_Run2016F',
+    #          'SingleMuon_Run2016G',
+    #          'SingleMuon_Run2016H',
+    #         # 'SingleMuon_Run2016H_v3',
               ]
-SetDir = "ttH"              
+SetDir = "test"              
 datadir = '{}/src/nano/analysis/data/dataset/'.format(os.environ['CMSSW_BASE'])
 #version = os.environ["CMSSW_VERSION"]
 
@@ -65,18 +68,18 @@ for i in RunFiles:
     fileList = datadir + 'dataset_' + datasetName + '.txt'
     jobName = analysis+'_'+datasetName 
 
-    Dirname = "{}/src/nano/analysis/h2mu/Batch/{}/".format(os.environ['CMSSW_BASE'],jobName)
-    DirnameJDS = "{}/src/nano/analysis/h2mu/Batch/".format(os.environ['CMSSW_BASE'])
+    Dirname = "{}/src/nano/analysis/test/Batch/{}/".format(os.environ['CMSSW_BASE'],jobName)
+    DirnameJDS = "{}/src/nano/analysis/test/Batch/".format(os.environ['CMSSW_BASE'])
     if os.path.isdir(Dirname):
         print "ERROR: output directory already existing."
         sys.exit()
     else: os.makedirs(Dirname)
 
-    Dirname_ = "{}/src/nano/analysis/h2mu/Results/{}/{}/".format(os.environ['CMSSW_BASE'],SetDir,datasetName)
+    Dirname_ = "{}/src/nano/analysis/test/Results/{}/{}/".format(os.environ['CMSSW_BASE'],SetDir,datasetName)
     if not os.path.isdir(Dirname_):
         os.makedirs(Dirname_)
 
-    Dirname_ = "%s/src/nano/analysis/h2mu/Batch/NanoAOD/"%(os.environ['CMSSW_BASE'])
+    Dirname_ = "%s/src/nano/analysis/test/Batch/NanoAOD/"%(os.environ['CMSSW_BASE'])
     if not os.path.isdir(Dirname_):
         os.makedirs(Dirname_)
 
@@ -101,7 +104,7 @@ for i in RunFiles:
         jds = "%ssubmit.jds" %Dirname 
         fout = open(jds, "w")
         print>>fout, "# Job description file for condor job"
-        print>>fout, """executable = {0}/src/nano/analysis/h2mu/Batch/tth2mu.sh
+        print>>fout, """executable = {0}/src/nano/analysis/test/Batch/tth2mu.sh
 universe   = vanilla
 
 log = condor.log
