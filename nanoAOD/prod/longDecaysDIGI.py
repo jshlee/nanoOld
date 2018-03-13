@@ -28,8 +28,8 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/aod_ttbar.root'),
-#    fileNames = cms.untracked.vstring('/store/user/jlee/CRAB_PrivateMC/crab_tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_digi/180213_183708/0000/TTbarLepton_13TeV_TuneCUETP8M1_GEN_SIM_DIGIPREMIX_S2_DATAMIX_L1_DIGI2RAW_HLT_996.root'),
-    fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/AODSIM.root'),
+    fileNames = cms.untracked.vstring('/store/user/jlee/tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_AODTruth/AODSIM_212.root'),
+    #fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/AODSIM.root'),
     secondaryFileNames = cms.untracked.vstring()
 )
 
@@ -64,7 +64,6 @@ from  PhysicsTools.NanoAOD.common_cff import *
 process.genParticleTable.src = cms.InputTag("genParticles")
 process.genParticleTable.variables.mass = Var("mass", float,precision=8,doc="Mass")
 
-
 process.load("Validation.RecoTrack.TrackValidation_cff")
 
 process.load("SimTracker.TrackAssociatorProducers.trackAssociatorByHits_cfi")
@@ -74,8 +73,6 @@ process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
 process.load('nano.nanoAOD.longDecays_cff')
 process.ldTable.jetLabel = cms.InputTag("patJets")
 process.ldTable.vertexLabel = cms.InputTag("offlinePrimaryVertices")
-process.ldTable.simTrackLabel = cms.InputTag("g4SimHits")
-process.ldTable.simVertexLabel = cms.InputTag("g4SimHits")
 process.ldTable.trackingVertexLabel = cms.InputTag("mix", "MergedTrackTruth")
 process.ldTable.trackingParticleLabel = cms.InputTag("mix", "MergedTrackTruth")
 process.ldTable.genLabel  = cms.InputTag("genParticles")

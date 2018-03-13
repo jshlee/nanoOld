@@ -38,6 +38,22 @@ ldTable = cms.EDProducer("longDecayProducer",
   cosThetaXYZCut = cms.double(100),
 )
 
-#after cross linkining
-ldTables = cms.Sequence(ldTable)
+longDecayCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("ldTable"),
+    cut = cms.string(""),  #DO NOT further cut here, use vertexTable.svCut
+    name = cms.string("longDecay"),
+    singleton = cms.bool(False), # the number of entries is variable
+    extension = cms.bool(True), 
+    variables = cms.PSet(P4Vars,
+        x   = Var("vx()", float, doc = "secondary vertex X position, in cm",precision=14),
+        y   = Var("vy()", float, doc = "secondary vertex Y position, in cm",precision=14),
+        z   = Var("vz()", float, doc = "secondary vertex Z position, in cm",precision=14),
+        pdgId=Var("pdgId()", int, doc = "pdgId"),
+    ),
+)
+longDecayCandidateTable.variables.pt.precision=14
+longDecayCandidateTable.variables.phi.precision=14
+longDecayCandidateTable.variables.eta.precision=14
+longDecayCandidateTable.variables.mass.precision=14
 
+ldTables = cms.Sequence(ldTable+longDecayCandidateTable)

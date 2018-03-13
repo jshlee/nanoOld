@@ -58,8 +58,5 @@ cmesonCandidateTable.variables.phi.precision=14
 cmesonCandidateTable.variables.eta.precision=14
 cmesonCandidateTable.variables.mass.precision=14
 
-#before cross linking
-cmesonSequence = cms.Sequence()
-#after cross linkining
 cmesonTables = cms.Sequence(cmesonTable+cmesonCandidateTable)
 
