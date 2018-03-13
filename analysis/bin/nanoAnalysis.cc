@@ -57,7 +57,7 @@ void nanoAnalysis::MakeBranch(TTree* t)
   t->Branch("FL", &b_FL, "FL/I");
   t->Branch("FH", &b_FH, "FH/I");
   t->Branch("SL", &b_SL, "SL/I");
-  t->Branch("csvweight", "std::vector<float>", &b_csvweights);
+ // t->Branch("csvweight", "std::vector<float>", &b_csvweights);
   t->Branch("btagweight", &b_btagweight, "btagweight/F");
   t->Branch("mueffweight", &b_mueffweight, "mueffweight/F");
   t->Branch("mueffweight_up", &b_mueffweight_up, "mueffweight_up/F");
@@ -438,7 +438,7 @@ vector<TParticle> nanoAnalysis::LooseJetSelection(vector<TParticle> leptons)
       Jet_SF_CSV[iu] *= m_btagSF.getSF(jet, Jet_btagCSVV2[i], Jet_hadronFlavour[i], iu);
     }
   }
-  for (UInt_t i =0; i<19; i++) b_csvweights.push_back(Jet_SF_CSV[i]);
+  //for (UInt_t i =0; i<19; i++) b_csvweights.push_back(Jet_SF_CSV[i]);
   b_btagweight = Jet_SF_CSV[0];
   return jets;
 }
@@ -549,7 +549,7 @@ vector<TParticle> nanoAnalysis::JetSelection(vector<TParticle> leptons)
       Jet_SF_CSV[iu] *= m_btagSF.getSF(jet, Jet_btagCSVV2[i], Jet_hadronFlavour[i], iu);
     }
   }
-  for (UInt_t i =0; i<19; i++) b_csvweights.push_back(Jet_SF_CSV[i]);
+  //for (UInt_t i =0; i<19; i++) b_csvweights.push_back(Jet_SF_CSV[i]);
   b_btagweight = Jet_SF_CSV[0];
   return jets;
 }
