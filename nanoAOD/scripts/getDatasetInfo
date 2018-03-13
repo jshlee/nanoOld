@@ -6,7 +6,6 @@ import csv
 from pandas import DataFrame
 
 gdocbase = "https://docs.google.com/spreadsheets/d/12kLmQfZEH1R9VWt452IOHV9wUKPdJ8VnMnDIHweltA4/pub?gid=%s&single=true&output=csv"
-
 def getCampaignSummary():
     url = gdocbase % "843768870"
     print "Retrieving campaign info..."
