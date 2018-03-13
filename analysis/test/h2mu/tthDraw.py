@@ -24,7 +24,7 @@ version = os.environ['CMSSW_VERSION']
 user = os.environ['USER']
 
 
-#rootfileDir = 
+rootfileDir = "/xrootd/store/user/{}/nanoAOD/test/results_merged/tth2mu_".format(user)
 
 #rootfileDir = "%s/src/nano/analysis/topMass/Results/results_merged/topmass_"% os.environ['CMSSW_BASE']
 #rootfileDir = "/xrootd/store/user/pseudotop/ntuples/results_merged/v7-6-3/h2muAnalyzer_"
@@ -38,38 +38,39 @@ mcfilelist = [
 #              'ZH_HToMuMu',
 #              'VBF_HToMuMu',
 #              'GG_HToMuMu',
-             # 'ttH_nonbb',
+               'ttH',
              # 'GluGluToZZTo2mu2tau',
              # 'GluGluToZZTo2e2mu',
              # 'GluGluToZZTo4mu',
              # 'ttZToLLNuNu',
              # 'ZZTo4L_powheg',
              # 'ZZTo2L2Nu_powheg',
-             # 'ZZ',
+     #          'ZZ',
              # 'WWTo2L2Nu',
-             # 'WW',
+     #          'WW',
 #              'WZTo2LQQ',
              # 'WZTo3LNu_powheg',
-             # 'WZ',
+     #          'WZ',
 #              "WWTo2L2Nu",
 #              "WZTo3LNu_amcatnlo",
              # "WZTo2L2Q",
 #              "ZZTo2L2Nu",
 #              "ZZTo2L2Q",
 #              "ZZTo4L",
-#              "WWW",
-#              "WWZ",
-#              "WZZ",
-#              "ZZZ",
-             # "ttZToLLNuNu",
+               "WWW",
+               "WWZ",
+               "WZZ",
+               "ZZZ",
+               "TTZToLLNuNu",
              # "ttWToLNu",
              # "SingleTop_tW_noHadron",
              # "SingleTbar_tW_noHadron",
 #              "SingleTop_tW",
 #              "SingleTbar_tW",
+               "TTJets_aMC",
              # "TTJets_DiLept",
              # "TTJets_DiLept_Tune4",
-               'TT_powheg',
+             # 'TT_powheg',
                'DYJets',
              # 'DYJets_MG_10to50',
              # 'DYJets_MG2',
@@ -81,8 +82,8 @@ mcfilelist = [
 #mcfilelist = ['VBF_HToMuMu','WW','WZ','ZZ','TT_powheg','DYJets','DYJets_10to50']#,'WJets']
 #mcfilelist = [ 'TTJets_aMC']
 rdfilelist = [
-              'DoubleMuon_Run2016',#mumu
-             # 'SingleMuon_Run2016',#mumu
+             # 'DoubleMuon_Run2016',#mumu
+              'SingleMuon_Run2016',#mumu
               #'SingleMuon_Run2015C',
              #'SingleMuon_Run2015D'
              ]
@@ -91,14 +92,14 @@ datasets = json.load(open("%s/src/nano/analysis/data/dataset/dataset.json" % os.
 #cut_step = "(step>=5)"
 #cut = 'lep1.Pt()>60&&lep2.Pt()>60&&dilep.M()>60&&step>=5'
 #cut = 'dilep.M()>60&&step>4&&filtered&&MVA_BDT>-0.0246'
-cut = 'Dilep.M()>60'
+cut = 'Dilep.M()>60&&b_charge==1'
 #cut = 'filtered==1&&%s&&%s'%(cut_step,emu_pid)
 #cut = 'channel==2'
 print cut
 #weight = 'genweight*puweight*mueffweight*eleffweight*tri'
 #weight = 'weight*(mueffweight)'
 #weight = 'genweight*puweight'
-weight = 'genweight'
+weight = 'weight*mueffweight*btagweight'
 #plotvar = 'met'
 plotvar = 'Dilep.M()'
 binning = [150, 50, 200]#[150, 50, 200]
@@ -106,9 +107,9 @@ binning = [150, 50, 200]#[150, 50, 200]
 x_name = 'Invariant Mass'
 y_name = 'Events'
 dolog = True
-f_name = 'Dilep_M_C_Test'
-#minp = 0.05
-#maxp = 1000000000
+f_name = 'Dilep_Test'
+minp = 0.05
+maxp = 1000000000
 try:
     opts, args = getopt.getopt(sys.argv[1:],"hdc:w:b:p:x:y:f:j:",["cut","weight","binning","plotvar","x_name","y_name","f_name","json_used","dolog"])
 except getopt.GetoptError:          
@@ -137,8 +138,17 @@ for opt, arg in opts:
     elif opt in ("-d", "--dolog"):
         dolog = True
 print plotvar, x_name, f_name
-
-tname = "nEvent"
+if "FL" in f_name:
+   maxp = 100
+   minp = 0.0005
+if "FH" in f_name:
+   maxp = 100000000
+   minp = 0.0005
+if "SL" in f_name:
+   maxp = 10000000
+   minp = 0.0005
+   
+tname = "events"
 
 mchistList = []
 
@@ -172,7 +182,7 @@ for imc,mcname in enumerate(mcfilelist):
     print rfname
     tfile = ROOT.TFile(rfname)
     #wentries = tfile.Get("genweight").Integral()
-    wentries = tfile.Get("genweight").Integral()
+    wentries = tfile.Get("weight").Integral()
     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Wentires: %s"%(wentries)
     #wentries = tfile.Get("Events").Integral(0,1)
     #print wentries
