@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from  PhysicsTools.NanoAOD.common_cff import *
 
 ##################### Tables for final output and docs ##########################
-cmesonTable = cms.EDProducer("CMesonProducer",
+ldTable = cms.EDProducer("longDecayProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
   mcLabel  = cms.InputTag("prunedGenParticles"),
@@ -38,25 +38,22 @@ cmesonTable = cms.EDProducer("CMesonProducer",
   cosThetaXYZCut = cms.double(100),
 )
 
-cmesonCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("cmesonTable"),
+longDecayCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("ldTable"),
     cut = cms.string(""),  #DO NOT further cut here, use vertexTable.svCut
-    name = cms.string("cmeson"),
+    name = cms.string("longDecay"),
     singleton = cms.bool(False), # the number of entries is variable
     extension = cms.bool(True), 
     variables = cms.PSet(P4Vars,
-        x   = Var("vx()", float, doc = "secondary vertex X position, in cm",precision=10),
-        y   = Var("vy()", float, doc = "secondary vertex Y position, in cm",precision=10),
+        x   = Var("vx()", float, doc = "secondary vertex X position, in cm",precision=14),
+        y   = Var("vy()", float, doc = "secondary vertex Y position, in cm",precision=14),
         z   = Var("vz()", float, doc = "secondary vertex Z position, in cm",precision=14),
-        chi2= Var("vertexChi2()", float, doc = "chi2",precision=14),
-        ndof= Var("vertexNdof()", int, doc = "number of degrees of freedom"),
         pdgId=Var("pdgId()", int, doc = "pdgId"),
     ),
 )
-cmesonCandidateTable.variables.pt.precision=14
-cmesonCandidateTable.variables.phi.precision=14
-cmesonCandidateTable.variables.eta.precision=14
-cmesonCandidateTable.variables.mass.precision=14
+longDecayCandidateTable.variables.pt.precision=14
+longDecayCandidateTable.variables.phi.precision=14
+longDecayCandidateTable.variables.eta.precision=14
+longDecayCandidateTable.variables.mass.precision=14
 
-cmesonTables = cms.Sequence(cmesonTable+cmesonCandidateTable)
-
+ldTables = cms.Sequence(ldTable+longDecayCandidateTable)
