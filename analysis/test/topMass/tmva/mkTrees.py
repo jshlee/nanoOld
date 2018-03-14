@@ -1,6 +1,7 @@
 import ROOT, math, os, copy, getopt, sys, array, math, glob
 from ROOT import * 
 from array import array
+import numpy as np
 
 # TTree
 f = ROOT.TFile("tmva_class_example.root", "recreate")
@@ -221,22 +222,31 @@ for iev, event in enumerate(events):
         cme_y[0] = event.cmeson_y[k]               
         cme_z[0] = event.cmeson_z[k]               
         cme_ndof[0] = event.cmeson_ndof[k]               
-        cme_pdgId[0] = event.cmeson_pdgId[k]               
+        cme_pdgId[0] = event.cmeson_pdgId[k]
 
-        if cme_mcMatch[0] > 0:
-            sigTree0.Fill()
-            #print "sigTree0 : ", cme_mcMatch[0]
-        if cme_mcMatch[0] > 1:
-            #print "sigTree1 : ", cme_mcMatch[0]
-            sigTree1.Fill()
-        if cme_mcMatch[0] < 0:
-            bkgTree0.Fill()
-            #print "bkgTree0 : ", cme_mcMatch[0]
-        if cme_mcMatch[0] < 1:
-            bkgTree1.Fill()
-            #print "bkgTree1 : ", cme_mcMatch[0]
-        #print cme_mcMatch[0] 
-        allTree.Fill()
+        #print event.cmeson_lxySig[0]
+
+        if np.isnan(event.cmeson_lxySig[0]):
+            print event.cmeson_lxySig[0]
+            print event.cmeson_pdgId[0]
+
+
+
+
+        #if cme_mcMatch[0] > 0:
+        #    sigTree0.Fill()
+        #    #print "sigTree0 : ", cme_mcMatch[0]
+        #if cme_mcMatch[0] > 1:
+        #    #print "sigTree1 : ", cme_mcMatch[0]
+        #    sigTree1.Fill()
+        #if cme_mcMatch[0] < 0:
+        #    bkgTree0.Fill()
+        #    #print "bkgTree0 : ", cme_mcMatch[0]
+        #if cme_mcMatch[0] < 1:
+        #    bkgTree1.Fill()
+        #    #print "bkgTree1 : ", cme_mcMatch[0]
+        ##print cme_mcMatch[0] 
+        #allTree.Fill()
     
 f.Write()
 f.Close()
