@@ -7,58 +7,60 @@ import numpy as np
 from math import ceil       
 username = os.environ['USER']
 
-analysis = 'TT'
-
-#pythonCfg = 'tth2mu.py'
-pythonCfg = 'tth2muC.py'
+analysis = 'top'
 
 RunFiles = [
-    #         # 'WMinusH_HToMuMu',
-    #         # 'WPlusH_HToMuMu',
-    #         # 'ZH_HToMuMu',
-    #         # 'VBF_HToMuMu',
-    #         # 'GG_HToMuMu',
-    #           'ttH',
-    #         # "WWTo2L2Nu",
-    #         # "WZTo3LNu_amcatnlo",
-    #         # "WZTo2LQQ",
-    #         # "ZZTo2L2Nu",
-    #         # "ZZTo2L2Q",
-    #          "ZZTo4L_powheg",
-    #          "WWW",
-    #          "WWZ",
-    #          "WZZ",
-    #          "ZZZ",
-    #          "TTZToLLNuNu",
-              "ZZ",
-              "WZ",
-              "WW",
-#   #           "ttWToLNu",
-    #         # "SingleTop_tW_noHadron",
-    #         # "SingleTbar_tW_noHadron",
-    #         # "SingleTop_tW",
-    #         # "SingleTbar_tW",
-#   #           "TTJets_DiLept",
-#   #           "TTJets_DiLept_Tune4",
-    #          'TTJets_aMC', 
-    #          'DYJets',
-#   #           'DYJets_MG_10to50',
-#   #           'DYJets_MG2',
-#   #           'DYJets_2J',
-#   #           'DYJets_1J',
-#   #           'DYJets_0J',
-#   #           'DYJets_10to50', 
-    #          'SingleMuon_Run2016B',
-    #          'SingleMuon_Run2016Bv1',
-    #          'SingleMuon_Run2016C',
-    #          'SingleMuon_Run2016D',
-    #          'SingleMuon_Run2016E',
-    #          'SingleMuon_Run2016F',
-    #          'SingleMuon_Run2016G',
-    #          'SingleMuon_Run2016H',
-    #         # 'SingleMuon_Run2016H_v3',
-              ]
-SetDir = "test"              
+             'DoubleEG_Run2016B',
+             'DoubleEG_Run2016Bv1',
+             'DoubleEG_Run2016C',
+             'DoubleEG_Run2016D',
+             'DoubleEG_Run2016E',
+             'DoubleEG_Run2016F',
+             'DoubleEG_Run2016G',
+             'DoubleEG_Run2016H',
+             'MuonEG_Run2016B',
+             'MuonEG_Run2016Bv1',
+             'MuonEG_Run2016C',
+             'MuonEG_Run2016D',
+             'MuonEG_Run2016E',
+             'MuonEG_Run2016F',
+             'MuonEG_Run2016G',
+             'MuonEG_Run2016H',
+             'DoubleMuon_Run2016B',
+             'DoubleMuon_Run2016Bv1',
+             'DoubleMuon_Run2016C',
+             'DoubleMuon_Run2016D',
+             'DoubleMuon_Run2016E',
+             'DoubleMuon_Run2016F',
+             'DoubleMuon_Run2016G',
+             'DoubleMuon_Run2016H',
+             'SingleMuon_Run2016B', 
+             'SingleMuon_Run2016Bv1',
+             'SingleMuon_Run2016C',
+             'SingleMuon_Run2016D',
+             'SingleMuon_Run2016E',
+             'SingleMuon_Run2016F',
+             'SingleMuon_Run2016G',
+             'SingleMuon_Run2016H',
+             'SingleElectron_Run2016B',
+             'SingleElectron_Run2016Bv1',
+             'SingleElectron_Run2016C',
+             'SingleElectron_Run2016D',
+             'SingleElectron_Run2016E',
+             'SingleElectron_Run2016F',
+             'SingleElectron_Run2016G',
+             'SingleElectron_Run2016H',
+             'TT_powheg',
+             'WJets',
+             "SingleTop_tW",
+             "SingleTbar_tW",
+             'ZZ',
+             'WW',
+             'WZ',
+             'DYJets',
+             'DYJets_10to50',
+            ]
+
 datadir = '{}/src/nano/analysis/data/dataset/'.format(os.environ['CMSSW_BASE'])
 #version = os.environ["CMSSW_VERSION"]
 
@@ -74,8 +76,7 @@ for i in RunFiles:
         print "ERROR: output directory already existing."
         sys.exit()
     else: os.makedirs(Dirname)
-
-    Dirname_ = "{}/src/nano/analysis/test/Results/{}/{}/".format(os.environ['CMSSW_BASE'],SetDir,datasetName)
+    Dirname_ = "%s/src/nano/analysis/test/Results/%s/"%(os.environ['CMSSW_BASE'],datasetName)
     if not os.path.isdir(Dirname_):
         os.makedirs(Dirname_)
 
@@ -104,11 +105,9 @@ for i in RunFiles:
         jds = "%ssubmit.jds" %Dirname 
         fout = open(jds, "w")
         print>>fout, "# Job description file for condor job"
-        print>>fout, """executable = {0}/src/nano/analysis/test/Batch/tth2mu.sh
+        print>>fout, """executable = {0}/src/nano/analysis/test/Batch/ttbar.sh
 universe   = vanilla
-
 log = condor.log
-
 getenv     = True
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
@@ -119,7 +118,7 @@ queue""" .format(os.environ['CMSSW_BASE'],Dirname, count)
         fout.close()
         count += 1 
         #jobName = analysis+'_'+datasetName
-        subBatch = "condor_submit -batch-name {} -append 'arguments={} {} {}' {}".format(datasetName ,SetDir ,datasetName ,FileNamesStr ,jds)
+        subBatch = "condor_submit -batch-name {} -append 'arguments={} {}' {}".format(datasetName ,datasetName,FileNamesStr, jds)
         #print createbatch
         print subBatch 
             
