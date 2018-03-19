@@ -47,75 +47,8 @@
 
 #include "TLorentzVector.h"
 
+#include "longDecayProducer.h"
 //#define debugMode
-
-using namespace edm;
-using namespace std;
-
-class longDecayProducer : public edm::stream::EDProducer<>
-{
-public:
-  explicit longDecayProducer(const edm::ParameterSet & iConfig);
-
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-  
-private:
-  void produce( edm::Event&, const edm::EventSetup& ) override;
-
-  reco::LeafCandidate getCandidate(const TrackingParticle* tp) {
-    return reco::LeafCandidate( tp->charge(), tp->p4(), tp->vertex(), tp->pdgId(), tp->status() );
-  };
-  
-  edm::EDGetTokenT<edm::View<pat::Jet> > jetLabel_;
-  edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
-  edm::EDGetTokenT<edm::View<reco::GenParticle> > genLabel_;
-  edm::EDGetTokenT<TrackingVertexCollection> trackingVertexLabel_;
-  edm::EDGetTokenT<TrackingParticleCollection> trackingParticleLabel_;
-  
-  edm::ESHandle<TransientTrackBuilder> trackBuilder_;
-
-  const float gPionMass = 0.1396;
-  const float gKaonMass = 0.4937;
-  const float gJpsiMass = 3.096;
-  const float gD0Mass = 1.865;
-  const float gDstarMass = 2.010;
-  const float gProtonMass = 0.938272;
-  const int pdgId_Kp = 321;
-  const int pdgId_Jpsi = 443;
-  const int pdgId_D0 = 421;
-  const int pdgId_Dstar = 413;
-  const int pdgId_KS = 310;
-  const int pdgId_Lambda = 3122;
-  const int pdgId_p = 2122;
-  const float jpsiMin_ = 2.5;
-  const float jpsiMax_ = 3.4;
-  const float D0Min_   = 1.7;
-  const float D0Max_   = 2.0;
-  const float DstarDiffMin_   = 0.14;
-  const float DstarDiffMax_   = 0.16;
-  const float KSMin_   = 0.43;
-  const float KSMax_   = 0.57;
-  const float LambdaMin_   = 0.9;
-  const float LambdaMax_   = 1.16;
-  //unsigned int maxNumPFCand_;
-  bool doFullMatch_;
-  bool applyCuts_;
-  // cuts on initial track selection
-  float tkChi2Cut_;
-  int tkNHitsCut_;
-  float tkPtCut_;
-  float tkIPSigXYCut_;
-  float tkIPSigZCut_;
-  // cuts on the vertex
-  float vtxChi2Cut_;
-  float vtxDecaySigXYCut_;
-  float vtxDecaySigXYZCut_;
-  // miscellaneous cuts
-  float tkDCACut_;
-  float cosThetaXYCut_;
-  float cosThetaXYZCut_;  
-};
-
 
 longDecayProducer::longDecayProducer(const edm::ParameterSet & iConfig) :
   // jetLabel_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
@@ -163,38 +96,56 @@ longDecayProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
   vector<int> imother;
-  
+  vector<int> isKsFromTsb;
+  vector<uint8_t> inVol;
+  vector<uint8_t> isKsFromTop;
+
   edm::Handle<TrackingVertexCollection> trackingVertexs;
   iEvent.getByToken(trackingVertexLabel_, trackingVertexs);
   edm::Handle<TrackingParticleCollection> trackingParticles;
   iEvent.getByToken(trackingParticleLabel_, trackingParticles);
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
-    if (trackVertex.eventId().bunchCrossing() != 0)
-      continue;  // Consider only in-time events
+
+    if (trackVertex.eventId().bunchCrossing() != 0) continue;  // Consider only in-time events
     if (trackVertex.nDaughterTracks() < 2) continue;  // Keep only V0 vertices
     
-    for (TrackingVertex::tp_iterator source = trackVertex.sourceTracks_begin();
-         source != trackVertex.sourceTracks_end(); ++source) {
+    for (TrackingVertex::tp_iterator source = trackVertex.sourceTracks_begin(); source != trackVertex.sourceTracks_end(); ++source) {
       auto decayTrk = source->get();
-      if (decayTrk->pdgId() != 310) continue;
+      if (decayTrk->pdgId() != 310) continue; //&& decayTrk->pdgId() != 3122) continue;
+
+      cout << "##################################start##################################" << endl;
 
       candidates->push_back(getCandidate(decayTrk));
       imother.push_back(1);
-      
-      cout << " # decayTrk = " << " pdg = " << decayTrk->pdgId() << ", pt = " << decayTrk->p4().Pt()<<", vert = "<< trackVertex.position() <<", inVolume "<<trackVertex.inVolume()<< endl;
+      inVol.push_back(trackVertex.inVolume());
+
+      int count = 0;
+      int KsFromQuark = 0;
+      bool KsFromTquark = false;
+
+      motherTracking(trackVertex, decayTrk, count, KsFromQuark, KsFromTquark, isKsFromTsb, isKsFromTop);
+
+      // Check KS-Pion Matching through SimTrk
       for (unsigned int i = 0; i < trackVertex.nDaughterTracks(); ++i){	
 	auto dau = trackVertex.daughterTracks().at(i).get();
 
 	candidates->push_back(getCandidate(dau));
-	imother.push_back(1);
-	
-	cout << " dau = " << " pdg = " << dau->pdgId() << ", pt = " << dau->p4().Pt() << endl;
+	imother.push_back(0);
+        inVol.push_back(trackVertex.inVolume());
+        isKsFromTop.push_back(KsFromTquark);
+	isKsFromTsb.push_back(KsFromQuark);
+	cout << "ev final ===> KsFromTquark : " << KsFromTquark << " KsFromQuark : " << KsFromQuark << endl;
+        cout << "ev final size : " << "candidate : " << candidates->size() << " imother : " << imother.size() << " inVol : " << inVol.size() << " isKsFromTop : " << isKsFromTop.size() << " isKsFromTsb : " << isKsFromTsb.size() << endl;
+
+
+//	cout << " dau = " << " pdg = " << dau->pdgId() << ", pt = " << dau->p4().Pt() << endl;
       
       }
+      cout << "###################################end###################################" << endl;
     }
   }
-
+/*
   Handle<edm::View<reco::GenParticle> > genParticles;
   iEvent.getByToken(genLabel_,genParticles);
   int i = 0;
@@ -217,10 +168,13 @@ longDecayProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     ++i;
   }
   
-
+*/
   auto hadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"longDecay",false);
   hadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
-  
+  hadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"track from t->s/b",nanoaod::FlatTable::IntColumn);
+  hadTable->addColumn<uint8_t>("isKsFromTop",isKsFromTop,"track from top",nanoaod::FlatTable::UInt8Column);
+  hadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
+ 
   iEvent.put(move(hadTable),"longDecay");
   iEvent.put(move(candidates));
 }
