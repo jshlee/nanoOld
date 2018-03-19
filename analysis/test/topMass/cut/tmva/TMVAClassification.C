@@ -34,8 +34,8 @@ int TMVAClassification( TString myMethodList = "" )
    std::map<std::string,int> Use;
 
    // Cut optimisation
-   Use["Cuts"]            = 1;
-   Use["CutsD"]           = 0;
+   Use["Cuts"]            = 0;
+   Use["CutsD"]           = 1;
    Use["CutsPCA"]         = 0;
    Use["CutsGA"]          = 0;
    Use["CutsSA"]          = 0;
@@ -137,8 +137,8 @@ int TMVAClassification( TString myMethodList = "" )
 
    // Register the training and test trees
 
-   TTree *signalTree     = (TTree*)input->Get("TreeS");
-   TTree *background     = (TTree*)input->Get("TreeB");
+   TTree *signalTree     = (TTree*)input->Get("TreeS0");
+   TTree *background     = (TTree*)input->Get("TreeB0");
 
    // Create a ROOT output file where TMVA will store ntuples, histograms, etc.
    TString outfileName( "TMVA.root" );
@@ -167,9 +167,36 @@ int TMVAClassification( TString myMethodList = "" )
    // Define the input variables that shall be used for the MVA training
    // note that you may also use variable expressions, such as: "3*var1/var2*abs(var3)"
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
+   
+   dataloader->AddVariable( "cme_lxy", 'F' );
+   //dataloader->AddVariable( "cme_lxySig", 'F' );
+   dataloader->AddVariable( "cme_l3D", 'F' );
+   //dataloader->AddVariable( "cme_l3DSig", 'F' );
+   dataloader->AddVariable( "cme_jetDR", 'F' );
+   dataloader->AddVariable( "cme_legDR", 'F' );
+   
    dataloader->AddVariable( "cme_dca", 'F' );
    dataloader->AddVariable( "cme_angleXY", 'F' );
    dataloader->AddVariable( "cme_angleXYZ", 'F' );
+   dataloader->AddVariable( "cme_trk_normalizedChi2", 'F' );
+   dataloader->AddVariable( "cme_trk_pt", 'F' );
+   dataloader->AddVariable( "cme_trk_ipsigXY", 'F' );
+   dataloader->AddVariable( "cme_trk_ipsigZ", 'F' );
+   dataloader->AddVariable( "cme_trk_nHits", 'I' );
+   dataloader->AddVariable( "cme_x", 'F' );
+   dataloader->AddVariable( "cme_y", 'F' );
+   dataloader->AddVariable( "cme_z", 'F' );
+   dataloader->AddVariable( "cme_pt", 'F' );
+   dataloader->AddVariable( "cme_chi2", 'F' );
+   // dataloader->AddVariable( "cme_ndof", 'I' );
+   
+   // dataloader->AddVariable( "cme_lx := cme_dca/cme_lxy", 'F' );
+   // dataloader->AddVariable( "cme_lxyS := cme_lxy/cme_lxySig", 'F' );
+   // dataloader->AddVariable( "cme_l3DS := cme_l3D/cme_l3DSig", 'F' );
+   // dataloader->AddVariable( "cme_cn : = cme_chi2/cme_ndof", 'F' );
+
+   // dataloader->AddVariable( "cme_pt", 'F' );
+   
 
    // global event weights per tree (see below for setting event-wise weights)
    Double_t signalWeight     = 1.0;
@@ -225,8 +252,8 @@ int TMVAClassification( TString myMethodList = "" )
    //dataloader->SetBackgroundWeightExpression( "weight" );
 
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycuts = ""; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
-   TCut mycutb = ""; // for example: TCut mycutb = "abs(var1)<0.5";
+   TCut mycuts = "cme_pdgId==421"; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
+   TCut mycutb = "cme_pdgId==421"; // for example: TCut mycutb = "abs(var1)<0.5";
 
    // Tell the dataloader how to use the training and testing events
    //
@@ -240,7 +267,7 @@ int TMVAClassification( TString myMethodList = "" )
    //    dataloader->PrepareTrainingAndTestTree( mycut,
    //         "NSigTrain=3000:NBkgTrain=3000:NSigTest=3000:NBkgTest=3000:SplitMode=Random:!V" );
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
-                                        "nTrain_Signal=1000:nTrain_Background=1000:SplitMode=Random:NormMode=NumEvents:!V" );
+                                       "nTrain_Signal=4000:nTrain_Background=4000:nTest_Signal=4000:nTest_Background=4000:SplitMode=Random:NormMode=NumEvents:!V" );
 
    // ### Book MVA methods
    //
