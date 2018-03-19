@@ -137,8 +137,8 @@ int TMVAClassification( TString myMethodList = "" )
 
    // Register the training and test trees
 
-   TTree *signalTree     = (TTree*)input->Get("TreeS");
-   TTree *background     = (TTree*)input->Get("TreeB");
+   TTree *signalTree     = (TTree*)input->Get("TreeS0");
+   TTree *background     = (TTree*)input->Get("TreeB0");
 
    // Create a ROOT output file where TMVA will store ntuples, histograms, etc.
    TString outfileName( "TMVA.root" );
@@ -169,7 +169,7 @@ int TMVAClassification( TString myMethodList = "" )
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
    
    dataloader->AddVariable( "cme_lxy", 'F' );
-   dataloader->AddVariable( "cme_lxySig", 'F' );
+   //dataloader->AddVariable( "cme_lxySig", 'F' );
    dataloader->AddVariable( "cme_l3D", 'F' );
    //dataloader->AddVariable( "cme_l3DSig", 'F' );
    dataloader->AddVariable( "cme_jetDR", 'F' );
@@ -188,12 +188,12 @@ int TMVAClassification( TString myMethodList = "" )
    dataloader->AddVariable( "cme_z", 'F' );
    dataloader->AddVariable( "cme_pt", 'F' );
    dataloader->AddVariable( "cme_chi2", 'F' );
-   dataloader->AddVariable( "cme_ndof", 'I' );
+   // dataloader->AddVariable( "cme_ndof", 'I' );
    
    // dataloader->AddVariable( "cme_lx := cme_dca/cme_lxy", 'F' );
    // dataloader->AddVariable( "cme_lxyS := cme_lxy/cme_lxySig", 'F' );
    // dataloader->AddVariable( "cme_l3DS := cme_l3D/cme_l3DSig", 'F' );
-   dataloader->AddVariable( "cme_cn : = cme_chi2/cme_ndof", 'F' );
+   // dataloader->AddVariable( "cme_cn : = cme_chi2/cme_ndof", 'F' );
 
    // dataloader->AddVariable( "cme_pt", 'F' );
    
@@ -252,8 +252,8 @@ int TMVAClassification( TString myMethodList = "" )
    //dataloader->SetBackgroundWeightExpression( "weight" );
 
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycuts = "cme_pdgId==421 && TMath::isNaN(cme_lxySig)==false";// && cme_lxyS<100000"; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
-   TCut mycutb = "cme_pdgId==421 && TMath::isNaN(cme_lxySig)==false";// && cme_lxyS<100000"; // for example: TCut mycutb = "abs(var1)<0.5";
+   TCut mycuts = "cme_pdgId==421"; // for example: TCut mycuts = "abs(var1)<0.5 && abs(var2-0.5)<1";
+   TCut mycutb = "cme_pdgId==421"; // for example: TCut mycutb = "abs(var1)<0.5";
 
    // Tell the dataloader how to use the training and testing events
    //
