@@ -35,10 +35,6 @@ private:
 
 void BTagWeightEvaluator::initCSVWeight()
 {
-<<<<<<< HEAD
-=======
-  std::cout << "test" << std::endl;
->>>>>>> 96fd3c74dc1707208e24a84af87be5152d60887f
   string csvFileName = "btagSF_CSVv2_ichep2016.csv";
   std::string env = std::getenv("CMSSW_BASE");
   std::string csvFile = env+"/src/nano/analysis/data/btagSF/"+csvFileName;
