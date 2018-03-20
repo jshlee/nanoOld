@@ -35,7 +35,6 @@ private:
 
 void BTagWeightEvaluator::initCSVWeight()
 {
-  std::cout << "test" << std::endl;
   string csvFileName = "btagSF_CSVv2_ichep2016.csv";
   std::string env = std::getenv("CMSSW_BASE");
   std::string csvFile = env+"/src/nano/analysis/data/btagSF/"+csvFileName;
@@ -92,7 +91,6 @@ double BTagWeightEvaluator::getSF(const TParticle& jet, const float CSVV2, const
   else if ( flav == 4 ) jf = BTagEntry::FLAV_C;
 
   return readerItr->second.eval(jf, aeta, pt, discr);
-  
   
   return 1.;
 };
