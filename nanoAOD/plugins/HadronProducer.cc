@@ -22,10 +22,10 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   for (const pat::Jet & aPatJet : *jetHandle){
     if (aPatJet.pt() < 30 or abs(aPatJet.eta()) > 3 ) continue;
 
-    vector<const reco::Candidate*> chargedHadrons, leptons;
+    vector<reco::Candidate*> chargedHadrons, leptons;
     
     for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
-      const reco::Candidate* dauCand ( dynamic_cast<const reco::Candidate*>(aPatJet.daughter(idx)));
+      reco::Candidate* dauCand = const_cast<reco::Candidate*>(aPatJet.daughter(idx));
 #ifdef debugMode
       cout <<"dau pt = "<< dauCand->pt() << ", eta = "<< dauCand->eta() << ", pid = "<< dauCand->pdgId()<<endl;
 #endif
@@ -54,17 +54,26 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     unsigned int dau_size = chargedHadrons.size() + leptons.size();
     if ( dau_size < 2 ) continue;
 
-    if (leptons.size() > 1){
-      auto jpsiCands = findJPsiCands(leptons, pv, njet, aPatJet);      
-      hadronCandidates.insert(hadronCandidates.end(), jpsiCands.begin(), jpsiCands.end());
+    // find JPsi Cands 
+    auto jpsiCands = findJPsiCands(leptons, pv, njet, aPatJet);      
+    hadronCandidates.insert(hadronCandidates.end(), jpsiCands.begin(), jpsiCands.end());
+    
+    // find D0 Cands
+    auto d0Cands = findD0Cands(chargedHadrons, pv, njet, aPatJet);      
+    hadronCandidates.insert(hadronCandidates.end(), d0Cands.begin(), d0Cands.end());
+
+    // find dstar cands
+    if (d0Cands.size()){
+      auto dStarCands = findDStarCands(d0Cands, chargedHadrons, pv, njet, aPatJet);
+      hadronCandidates.insert(hadronCandidates.end(), dStarCands.begin(), dStarCands.end());	
     }
-	
+    
     ++njet;
   }
 
-
   // saving all variables
   auto had_cands = make_unique<reco::VertexCompositeCandidateCollection>();
+  auto had_jets = make_unique<vector<pat::Jet>>();
   vector<int> had_nJet, had_nDau;
   vector<float> had_jetDR, had_legDR, had_diffMass;
   vector<float> had_lxy, had_lxySig, had_l3D, had_l3DSig, had_dca, had_angleXY, had_angleXYZ;
@@ -73,7 +82,7 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   for (auto cand: hadronCandidates){
     had_cands->push_back(cand.vcc);
-    
+    had_jets->push_back(cand.jet);
     const reco::Track* dau1 = cand.vcc.daughter(0)->bestTrack();
     had_dau1_chi2.push_back(dau1->normalizedChi2());
     had_dau1_nHits.push_back(dau1->numberOfValidHits());
@@ -89,9 +98,11 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     had_dau2_ipsigXY.push_back(std::abs(dau2->dxy(primaryVertexPoint)/dau2->dxyError()));
     
     had_nJet.push_back(cand.nJet);
-    had_nDau.push_back(cand.nDau);
-    had_jetDR.push_back(cand.jetDR);
-    had_legDR.push_back(cand.legDR);
+    had_nDau.push_back(cand.nDau);      
+    
+    had_jetDR.push_back(reco::deltaR( cand.vcc, cand.jet));
+    had_legDR.push_back(reco::deltaR( *dau1, *dau2));
+    
     had_diffMass.push_back(cand.diffMass);
     had_lxy.push_back(cand.lxy);
     had_lxySig.push_back(cand.lxySig);
@@ -133,22 +144,23 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   iEvent.put(move(had_table),"had");
   iEvent.put(move(had_cands));
+  iEvent.put(move(had_jets),"jet");
   
 }
 
-vector<HadronProducer::hadronCandidate> HadronProducer::findJPsiCands(vector<const reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+vector<HadronProducer::hadronCandidate> HadronProducer::findJPsiCands(vector<reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
 {
   vector<hadronCandidate> hadrons;
   // find jpsi to mumu or ee
   for (auto lep1Cand : leptons){
-    //if (lep1Cand->pdgId() > 0) continue; 
+    if (lep1Cand->pdgId() > 0) continue; 
     for (auto lep2Cand : leptons){
-      // if (lep2Cand->pdgId() < 0) continue; 
+      if (lep2Cand->pdgId() < 0) continue; 
 
-      // int pdgMul = lep1Cand->pdgId() * lep2Cand->pdgId();
-      // if ( pdgMul != -121 and pdgMul != -169 ) continue; 
+       int pdgMul = lep1Cand->pdgId() * lep2Cand->pdgId();
+       if ( pdgMul != -121 and pdgMul != -169 ) continue; 
 
-      vector<const reco::Candidate*> cands{lep1Cand, lep2Cand};
+      vector<reco::Candidate*> cands{lep1Cand, lep2Cand};
 
       hadronCandidate hc;
 
@@ -156,9 +168,10 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findJPsiCands(vector<con
 						hc.dca, hc.angleXY, hc.angleXYZ);
 
       if (cand.numberOfDaughters() < 2) continue;
-      // if (abs(cand.mass() - jpsi_m_) > 0.5) continue;
+      if (abs(cand.mass() - jpsi_m_) > 0.5) continue;
       
       hc.vcc = cand;
+      hc.jet = aPatJet;
       
       auto d2 = getDistance(2,cand,pv);
       hc.lxy = d2.first;      
@@ -171,11 +184,111 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findJPsiCands(vector<con
       hc.nDau = 2;
       hc.diffMass = -9;
 
-      hc.jetDR = reco::deltaR( cand, aPatJet);
-      hc.legDR = reco::deltaR( *lep1Cand, *lep2Cand);
-      
       hadrons.emplace_back(hc);
     }
   }
+  return hadrons;
+}
+
+vector<HadronProducer::hadronCandidate> HadronProducer::findD0Cands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+{
+  vector<hadronCandidate> hadrons;
+  // find jpsi to mumu or ee
+  for (auto pion : chargedHads){
+    for (auto kaon : chargedHads){
+      if ( pion->charge() * kaon->charge() != -1 ) continue;
+
+      pion->setMass(pion_m_);
+      pion->setPdgId(pion->charge()*pion_pdgId_);
+      kaon->setMass(kaon_m_);
+      kaon->setPdgId(kaon->charge()*kaon_pdgId_);
+
+      vector<reco::Candidate*> cands{pion, kaon};
+
+      hadronCandidate hc;
+
+      reco::VertexCompositeCandidate cand = fit(cands, pv, d0_pdgId_,
+						hc.dca, hc.angleXY, hc.angleXYZ);
+
+      if (cand.numberOfDaughters() < 2) continue;
+      if (abs(cand.mass() - d0_m_) > 0.5) continue;
+      
+      hc.vcc = cand;
+      hc.jet = aPatJet;
+      
+      auto d2 = getDistance(2,cand,pv);
+      hc.lxy = d2.first;      
+      hc.lxySig = d2.second;
+      auto d3 = getDistance(3,cand,pv);	
+      hc.l3D = d3.first;
+      hc.l3DSig = d3.second;
+
+      hc.nJet = nJet;
+      hc.nDau = 2;
+      hc.diffMass = -9;
+
+      hadrons.emplace_back(hc);
+    }
+  }
+  return hadrons;
+}
+
+vector<HadronProducer::hadronCandidate> HadronProducer::findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::Candidate*> &chargedHads,
+								       reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+{
+  vector<hadronCandidate> hadrons;
+  // find jpsi to mumu or ee
+  for (auto d0 : d0cands){
+    
+    for (auto pion : chargedHads){
+
+      const reco::Track* dau1 = d0.vcc.daughter(0)->bestTrack();
+      if (dau1 == pion->bestTrack()) continue;
+      
+      const reco::Track* dau2 = d0.vcc.daughter(1)->bestTrack();
+      if (dau2 == pion->bestTrack()) continue;
+
+      pion->setMass(pion_m_);
+      pion->setPdgId(pion->charge()*pion_pdgId_);
+      
+      // d0 first daughter should always be pion from findD0Cands
+      if (abs(d0.vcc.daughter(0)->pdgId()) != pion_pdgId_){
+	cout <<"HadronProducer::findDStarCands first daughter is not pion "<< d0.vcc.daughter(0)->pdgId() <<endl;
+      }
+      // D*+ -> [K- pi+]D0 pi+ (opposite signed kaon is suppressed by 2 OoM)
+      // i.e. pions should be opposite charge
+      if (!(d0.vcc.daughter(0)->pdgId() + pion->pdgId() == 0)) continue;
+      
+
+      hadronCandidate hc;
+
+      vector<reco::Candidate*> cands{pion, d0.vcc.daughter(0), d0.vcc.daughter(1)};
+      //vector<reco::Candidate*> cands{pion, &d0.vcc};
+      reco::VertexCompositeCandidate cand = fit(cands, pv, dstar_pdgId_,
+						hc.dca, hc.angleXY, hc.angleXYZ);
+      
+      if (cand.numberOfDaughters() < 2) continue;
+      
+      float diffMass_Dstar = cand.mass() - d0.vcc.mass();      
+      if (abs(diffMass_Dstar - (dstar_m_ - d0_m_)) > 0.5) continue;
+      
+      hc.vcc = cand;
+      hc.jet = aPatJet;
+      
+      auto d2 = getDistance(2,cand,pv);
+      hc.lxy = d2.first;      
+      hc.lxySig = d2.second;
+      auto d3 = getDistance(3,cand,pv);	
+      hc.l3D = d3.first;
+      hc.l3DSig = d3.second;
+
+      hc.nJet = nJet;
+      hc.nDau = 3;
+      hc.diffMass = diffMass_Dstar;
+
+      hadrons.emplace_back(hc);
+    }
+  }
+  
   return hadrons;
 }

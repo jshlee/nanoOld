@@ -57,9 +57,9 @@ class HadronProducer : public edm::stream::EDProducer<> {
 public:
   struct hadronCandidate {
     reco::VertexCompositeCandidate vcc;
+    pat::Jet jet;
     int nJet, nDau;
-    float jetDR, legDR, diffMass;
-    float lxy, lxySig, l3D, l3DSig, dca, angleXY, angleXYZ;
+    float diffMass, lxy, lxySig, l3D, l3DSig, dca, angleXY, angleXYZ;
   };
   
   explicit HadronProducer(const edm::ParameterSet & iConfig);
@@ -69,20 +69,22 @@ public:
 private:
   void produce( edm::Event&, const edm::EventSetup& ) override;
 
-  reco::VertexCompositeCandidate fit(vector<const reco::Candidate*>& cands,
+  reco::VertexCompositeCandidate fit(vector<reco::Candidate*>& cands,
 				     reco::Vertex& pv, int pdgId,
 				     float &dca, float &angleXY, float &angleXYZ);
     
   SVector3 getDistanceVector(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
   pair<float, float> getDistance(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
   
-  vector<HadronProducer::hadronCandidate> findJPsiCands(vector<const reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  
+  vector<hadronCandidate> findJPsiCands(vector<reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findD0Cands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::Candidate*> &chargedHads,
+					 reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
   edm::EDGetTokenT<edm::View<pat::Jet> > jetLabel_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
   edm::ESHandle<TransientTrackBuilder> trackBuilder_;
 
-  const int kaon_pdgId_ = 321, proton_pdgId_ = 2122;
+  const int pion_pdgId_ = 211, kaon_pdgId_ = 321, proton_pdgId_ = 2122;
   const float pion_m_ = 0.1396, kaon_m_ = 0.4937, proton_m_ = 0.938272;
 
   const int jpsi_pdgId_ = 443, d0_pdgId_ = 421, dstar_pdgId_ = 413;
@@ -129,9 +131,10 @@ HadronProducer::HadronProducer(const edm::ParameterSet & iConfig) :
   
   produces<nanoaod::FlatTable>("had");
   produces<reco::VertexCompositeCandidateCollection>();
+  produces<vector<pat::Jet>>("jet");
 }
 
-reco::VertexCompositeCandidate HadronProducer::fit(vector<const reco::Candidate*>& cands,
+reco::VertexCompositeCandidate HadronProducer::fit(vector<reco::Candidate*>& cands,
 						   reco::Vertex& pv, int pdgId,
 						   float &dca, float &angleXY, float &angleXYZ)
 {
