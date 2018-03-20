@@ -22,7 +22,6 @@
 #include "lumiTool.h"
 #include "MuonScaleFactorEvaluator.h"
 #include "ElecScaleFactorEvaluator.h"
-#include "json.h"
 #include "BTagWeightEvaluator.h"
 
 class nanoAnalysis {
@@ -60,11 +59,11 @@ private:
       Int_t b_Step;
      
       //Channel
-      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet, b_charge, b_Lcharge;
+      Int_t b_channel, b_nlep, b_nmuon, b_nelec, b_njet, b_nbjet, b_charge;
       Bool_t keep;
       //triggers
       Bool_t b_trig_m, b_trig_m2,  b_trig_e, b_trig_mm, b_trig_em, b_trig_ee;
-      Int_t b_FL, b_FH, b_SL;
+      Int_t b_FL, b_FH2, b_FH3, b_FH4, b_SL;
 
       //Tools
       pileUpTool* m_pileUp;
@@ -84,15 +83,11 @@ private:
       Bool_t LumiCheck();
       enum TTLLChannel { CH_NOLL = 0, CH_MUEL, CH_ELEL, CH_MUMU };
 
-      bool hasOverLap(TLorentzVector cand, vector<TParticle> objects);
+      bool hasOverLap(TLorentzVector cand, vector<TParticle> objects, Float_t rad);
       
-      std::vector<TParticle> LooseMuonSelection();
-      std::vector<TParticle> LooseElectronSelection(vector<TParticle>);
-      std::vector<TParticle> LooseJetSelection(std::vector<TParticle>);
-      std::vector<TParticle> LooseBJetSelection(std::vector<TParticle>);
       std::vector<TParticle> MuonSelection();
-      std::vector<TParticle> ElectronSelection();
-      std::vector<TParticle> JetSelection(std::vector<TParticle>);
+      std::vector<TParticle> ElectronSelection(std::vector<TParticle>);
+      std::vector<TParticle> JetSelection(std::vector<TParticle>, std::vector<TParticle>);
       std::vector<TParticle> BJetSelection(std::vector<TParticle>);
       
       Double_t roccoR(TLorentzVector m, Int_t &q, Int_t &nGen, Int_t &nTrackerLayers);
@@ -337,7 +332,7 @@ public:
       Bool_t          Photon_mvaID_WP90[7];   //[nPhoton]
       Bool_t          Photon_pixelSeed[7];   //[nPhoton]
       Int_t           Pileup_nPU;
-      Float_t         Pileup_nTrueInt;
+      Int_t           Pileup_nTrueInt;
       Float_t         PuppiMET_phi;
       Float_t         PuppiMET_pt;
       Float_t         PuppiMET_sumEt;
