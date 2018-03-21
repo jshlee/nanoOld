@@ -335,48 +335,6 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<r
   return hadrons;
 }
 
-vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
-{
-  vector<hadronCandidate> hadrons;
-  for (auto pion1 : chargedHads){
-    for (auto pion2 : chargedHads){
-      if ( pion1->charge() * pion2->charge() != -1 ) continue;
-
-      pion1->setMass(pion_m_);
-      pion1->setPdgId(pion1->charge()*pion_pdgId_);
-      pion2->setMass(pion_m_);
-      pion2->setPdgId(pion2->charge()*pion_pdgId_);
-
-      vector<reco::Candidate*> cands{pion1, pion2};
-
-      hadronCandidate hc;
-
-      reco::VertexCompositeCandidate cand = fit(cands, pv, kshort_pdgId_,
-                                                hc.dca, hc.angleXY, hc.angleXYZ);
-
-      if (cand.numberOfDaughters() < 2) continue;
-      if (abs(cand.mass() - kshort_m_) > 0.5) continue;
-
-      hc.vcc = cand;
-      hc.jet = aPatJet;
-
-      auto d2 = getDistance(2,cand,pv);
-      hc.lxy = d2.first;
-      hc.lxySig = d2.second;
-      auto d3 = getDistance(3,cand,pv);
-      hc.l3D = d3.first;
-      hc.l3DSig = d3.second;
-
-      hc.nJet = nJet;
-      hc.nDau = 2;
-      hc.diffMass = -9;
-
-      hadrons.emplace_back(hc);
-    }
-  }
-  return hadrons;
-}
-
 vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
 {
   vector<hadronCandidate> hadrons;
