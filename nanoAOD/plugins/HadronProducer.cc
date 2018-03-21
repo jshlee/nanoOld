@@ -67,6 +67,13 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       auto dStarCands = findDStarCands(d0Cands, chargedHadrons, pv, njet, aPatJet);
       hadronCandidates.insert(hadronCandidates.end(), dStarCands.begin(), dStarCands.end());	
     }
+    // find KShort Cands
+    auto KShortCands = findKShortCands(chargedHadrons, pv, njet, aPatJet);
+    hadronCandidates.insert(hadronCandidates.end(), KShortCands.begin(), KShortCands.end());
+
+    // find Lambda Cands
+    auto LambdaCands = findLambdaCands(chargedHadrons, pv, njet, aPatJet);
+    hadronCandidates.insert(hadronCandidates.end(), LambdaCands.begin(), LambdaCands.end());
     
     ++njet;
   }
