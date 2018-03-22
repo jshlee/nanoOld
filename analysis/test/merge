@@ -15,9 +15,9 @@ if "results_merged" not in os.listdir(os.getcwd()):
 """
 
 version="%s"%os.environ["CMSSW_VERSION"]
-dirname = "test"
-pstored="/xrootd/store/user/%s/nanoAOD/%s/"%(os.environ['USER'],dirname)
-#pstored = "/cms/scratch/daniel/nanoAOD/src/nano/analysis/h2mu/Results/CSV/"
+#dirname = "Results"
+#pstored="/cms/scratch/%s/nanoAOD/src/nano/analysis/test/%s/"%(os.environ['USER'],dirname)
+pstored = "/cms/scratch/seulgi/nanoAOD/src/nano/analysis/test/Results/"
 
 pmerged=pstored+"results_merged/" 
 
@@ -41,8 +41,8 @@ for d in dir_list:
         failed_list.append(d)
     else:
         #os.system("hadd -f %s.root %s"%(pmerged+"h2muAnalyzer_"+d,file_names))
-        print "hadd -f %s.root %s"%(pmerged+"tth2mu_"+d,file_names)
-        os.system("hadd -f %s.root %s"%(pmerged+"tth2mu_"+d,file_names))
+        print "hadd -f %s.root %s"%(pmerged+"topmass_"+d,file_names)
+        os.system("hadd -f %s.root %s"%(pmerged+"topmass_"+d,file_names))
 
 if len(failed_list) > 0:
     print

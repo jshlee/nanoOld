@@ -35,7 +35,7 @@ int TMVAClassification( TString myMethodList = "" )
 
    // Cut optimisation
    Use["Cuts"]            = 0;
-   Use["CutsD"]           = 1;
+   Use["CutsD"]           = 0;
    Use["CutsPCA"]         = 0;
    Use["CutsGA"]          = 0;
    Use["CutsSA"]          = 0;
@@ -188,6 +188,10 @@ int TMVAClassification( TString myMethodList = "" )
    dataloader->AddVariable( "cme_z", 'F' );
    dataloader->AddVariable( "cme_pt", 'F' );
    dataloader->AddVariable( "cme_chi2", 'F' );
+   
+   dataloader->AddSpectator( "cme_mass", 'F' );
+   
+   
    // dataloader->AddVariable( "cme_ndof", 'I' );
    
    // dataloader->AddVariable( "cme_lx := cme_dca/cme_lxy", 'F' );
@@ -283,7 +287,7 @@ int TMVAClassification( TString myMethodList = "" )
 
    if (Use["CutsD"])
       factory->BookMethod( dataloader, TMVA::Types::kCuts, "CutsD",
-                           "!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate" );
+                           "!H:!V:FitMethod=MC:EffSel:SampleSize=4000:VarProp=FSmart:VarTransform=Decorrelate" );
 
    if (Use["CutsPCA"])
       factory->BookMethod( dataloader, TMVA::Types::kCuts, "CutsPCA",
