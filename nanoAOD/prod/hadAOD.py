@@ -22,14 +22,14 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(50)
 )
 #process.maxEvents.input = cms.untracked.int32(1000)
 # Input source
 process.source = cms.Source("PoolSource",
-    #fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/aod_ttbar.root'),
-    fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/AODSIM.root'),
-    secondaryFileNames = cms.untracked.vstring()
+fileNames = cms.untracked.vstring('/store/user/jlee/tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_reco/reco_234.root'),
+#fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/reco.root'),
+secondaryFileNames = cms.untracked.vstring()
 )
 
 process.options = cms.untracked.PSet()
@@ -63,26 +63,23 @@ from  PhysicsTools.NanoAOD.common_cff import *
 process.genParticleTable.src = cms.InputTag("genParticles")
 process.genParticleTable.variables.mass = Var("mass", float,precision=8,doc="Mass")
 
-process.load("SimGeneral.MixingModule.trackingTruthProducerSelection_cfi")
-process.trackingParticles.simHitCollections = cms.PSet( )
-process.mix.playback = cms.untracked.bool(True)
-process.mix.digitizers = cms.PSet(
-     mergedtruth = cms.PSet(process.trackingParticles)
-)
-for a in process.aliases: delattr(process, a)
-
-process.load("SimTracker.TrackAssociatorProducers.trackAssociatorByHits_cfi")
 process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
-
 process.load('nano.nanoAOD.hadrons_cff')
 process.hadTable.jetLabel = cms.InputTag("patJets")
 process.hadTable.vertexLabel = cms.InputTag("offlinePrimaryVertices")
-#process.hadTable.trackingParticles = cms.InputTag("mix","MergedTrackTruth")
-process.hadTable.genLabel  = cms.InputTag("genParticles")
-process.hadTable.doFullMCMatching  = cms.bool(True)
 
-process.p = cms.Path(process.makePatJets+process.hadTables+process.genParticleTable)
+process.load("Validation.RecoTrack.TrackValidation_cff")
+#process.load('SimTracker.TrackerHitAssociation.tpClusterProducer_cfi')
+#process.load('SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi')
+#process.load('SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi')
+process.load('nano.nanoAOD.hadTruth_cff')
+
+process.p = cms.Path(process.makePatJets+process.hadTables+process.genParticleTable
+                         +process.mix+process.tracksValidationTruth
+                         #+process.tpClusterProducer+process.quickTrackAssociatorByHits
+                         #+process.trackingParticleRecoTrackAsssociation
+                         +process.hadTruthTables)
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.NANOAODSIMoutput_step = cms.EndPath(process.NANOAODSIMoutput)
