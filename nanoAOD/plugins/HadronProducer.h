@@ -85,6 +85,7 @@ private:
 
   vector<hadronCandidate> findKShortCands(vector<reco::RecoChargedCandidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
   vector<hadronCandidate> findLambdaCands(vector<reco::RecoChargedCandidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findLambdaBCands(vector<hadronCandidate>& LambdaCands,vector<hadronCandidate>& jpsiCands, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
 
   edm::EDGetTokenT<edm::View<pat::Jet> > jetLabel_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
@@ -98,6 +99,9 @@ private:
 
   const int kshort_pdgId_ = 310, lambda_pdgId_ = 3122;
   const float kshort_m_ = 0.4976, lambda_m_ = 1.11568;
+  
+  const int lambdab_pdgId_ = 5122;
+  const float lambdab_m_ = 6.202;
   
   // cuts on initial track selection
   float tkChi2Cut_;

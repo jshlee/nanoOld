@@ -36,7 +36,7 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       auto recoDau = new reco::RecoChargedCandidate(dau->charge(), dau->p4(), dau->vertex(), dau->pdgId());
       reco::PFCandidatePtr pfCand = aPatJet.getPFConstituent(idx);
       if (pfCand->trackRef().isNonnull()){
-	recoDau->setTrack(pfCand->trackRef());
+	    recoDau->setTrack(pfCand->trackRef());
       }
       
       //const reco::Track * trk = dau->bestTrack();      
@@ -82,6 +82,10 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     // find Lambda Cands
     auto LambdaCands = findLambdaCands(chargedHadrons, pv, njet, aPatJet);
     hadronCandidates.insert(hadronCandidates.end(), LambdaCands.begin(), LambdaCands.end());
+    
+    // find LambdaB Cands
+    auto LambdaBCands = findLambdaBCands(LambdaCands,jpsiCands, pv, njet, aPatJet);
+    hadronCandidates.insert(hadronCandidates.end(), LambdaBCands.begin(), LambdaBCands.end());
     
     ++njet;
     for (auto lep : leptons) delete lep;
@@ -396,3 +400,47 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaCands(vector<r
   return hadrons;
 }
 
+vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaBCands(vector<HadronProducer::hadronCandidate>& LambdaCands,vector<HadronProducer::hadronCandidate>& jpsiCands, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+{
+  vector<hadronCandidate> hadrons;
+  // find jpsi to mumu or ee
+  for (auto lambda :LambdaCands){
+    for (auto jpsi : jpsiCands){
+      
+      if (lambda.vcc.pdgId()!=lambda_pdgId_ && lambda.vcc.pdgId()!=-lambda_pdgId_) continue;
+      if (lambda.vcc.pdgId() * jpsi.vcc.pdgId() < 0) continue;
+
+      vector<reco::RecoChargedCandidate*> cands{
+	  dynamic_cast<reco::RecoChargedCandidate*>(lambda.vcc.daughter(0)),
+	  dynamic_cast<reco::RecoChargedCandidate*>(lambda.vcc.daughter(1)),
+	  dynamic_cast<reco::RecoChargedCandidate*>(jpsi.vcc.daughter(0)),
+	  dynamic_cast<reco::RecoChargedCandidate*>(jpsi.vcc.daughter(1))
+      };
+
+      hadronCandidate hc;
+
+      reco::VertexCompositeCandidate cand = fit(cands, pv, lambdab_pdgId_,
+						hc.dca, hc.angleXY, hc.angleXYZ);
+
+      if (cand.numberOfDaughters() < 2) continue;
+      if (abs(cand.mass() - lambdab_m_) > 0.5) continue;
+      
+      hc.vcc = cand;
+      hc.jet = aPatJet;
+      
+      auto d2 = getDistance(2,cand,pv);
+      hc.lxy = d2.first;      
+      hc.lxySig = d2.second;
+      auto d3 = getDistance(3,cand,pv);	
+      hc.l3D = d3.first;
+      hc.l3DSig = d3.second;
+
+      hc.nJet = nJet;
+      hc.nDau = 2;
+      hc.diffMass = -9;
+
+      hadrons.emplace_back(hc);
+    }
+  }
+  return hadrons;
+}
