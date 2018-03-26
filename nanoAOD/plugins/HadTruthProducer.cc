@@ -31,32 +31,39 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(trackingParticleLabel_, trackingParticles);
 
   vector<int> nmatchedv;
+
+  vector<int> isHadFromTsb;
+  vector<uint8_t> isHadFromTop;
   
   for (reco::VertexCompositeCandidateCollection::const_iterator cand = hadronCands->begin();
        cand != hadronCands->end(); cand++) {
 
+    int count = 0;
+    int hadFromQuark = 0;
+    bool hadFromTop = false;
+
     // for dstar and lambdaB, need to match with grand mother
-    cout <<"################################################# "<<endl;
-    cout <<"had " << cand->pdgId()<<endl;
-    cout <<"had pt = "<< cand->pt() << ", eta = "<< cand->eta() << ", pid = "<< cand->pdgId() << ", m = "<< cand->mass() <<endl;
+//    cout <<"################################################# "<<endl;
+//    cout <<"had " << cand->pdgId()<<endl;
+//    cout <<"had pt = "<< cand->pt() << ", eta = "<< cand->eta() << ", pid = "<< cand->pdgId() << ", m = "<< cand->mass() <<endl;
     reco::GenParticleRef trueHad;
     
     int numberOfDaughters = cand->numberOfDaughters();
     int nmatched = 0;
     for (int ndau =0; ndau < numberOfDaughters; ++ndau){
       auto rcCand = dynamic_cast<const reco::RecoChargedCandidate*>(cand->daughter(ndau));
-      cout <<" dau pid " << rcCand->pdgId()<<endl;
+//      cout <<" dau pid " << rcCand->pdgId()<<endl;
       RefToBase<reco::Track> track(rcCand->track());
       if (recotosim.find(track) != recotosim.end()) {
 	
 	TrackingParticleRef tpref = recotosim[track].begin()->first;
-	cout <<" matched dau pid " << tpref->pdgId()<<endl;	
+//	cout <<" matched dau pid " << tpref->pdgId()<<endl;	
 	if (rcCand->pdgId() == tpref->pdgId()){
 	  auto mother = getMother(tpref);
 	  if (mother.isNull()){
 	    continue;
 	  }
-	  cout <<"mum pt = "<< mother->pt() << ", eta = "<< mother->eta() << ", pid = "<< mother->pdgId()<<endl;
+//	  cout <<"mum pt = "<< mother->pt() << ", eta = "<< mother->eta() << ", pid = "<< mother->pdgId()<<endl;
 	  
 	  if (trueHad.isNull()){
 	    trueHad = mother;
@@ -72,13 +79,21 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     nmatchedv.push_back(nmatched);
     if (nmatched){
-      cout <<"nmatched "<< nmatched<<endl;
+//      cout <<"nmatched "<< nmatched<<endl;
       cout <<"trueHad "<< trueHad->pdgId() <<endl;
     }
+    if (nmatched == 2){
+      cout << "nmatched is 2 ===> mother tracking" << endl;
+      isHadFrom(trueHad,6,count,hadFromQuark,hadFromTop);
+    }
+    isHadFromTsb.push_back(hadFromQuark);
+    isHadFromTop.push_back(hadFromTop);
   }
   
   auto hadTruthTable = make_unique<nanoaod::FlatTable>(hadronCands->size(),"hadTruth",false);
   hadTruthTable->addColumn<int>("nMatched",nmatchedv,"no. of dau match",nanoaod::FlatTable::IntColumn);
+  hadTruthTable->addColumn<int>("isHadFromTsb",isHadFromTsb,"no. of dau match",nanoaod::FlatTable::IntColumn);
+  hadTruthTable->addColumn<uint8_t>("isHadFromTop",isHadFromTop,"Hadron from top",nanoaod::FlatTable::UInt8Column);  
   iEvent.put(move(hadTruthTable),"hadTruth");
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
