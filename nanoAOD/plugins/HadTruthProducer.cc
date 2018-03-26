@@ -8,6 +8,7 @@ trackingVertexLabel_(consumes<TrackingVertexCollection>(iConfig.getParameter<edm
 trackingParticleLabel_(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("trackingParticleLabel")))
 {
   produces<nanoaod::FlatTable>("hadTruth");
+  produces<nanoaod::FlatTable>("genHadron");
   produces<std::vector<reco::LeafCandidate> >();
 }
 
@@ -28,35 +29,57 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(trackingVertexLabel_, trackingVertexs);
   edm::Handle<TrackingParticleCollection> trackingParticles;
   iEvent.getByToken(trackingParticleLabel_, trackingParticles);
+
+  vector<int> nmatchedv;
   
   for (reco::VertexCompositeCandidateCollection::const_iterator cand = hadronCands->begin();
        cand != hadronCands->end(); cand++) {
 
-    cout <<"pid of had " << cand->pdgId()<<endl;
+    // for dstar and lambdaB, need to match with grand mother
+    cout <<"################################################# "<<endl;
+    cout <<"had " << cand->pdgId()<<endl;
+    cout <<"had pt = "<< cand->pt() << ", eta = "<< cand->eta() << ", pid = "<< cand->pdgId() << ", m = "<< cand->mass() <<endl;
+    reco::GenParticleRef trueHad;
     
-    for (size_t ndau =0; ndau < cand->numberOfDaughters(); ++ndau){
+    int numberOfDaughters = cand->numberOfDaughters();
+    int nmatched = 0;
+    for (int ndau =0; ndau < numberOfDaughters; ++ndau){
       auto rcCand = dynamic_cast<const reco::RecoChargedCandidate*>(cand->daughter(ndau));
+      cout <<" dau pid " << rcCand->pdgId()<<endl;
       RefToBase<reco::Track> track(rcCand->track());
       if (recotosim.find(track) != recotosim.end()) {
 	
 	TrackingParticleRef tpref = recotosim[track].begin()->first;
-	// do matchin
+	cout <<" matched dau pid " << tpref->pdgId()<<endl;	
+	if (rcCand->pdgId() == tpref->pdgId()){
+	  auto mother = getMother(tpref);
+	  if (mother.isNull()){
+	    continue;
+	  }
+	  cout <<"mum pt = "<< mother->pt() << ", eta = "<< mother->eta() << ", pid = "<< mother->pdgId()<<endl;
+	  
+	  if (trueHad.isNull()){
+	    trueHad = mother;
+	  }
+	  if (mother != trueHad){
+	    continue;
+	  }
+	  if (abs(mother->pdgId()) == cand->pdgId()){	    
+	    nmatched++;
+	  }
+	}
       }
-      // cout <<"pid of had " << track <<endl;
-      // for (unsigned int daughter = 0; daughter < 2; ++daughter) {
-      //   if (simtoreco.find(
-      // 				   gen_vertex.daughterTracks()[daughter]) !=
-      // 	  simtoreco.end()) {
-      // 	if (!simtoreco[gen_vertex.daughterTracks()[daughter]].empty()) {
-      // 	  candidateEff[daughter] = 1;  // Found a daughter track
-      // 	  reco_daughter[daughter] =
-      // 	    simtoreco[gen_vertex.daughterTracks()[daughter]]
-      // 	    .begin()
-      // 	    ->first.castTo<reco::TrackRef>();
-      // 	}
-      //   }
+    }
+    nmatchedv.push_back(nmatched);
+    if (nmatched){
+      cout <<"nmatched "<< nmatched<<endl;
+      cout <<"trueHad "<< trueHad->pdgId() <<endl;
     }
   }
+  
+  auto hadTruthTable = make_unique<nanoaod::FlatTable>(hadronCands->size(),"hadTruth",false);
+  hadTruthTable->addColumn<int>("nMatched",nmatchedv,"no. of dau match",nanoaod::FlatTable::IntColumn);
+  iEvent.put(move(hadTruthTable),"hadTruth");
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
   vector<int> imother;
@@ -128,12 +151,47 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
   
   */
-  auto hadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"hadTruth",false);
-  hadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
-  hadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"track from t->s/b",nanoaod::FlatTable::IntColumn);
-  hadTable->addColumn<uint8_t>("isKsFromTop",isKsFromTop,"track from top",nanoaod::FlatTable::UInt8Column);
-  hadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
+  auto genHadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"genHadron",false);
+  genHadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"track from t->s/b",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<uint8_t>("isKsFromTop",isKsFromTop,"track from top",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
   
-  iEvent.put(move(hadTable),"hadTruth");
+  iEvent.put(move(genHadTable),"genHadron");
   iEvent.put(move(candidates));
+}
+
+int HadTruthProducer::trackingVertex_pdgId(const TrackingVertex* tv)
+{
+  cout <<"tv->nSourceTracks() "<< tv->nSourceTracks() <<endl;
+  cout <<"tv->nSourceTracks() "<< tv->nSourceTracks() <<endl;
+  for (TrackingVertex::tp_iterator source = tv->sourceTracks_begin(); source != tv->sourceTracks_end(); ++source) {
+    return source->get()->pdgId();
+  }  
+  return 0;
+}
+
+const reco::GenParticleRef HadTruthProducer::getMother(const TrackingParticleRef& tp)
+{
+  const TrackingVertexRef& tv = tp->parentVertex();
+  if (tv->nSourceTracks()){
+    for (TrackingVertex::tp_iterator source = tv->sourceTracks_begin(); source != tv->sourceTracks_end(); ++source) {
+      auto mothers = source->get()->genParticles();
+      if (!mothers.empty()){
+	reco::GenParticleRefVector::const_iterator im = mothers.begin();
+	return *im;
+      }
+    }
+  }
+
+  if (!tp->genParticles().empty()){
+    auto genpart = tp->genParticles()[0];
+    const reco::GenParticleRefVector& mothers = genpart->motherRefVector();
+    if (!mothers.empty()){
+      reco::GenParticleRefVector::const_iterator im = mothers.begin();
+      return *im;
+    }
+  }
+  cout<<"no match to mother "<<endl;
+  return reco::GenParticleRef();
 }

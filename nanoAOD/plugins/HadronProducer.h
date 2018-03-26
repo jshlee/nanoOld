@@ -91,7 +91,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
   edm::ESHandle<TransientTrackBuilder> trackBuilder_;
 
-  const int pion_pdgId_ = 211, kaon_pdgId_ = 321, proton_pdgId_ = 2122;
+  const int pion_pdgId_ = 211, kaon_pdgId_ = 321, proton_pdgId_ = 2212;
   const float pion_m_ = 0.1396, kaon_m_ = 0.4937, proton_m_ = 0.938272;
 
   const int jpsi_pdgId_ = 443, d0_pdgId_ = 421, dstar_pdgId_ = 413;
@@ -152,7 +152,7 @@ reco::VertexCompositeCandidate HadronProducer::fit(vector<reco::RecoChargedCandi
   for (auto trk : cands){
     if (trk->track().isNonnull()){
       const reco::TransientTrack transientTrack = trackBuilder_->build(trk->track().get());
-      cout <<"found track ref"<<endl;
+      //cout <<"found track ref"<<endl;
       transientTracks.emplace_back(transientTrack);
     }
     else if (trk->bestTrack()){
@@ -161,13 +161,13 @@ reco::VertexCompositeCandidate HadronProducer::fit(vector<reco::RecoChargedCandi
       //cout <<"no track ref "<<endl;
     }
     else {
-      cout <<"no track... something is wrong"<<endl;
+      //cout <<"no track... something is wrong"<<endl;
     }
     charge += trk->charge();
   }
 
   if (transientTracks.size() < 2){
-    cout <<"no tracks... something is wrong"<<endl;
+    //cout <<"no tracks... something is wrong"<<endl;
     return reco::VertexCompositeCandidate();
   }
 

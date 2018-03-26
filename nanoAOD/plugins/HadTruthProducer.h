@@ -58,6 +58,9 @@ private:
   bool isKsFrom(const reco::GenParticle* particle, int pdgId, int count,int & KsFromQuark, bool & KsFromTquark);
   void motherTracking(const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & KsFromQuark, bool & KsFromTquark, std::vector<int> & isKsFromTsb, vector<uint8_t> & isKsFromTop);
 
+  int trackingVertex_pdgId(const TrackingVertex* tv);
+  const reco::GenParticleRef getMother(const TrackingParticleRef& tp);
+
   edm::EDGetTokenT<reco::RecoToSimCollection> recoRecoToSim_;
   edm::EDGetTokenT<reco::SimToRecoCollection> recoSimToReco_;
   edm::EDGetTokenT<reco::VertexCompositeCandidateCollection > hadronCands_;
@@ -69,9 +72,9 @@ private:
 bool HadTruthProducer::isKsFrom(const reco::GenParticle* particle, int pdgId, int count,int & KsFromQuark, bool & KsFromTquark){
   if(abs(particle->pdgId()) == pdgId && particle->status() == 62){
     //cout << " pdg : " << particle->pdgId() << " , status : " << particle->status() << endl;
-    auto dau1 = particle->daughter(0);
+    //auto ndau = particle->numberOfDaughters();
+    //auto dau1 = particle->daughter(0);
     auto dau2 = particle->daughter(1);
-    auto ndau = particle->numberOfDaughters();
 
     //cout << " dau1 pdg : " << dau1->pdgId() << " , status : " << dau1->status() << endl;
     //cout << " dau2 pdg : " << dau2->pdgId() << " , status : " << dau2->status() << endl;
