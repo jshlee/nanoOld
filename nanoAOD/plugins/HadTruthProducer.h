@@ -55,9 +55,9 @@ private:
   reco::LeafCandidate getCandidate(const TrackingParticle* tp) {
     return reco::LeafCandidate( tp->charge(), tp->p4(), tp->vertex(), tp->pdgId(), tp->status() );
   };
-  bool isKsFrom(const reco::GenParticle* particle, int pdgId, int count,int & KsFromQuark, bool & KsFromTop);
+  bool isGenHadFrom(const reco::GenParticle* particle, int pdgId, int count,int & GenHadFromQuark, bool & GenHadFromTop);
   bool isHadFrom(const reco::GenParticleRef &particle, int pdgId, int count, int & hadFromQuark, bool & hadFromTop);
-  void motherTracking(const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & KsFromQuark, bool & KsFromTop, std::vector<int> & isKsFromTsb, vector<uint8_t> & isKsFromTop);
+  void motherTracking(int PID, const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & GenHadFromQuark, bool & GenHadFromTop, std::vector<int> & isGenHadFromTsb, vector<uint8_t> & isGenHadFromTop);
 
   int trackingVertex_pdgId(const TrackingVertex* tv);
   const reco::GenParticleRef getMother(const TrackingParticleRef& tp);
@@ -70,37 +70,27 @@ private:
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleLabel_;
 };
 
-bool HadTruthProducer::isKsFrom(const reco::GenParticle* particle, int pdgId, int count,int & KsFromQuark, bool & KsFromTop){
+bool HadTruthProducer::isGenHadFrom(const reco::GenParticle* particle, int pdgId, int count,int & GenHadFromQuark, bool & GenHadFromTop){
   if(abs(particle->pdgId()) == pdgId && particle->status() == 62){
 //    cout << " pdg : " << particle->pdgId() << " , status : " << particle->status() << endl;
 //    auto ndau = particle->numberOfDaughters();
 //    auto dau1 = particle->daughter(0);
     auto dau2 = particle->daughter(1);
-
 //    cout << " dau1 pdg : " << dau1->pdgId() << " , status : " << dau1->status() << endl;
 //    cout << " dau2 pdg : " << dau2->pdgId() << " , status : " << dau2->status() << endl;
 //    cout << " ndau : " << ndau << endl;
-    KsFromQuark = dau2->pdgId();
-    return KsFromTop = true;
+    GenHadFromQuark = dau2->pdgId();
+    return GenHadFromTop = true;
   }
   const reco::GenParticleRefVector& mothers = particle->motherRefVector(); 
-/*
-  if(mothers.empty()) //cout << "[" << count << "] empty!" << endl;
-  if(mothers.isAvailable()) //cout << "[" << count << "] Available!" << endl;
-  if(mothers.isNull()) //cout << "[" << count << "] Null!" << endl;
-  if(mothers.isTransient()) //cout << "[" << count << "] Transient!" << endl;
-
-  //cout << "[" << count << "] mothers capacity : " << mothers.capacity() << endl;
-*/
   count = count + 1;
   for(reco::GenParticleRefVector::const_iterator im = mothers.begin(); im != mothers.end(); ++im){
     const reco::GenParticle& part = **im;
-//    //cout << "[" << count << "] Momther pdgId : " << part.pdgId() << endl;
-    if( isKsFrom( &part, pdgId, count, KsFromQuark, KsFromTop) ){
-      return KsFromTop = true;
+    if( isGenHadFrom( &part, pdgId, count, GenHadFromQuark, GenHadFromTop) ){
+      return GenHadFromTop = true;
     }
   }
-  return KsFromTop = false;
+  return GenHadFromTop = false;
 }
 
 bool HadTruthProducer::isHadFrom(const reco::GenParticleRef& particle, int pdgId, int count,int & hadFromQuark, bool & hadFromTop){
@@ -115,11 +105,9 @@ bool HadTruthProducer::isHadFrom(const reco::GenParticleRef& particle, int pdgId
     hadFromQuark = dau2->pdgId();
     return hadFromTop = true;
   }
-//  cout << count << " pdgId : " << particle->pdgId() << " nMother : " << particle->numberOfMothers() << endl;
   count = count + 1;
   for(unsigned int im = 0; im < particle->numberOfMothers(); ++im){
     const reco::GenParticleRef& mothers = particle->motherRef(im);
-//    cout << count << " ==> " << im << " th mother ===> mother " << mothers->numberOfMothers() << endl; 
     if( isHadFrom( mothers, pdgId, count, hadFromQuark, hadFromTop) ){
       return hadFromTop = true;
     }
@@ -127,29 +115,22 @@ bool HadTruthProducer::isHadFrom(const reco::GenParticleRef& particle, int pdgId
   return hadFromTop = false;
 }
 
-void HadTruthProducer::motherTracking(const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & KsFromQuark, bool & KsFromTop, std::vector<int> & isKsFromTsb, vector<uint8_t> & isKsFromTop){
-  //cout << " ["<< count << "] decayTrk = " << " pdg = " << decayTrk->pdgId() << ", pt = " << decayTrk->p4().Pt() <<", vert = "<< trackVertex.position() <<", inVolume "<<trackVertex.inVolume()<< endl;
-  //cout << " ["<< count << "] isGenEmpty = " << decayTrk->genParticles().empty() << endl;
-  //cout << " ["<< count << "] isGenNull = " << decayTrk->genParticles().isNull() << endl;
-  //cout << " ["<< count << "] isGenAvail = " << decayTrk->genParticles().isAvailable() << endl;
-  //cout << " ["<< count << "] Capacity = " << decayTrk->genParticles().capacity() << endl;
-
+void HadTruthProducer::motherTracking(int PID, const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & GenHadFromQuark, bool & GenHadFromTop, std::vector<int> & isGenHadFromTsb, vector<uint8_t> & isGenHadFromTop){
   if(!decayTrk->genParticles().empty()){
     for(TrackingParticle::genp_iterator igen = decayTrk->genParticle_begin(); igen != decayTrk->genParticle_end(); ++igen){
       auto gen = igen->get();
-      if(count != 0 || decayTrk->pdgId() == 310 || decayTrk->pdgId() == 3122) {
-        isKsFromTop.push_back(isKsFrom(gen,6,count,KsFromQuark,KsFromTop));
-        isKsFromTsb.push_back(KsFromQuark);
+      if(count != 0 || decayTrk->pdgId() == PID) {
+        isGenHadFromTop.push_back(isGenHadFrom(gen,6,count,GenHadFromQuark,GenHadFromTop));
+        isGenHadFromTsb.push_back(GenHadFromQuark);
       }
     }
   }
   else{
     count = count + 1;
-    //cout << "there is no gen info ===> go parent vertex...(decayTrk->pv)" << endl;
     auto pv = decayTrk->parentVertex().get();
     for (TrackingVertex::tp_iterator pr = pv->sourceTracks_begin(); pr != pv->sourceTracks_end(); ++pr) {
       auto decayTrk2 = pr->get();
-      motherTracking(*pv, decayTrk2, count, KsFromQuark, KsFromTop, isKsFromTsb, isKsFromTop);
+      motherTracking(PID,*pv, decayTrk2, count, GenHadFromQuark, GenHadFromTop, isGenHadFromTsb, isGenHadFromTop);
     }
   }
 }

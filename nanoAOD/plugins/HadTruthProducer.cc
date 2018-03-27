@@ -98,11 +98,9 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
   vector<int> imother;
-  vector<int> isKsFromTsb;
-  vector<int> isLambFromTsb;
+  vector<int> isGenHadFromTsb;
   vector<uint8_t> inVol;
-  vector<uint8_t> isKsFromTop;
-  vector<uint8_t> isLambFromTop;
+  vector<uint8_t> isGenHadFromTop;
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
 
@@ -113,20 +111,16 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       auto decayTrk = source->get();
       if (decayTrk->pdgId() != 310 && decayTrk->pdgId() != 3122) continue;
 
-      //cout << "##################################start##################################" << endl;
+      int count = 0;
+      int GenHadFromQuark = 0;
+      bool GenHadFromTop = false;
+
+      if (decayTrk->pdgId() == 310) motherTracking(310, trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop, isGenHadFromTsb, isGenHadFromTop);
+      if (decayTrk->pdgId() == 3122) motherTracking(3122, trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop, isGenHadFromTsb, isGenHadFromTop);
 
       candidates->push_back(getCandidate(decayTrk));
       imother.push_back(1);
       inVol.push_back(trackVertex.inVolume());
-
-      int count = 0;
-      int KsFromQuark = 0;
-      bool KsFromTop = false;
-      int LambFromQuark = 0;
-      bool LambFromTop = false;
-
-      motherTracking(trackVertex, decayTrk, count, KsFromQuark, KsFromTop, isKsFromTsb, isKsFromTop);
-      motherTracking(trackVertex, decayTrk, count, LambFromQuark, LambFromTop, isLambFromTsb, isLambFromTop);
 
       // Check KS-Pion Matching through SimTrk
       for (unsigned int i = 0; i < trackVertex.nDaughterTracks(); ++i){	
@@ -135,19 +129,16 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	candidates->push_back(getCandidate(dau));
 	imother.push_back(0);
 	inVol.push_back(trackVertex.inVolume());
-	isKsFromTop.push_back(KsFromTop);
-	isKsFromTsb.push_back(KsFromQuark);
-        isLambFromTop.push_back(LambFromTop);
-        isLambFromTsb.push_back(LambFromQuark);
+	isGenHadFromTop.push_back(GenHadFromTop);
+	isGenHadFromTsb.push_back(GenHadFromQuark);
 
-	//cout << "ev final ===> KsFromTop : " << KsFromTop << " KsFromQuark : " << KsFromQuark << endl;
-	//cout << "ev final size : " << "candidate : " << candidates->size() << " imother : " << imother.size() << " inVol : " << inVol.size() << " isKsFromTop : " << isKsFromTop.size() << " isKsFromTsb : " << isKsFromTsb.size() << endl;
+//	cout << "ev final ===> PID : " << decayTrk->pdgId() << " GenHadFromTop : " << GenHadFromTop << " GenHadFromQuark : " << GenHadFromQuark << endl;
+//	cout << "ev final size : " << "candidate : " << candidates->size() << " imother : " << imother.size() << " inVol : " << inVol.size() << " isGenHadFromTop : " << isGenHadFromTop.size() << " isGenHadFromTsb : " << isGenHadFromTsb.size() << endl;
 
 
 	//	//cout << " dau = " << " pdg = " << dau->pdgId() << ", pt = " << dau->p4().Pt() << endl;
       
       }
-      //cout << "###################################end###################################" << endl;
     }
   }
   /*
@@ -176,10 +167,8 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   */
   auto genHadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"genHadron",false);
   genHadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"KS from t->s/b",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<int>("isLambFromTsb",isLambFromTsb,"Lamb from t->s/b",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<uint8_t>("isKsFromTop",isKsFromTop,"KS from top",nanoaod::FlatTable::UInt8Column);
-  genHadTable->addColumn<uint8_t>("isLambFromTop",isLambFromTop,"Lamb from top",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<int>("isGenHadFromTsb",isGenHadFromTsb,"KS from t->s/b",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<uint8_t>("isGenHadFromTop",isGenHadFromTop,"KS from top",nanoaod::FlatTable::UInt8Column);
   genHadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
   
   iEvent.put(move(genHadTable),"genHadron");
