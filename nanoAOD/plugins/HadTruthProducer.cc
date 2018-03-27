@@ -33,7 +33,7 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   vector<int> nmatchedv;
 
   vector<int> isHadFromTsb;
-  vector<bool> isHadFromTop;
+  vector<uint8_t> isHadFromTop;
   
   for (reco::VertexCompositeCandidateCollection::const_iterator cand = hadronCands->begin();
        cand != hadronCands->end(); cand++) {
@@ -93,16 +93,16 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   auto hadTruthTable = make_unique<nanoaod::FlatTable>(hadronCands->size(),"hadTruth",false);
   hadTruthTable->addColumn<int>("nMatched",nmatchedv,"no. of dau match",nanoaod::FlatTable::IntColumn);
   hadTruthTable->addColumn<int>("isHadFromTsb",isHadFromTsb,"Hadron from t->s/b",nanoaod::FlatTable::IntColumn);
-  hadTruthTable->addColumn<bool>("isHadFromTop",isHadFromTop,"Hadron from Top",nanoaod::FlatTable::BoolColumn);  
+  hadTruthTable->addColumn<uint8_t>("isHadFromTop",isHadFromTop,"Hadron from Top",nanoaod::FlatTable::UInt8Column);  
   iEvent.put(move(hadTruthTable),"hadTruth");
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
   vector<int> imother;
   vector<int> isKsFromTsb;
   vector<int> isLambFromTsb;
-  vector<bool> inVol;
-  vector<bool> isKsFromTop;
-  vector<bool> isLambFromTop;
+  vector<uint8_t> inVol;
+  vector<uint8_t> isKsFromTop;
+  vector<uint8_t> isLambFromTop;
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
 
@@ -111,7 +111,7 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
     
     for (TrackingVertex::tp_iterator source = trackVertex.sourceTracks_begin(); source != trackVertex.sourceTracks_end(); ++source) {
       auto decayTrk = source->get();
-      if (decayTrk->pdgId() != 310) continue; //&& decayTrk->pdgId() != 3122) continue;
+      if (decayTrk->pdgId() != 310 && decayTrk->pdgId() != 3122) continue;
 
       //cout << "##################################start##################################" << endl;
 
@@ -178,9 +178,9 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   genHadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
   genHadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"KS from t->s/b",nanoaod::FlatTable::IntColumn);
   genHadTable->addColumn<int>("isLambFromTsb",isLambFromTsb,"Lamb from t->s/b",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<bool>("isKsFromTop",isKsFromTop,"KS from top",nanoaod::FlatTable::BoolColumn);
-  genHadTable->addColumn<bool>("isLambFromTop",isLambFromTop,"Lamb from top",nanoaod::FlatTable::BoolColumn);
-  genHadTable->addColumn<bool>("inVol",inVol,"track in volume",nanoaod::FlatTable::BoolColumn); 
+  genHadTable->addColumn<uint8_t>("isKsFromTop",isKsFromTop,"KS from top",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<uint8_t>("isLambFromTop",isLambFromTop,"Lamb from top",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
   
   iEvent.put(move(genHadTable),"genHadron");
   iEvent.put(move(candidates));
