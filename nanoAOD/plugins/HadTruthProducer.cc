@@ -39,7 +39,7 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
        cand != hadronCands->end(); cand++) {
 
     int count = 0;
-    int hadFromQuark = 0;
+    int hadFromQuark = -99;
     bool hadFromTop = false;
 
     // for dstar and lambdaB, need to match with grand mother
@@ -92,15 +92,17 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   auto hadTruthTable = make_unique<nanoaod::FlatTable>(hadronCands->size(),"hadTruth",false);
   hadTruthTable->addColumn<int>("nMatched",nmatchedv,"no. of dau match",nanoaod::FlatTable::IntColumn);
-  hadTruthTable->addColumn<int>("isHadFromTsb",isHadFromTsb,"no. of dau match",nanoaod::FlatTable::IntColumn);
-  hadTruthTable->addColumn<bool>("isHadFromTop",isHadFromTop,"Hadron from top",nanoaod::FlatTable::BoolColumn);  
+  hadTruthTable->addColumn<int>("isHadFromTsb",isHadFromTsb,"Hadron from t->s/b",nanoaod::FlatTable::IntColumn);
+  hadTruthTable->addColumn<bool>("isHadFromTop",isHadFromTop,"Hadron from Top",nanoaod::FlatTable::BoolColumn);  
   iEvent.put(move(hadTruthTable),"hadTruth");
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
   vector<int> imother;
   vector<int> isKsFromTsb;
+  vector<int> isLambFromTsb;
   vector<bool> inVol;
   vector<bool> isKsFromTop;
+  vector<bool> isLambFromTop;
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
 
@@ -119,9 +121,12 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       int count = 0;
       int KsFromQuark = 0;
-      bool KsFromTquark = false;
+      bool KsFromTop = false;
+      int LambFromQuark = 0;
+      bool LambFromTop = false;
 
-      motherTracking(trackVertex, decayTrk, count, KsFromQuark, KsFromTquark, isKsFromTsb, isKsFromTop);
+      motherTracking(trackVertex, decayTrk, count, KsFromQuark, KsFromTop, isKsFromTsb, isKsFromTop);
+      motherTracking(trackVertex, decayTrk, count, LambFromQuark, LambFromTop, isLambFromTsb, isLambFromTop);
 
       // Check KS-Pion Matching through SimTrk
       for (unsigned int i = 0; i < trackVertex.nDaughterTracks(); ++i){	
@@ -130,9 +135,12 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 	candidates->push_back(getCandidate(dau));
 	imother.push_back(0);
 	inVol.push_back(trackVertex.inVolume());
-	isKsFromTop.push_back(KsFromTquark);
+	isKsFromTop.push_back(KsFromTop);
 	isKsFromTsb.push_back(KsFromQuark);
-	//cout << "ev final ===> KsFromTquark : " << KsFromTquark << " KsFromQuark : " << KsFromQuark << endl;
+        isLambFromTop.push_back(LambFromTop);
+        isLambFromTsb.push_back(LambFromQuark);
+
+	//cout << "ev final ===> KsFromTop : " << KsFromTop << " KsFromQuark : " << KsFromQuark << endl;
 	//cout << "ev final size : " << "candidate : " << candidates->size() << " imother : " << imother.size() << " inVol : " << inVol.size() << " isKsFromTop : " << isKsFromTop.size() << " isKsFromTsb : " << isKsFromTsb.size() << endl;
 
 
@@ -168,8 +176,10 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   */
   auto genHadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"genHadron",false);
   genHadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"track from t->s/b",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<bool>("isKsFromTop",isKsFromTop,"track from top",nanoaod::FlatTable::BoolColumn);
+  genHadTable->addColumn<int>("isKsFromTsb",isKsFromTsb,"KS from t->s/b",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<int>("isLambFromTsb",isLambFromTsb,"Lamb from t->s/b",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<bool>("isKsFromTop",isKsFromTop,"KS from top",nanoaod::FlatTable::BoolColumn);
+  genHadTable->addColumn<bool>("isLambFromTop",isLambFromTop,"Lamb from top",nanoaod::FlatTable::BoolColumn);
   genHadTable->addColumn<bool>("inVol",inVol,"track in volume",nanoaod::FlatTable::BoolColumn); 
   
   iEvent.put(move(genHadTable),"genHadron");
