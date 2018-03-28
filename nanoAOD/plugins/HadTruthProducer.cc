@@ -85,6 +85,7 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   vector<uint8_t> inVol;
   vector<int> dau1_pdgId, dau2_pdgId;
   vector<float> dau1_pt, dau1_eta, dau1_phi, dau2_pt, dau2_eta, dau2_phi;
+  vector<float> vx, vy, vz;
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
     if (trackVertex.eventId().bunchCrossing() != 0) continue;  // Consider only in-time events
@@ -99,6 +100,11 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       bool GenHadFromTop = false;
 
       motherTracking(decayTrk->pdgId(), trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop);
+
+
+      vx.push_back(trackVertex.position().x());
+      vy.push_back(trackVertex.position().y());
+      vz.push_back(trackVertex.position().z());
 
       candidates->push_back(getCandidate(decayTrk));
       auto dau1 = trackVertex.daughterTracks().at(0).get();
@@ -129,7 +135,10 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   genHadTable->addColumn<float>("dau2_eta", dau2_eta,"second daughter eta",nanoaod::FlatTable::FloatColumn); 
   genHadTable->addColumn<float>("dau1_phi", dau1_phi,"first daughter phi",nanoaod::FlatTable::FloatColumn); 
   genHadTable->addColumn<float>("dau2_phi", dau2_phi,"second daughter phi",nanoaod::FlatTable::FloatColumn); 
-  
+  genHadTable->addColumn<float>("vx", vx,"vertex x postion",nanoaod::FlatTable::FloatColumn);
+  genHadTable->addColumn<float>("vy", vy,"vertex y postion",nanoaod::FlatTable::FloatColumn);
+  genHadTable->addColumn<float>("vz", vz,"vertex z postion",nanoaod::FlatTable::FloatColumn);
+
   iEvent.put(move(genHadTable),"genHadron");
   iEvent.put(move(candidates));
 }
