@@ -71,20 +71,20 @@ public:
 private:
   void produce( edm::Event&, const edm::EventSetup& ) override;
 
-  reco::VertexCompositeCandidate fit(vector<reco::RecoChargedCandidate*>& cands,
+  reco::VertexCompositeCandidate fit(vector<reco::Candidate*>& cands,
 				     reco::Vertex& pv, int pdgId,
 				     float &dca, float &angleXY, float &angleXYZ);
     
   SVector3 getDistanceVector(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
   pair<float, float> getDistance(int dim, reco::VertexCompositeCandidate& vertex,reco::Vertex& pv);
   
-  vector<hadronCandidate> findJPsiCands(vector<reco::RecoChargedCandidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  vector<hadronCandidate> findD0Cands(vector<reco::RecoChargedCandidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  vector<hadronCandidate> findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::RecoChargedCandidate*> &chargedHads,
+  vector<hadronCandidate> findJPsiCands(vector<reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findD0Cands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::Candidate*> &chargedHads,
 					 reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
 
-  vector<hadronCandidate> findKShortCands(vector<reco::RecoChargedCandidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  vector<hadronCandidate> findLambdaCands(vector<reco::RecoChargedCandidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findKShortCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findLambdaCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
   vector<hadronCandidate> findLambdaBCands(vector<hadronCandidate>& LambdaCands,vector<hadronCandidate>& jpsiCands, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
 
   edm::EDGetTokenT<edm::View<pat::Jet> > jetLabel_;

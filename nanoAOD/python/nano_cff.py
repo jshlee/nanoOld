@@ -16,8 +16,8 @@ def customise(process):
     customiseMuons(process)
     
     process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
-    process.load('nano.nanoAOD.cmesons_cff')
-    process.nanoAOD_step += process.cmesonTables
+    process.load('nano.nanoAOD.hadrons_cff')
+    process.nanoAOD_step += process.hadTables
 
     process.load('nano.nanoAOD.v0_cff')
     process.nanoAOD_step += process.v0GenParticles + process.v0Tables
