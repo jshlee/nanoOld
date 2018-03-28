@@ -137,8 +137,8 @@ int TMVAClassification( TString myMethodList = "" )
 
    // Register the training and test trees
 
-   TTree *signalTree     = (TTree*)input->Get("TreeS0");
-   TTree *background     = (TTree*)input->Get("TreeB0");
+   TTree *signalTree     = (TTree*)input->Get("TreeS");
+   TTree *background     = (TTree*)input->Get("TreeB");
 
    // Create a ROOT output file where TMVA will store ntuples, histograms, etc.
    TString outfileName( "TMVA.root" );
@@ -178,18 +178,31 @@ int TMVAClassification( TString myMethodList = "" )
    dataloader->AddVariable( "cme_dca", 'F' );
    dataloader->AddVariable( "cme_angleXY", 'F' );
    dataloader->AddVariable( "cme_angleXYZ", 'F' );
-   dataloader->AddVariable( "cme_trk_normalizedChi2", 'F' );
-   dataloader->AddVariable( "cme_trk_pt", 'F' );
-   dataloader->AddVariable( "cme_trk_ipsigXY", 'F' );
-   dataloader->AddVariable( "cme_trk_ipsigZ", 'F' );
-   dataloader->AddVariable( "cme_trk_nHits", 'I' );
    dataloader->AddVariable( "cme_x", 'F' );
    dataloader->AddVariable( "cme_y", 'F' );
    dataloader->AddVariable( "cme_z", 'F' );
    dataloader->AddVariable( "cme_pt", 'F' );
    dataloader->AddVariable( "cme_chi2", 'F' );
+   dataloader->AddVariable( "cme_eta", 'F' );
+   dataloader->AddVariable( "cme_phi", 'F' );
    
+   dataloader->AddVariable( "cme_jet_btagCMVA", 'F' );
+   dataloader->AddVariable( "cme_jet_btagCSVV2", 'F' );
+   dataloader->AddVariable( "cme_jet_btagDeepB", 'F' );
+   dataloader->AddVariable( "cme_jet_btagDeepC", 'F' );
+   dataloader->AddVariable( "cme_dau1_chi2", 'F' );
+   dataloader->AddVariable( "cme_dau1_ipsigXY", 'F' );
+   dataloader->AddVariable( "cme_dau1_ipsigZ", 'F' );
+   dataloader->AddVariable( "cme_dau1_nHits", 'F' );
+   dataloader->AddVariable( "cme_dau1_pt", 'F' );
+   dataloader->AddVariable( "cme_dau2_chi2", 'F' );
+   dataloader->AddVariable( "cme_dau2_ipsigXY", 'F' );
+   dataloader->AddVariable( "cme_dau2_ipsigZ", 'F' );
+   dataloader->AddVariable( "cme_dau2_nHits", 'F' );
+   dataloader->AddVariable( "cme_dau2_pt", 'F' );
+
    dataloader->AddSpectator( "cme_mass", 'F' );
+   // dataloader->AddSpectator( "cme_diffMass", 'F' );
    
    
    // dataloader->AddVariable( "cme_ndof", 'I' );
@@ -271,7 +284,7 @@ int TMVAClassification( TString myMethodList = "" )
    //    dataloader->PrepareTrainingAndTestTree( mycut,
    //         "NSigTrain=3000:NBkgTrain=3000:NSigTest=3000:NBkgTest=3000:SplitMode=Random:!V" );
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
-                                       "nTrain_Signal=4000:nTrain_Background=4000:nTest_Signal=4000:nTest_Background=4000:SplitMode=Random:NormMode=NumEvents:!V" );
+                                       "nTrain_Signal=5000:nTrain_Background=5000:nTest_Signal=50000:nTest_Background=5000:SplitMode=Random:NormMode=NumEvents:!V" );
 
    // ### Book MVA methods
    //

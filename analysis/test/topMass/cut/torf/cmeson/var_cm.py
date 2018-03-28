@@ -7,16 +7,16 @@ from array import array
 def TORF(event):
     Tcmesons_var=[]
     Fcmesons_var=[]
-    for i in range(event.ncmeson):
-        if event.cmeson_pdgId[i] == 443:
-            if event.cmeson_mcMatch[i] > 1: 
-                Tcmeson_var = event.cmeson_var[i]
-                #Tcmeson2_var = event.cmeson_varSig[i]
+    for i in range(event.nhad):
+        if event.had_pdgId[i] == number:
+            if event.hadTruth_nMatched[i] == 2: 
+                Tcmeson_var = event.had_var[i]
+                #Tcmeson2_var = event.had_varSig[i]
                 #Tcmeson_var = Tcmeson1_var / Tcmeson2_var
                 Tcmesons_var.append(Tcmeson_var)
-            elif event.cmeson_mcMatch[i] < 1: 
-                Fcmeson_var = event.cmeson_var[i]
-                #Fcmeson2_var = event.cmeson_varSig[i]
+            elif event.hadTruth_nMatched[i] == 0: 
+                Fcmeson_var = event.had_var[i]
+                #Fcmeson2_var = event.had_varSig[i]
                 #Fcmeson_var = Fcmeson1_var / Fcmeson2_var             
                 Fcmesons_var.append(Fcmeson_var)
         
@@ -26,31 +26,32 @@ def TORF(event):
 # Choosing Cmeson
 #def pickCmeson(event):
 #    mesons = []
-#    dstars = []
-#    jpsis = []
+#    whatcms = []
+#    whatcms = []
 #    for i in range(event.ncmeson):
-#        if event.cmeson_pdgId[i] == 443: 
+#        if event.cmeson_pdgId[i] == number: 
 #            meson = ROOT.TLorentzVector()
 #            meson.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
 #            mesons.append(meson) 
-#        if event.cmeson_pdgId[i] == 413: 
-#            dstar = ROOT.TLorentzVector()
-#            dstar.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
-#            dstars.append(dstar)
-#        if event.cmeson_pdgId[i] == 443:         
-#            jpsi = ROOT.TLorentzVector()
-#            jpsi.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
-#            jpsis.append(jpsi)    
-#    return mesons, dstars, jpsis 
+#        if event.cmeson_pdgId[i] == number: 
+#            whatcm = ROOT.TLorentzVector()
+#            whatcm.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
+#            whatcms.append(whatcm)
+#        if event.cmeson_pdgId[i] == number:         
+#            whatcm = ROOT.TLorentzVector()
+#            whatcm.SetPtEtaPhiM(event.cmeson_pt[i], event.cmeson_eta[i], event.cmeson_phi[i], event.cmeson_mass[i])
+#            whatcms.append(whatcm)    
+#    return mesons, whatcms, whatcms 
 
 
 # Making histograms
-tstack_F = ROOT.THStack("TorF_var_jpsi", "TorF_var_jpsi")
-tstack_T = ROOT.THStack("TorF_var_jpsi", "TorF_var_jpsi")
+tstack_F = ROOT.THStack("TorF_var_whatcm", "TorF_var_whatcm")
+tstack_T = ROOT.THStack("TorF_var_whatcm", "TorF_var_whatcm")
 
 datalumi = 38*1000
 
-ttbardir = "/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180222_144032/0000/"
+ttbardir = "/xrootd/store/user/jlee/tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_hadAOD/"
+#ttbardir = "/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180222_144032/0000/"
 #ttbardir = "/xrootd/store/user/jlee/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/RunIISummer16DR80Premix-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/180221_181316/0000/"
 samples = [ttbardir]
 #xsec = [831.76]
@@ -73,7 +74,7 @@ for j, sampledir in enumerate(samples):
         events = inFile.Get("Events")
         nevents += events.GetEntries()
 
-        if i == 100 : break
+        #if i == 2 : break
 
         for iev, event in enumerate(events):
 
@@ -104,7 +105,7 @@ for j, sampledir in enumerate(samples):
     hTlist.append(hT)
 
 
-outFile = ROOT.TFile("TF_var_jpsi.root", "RECREATE")
+outFile = ROOT.TFile("TF_var_whatcm.root", "RECREATE")
 outFile.cd()
 
 for i, hF in enumerate(hFlist):
@@ -140,7 +141,7 @@ if Fmax < Tmax:
 legend.Draw("same")
 tstack_F.GetXaxis().SetTitle("var")
 tstack_F.GetYaxis().SetTitle("Normalized Entries")
-canv.Print("TF_var_jpsi.png")
+canv.Print("TF_var_whatcm.png")
     
 outFile.Write()
 outFile.Close()

@@ -54,7 +54,7 @@ for j, sampledir in enumerate(samples):
         events = inFile.Get("Events")
         nevents += events.GetEntries()
 
-        if i == 100 : break
+        if i == 2 : break
 
         for iev, event in enumerate(events):
 
@@ -82,9 +82,9 @@ outFile = ROOT.TFile("TF_var.root", "RECREATE")
 outFile.cd()
 
 for i, hF in enumerate(hFlist):
-    h.SetLineColor(kRed)
-    h.SetFillColor(kRed)
-    h.SetFillStyle(3005)
+    hF.SetLineColor(kRed)
+    hF.SetFillColor(kRed)
+    hF.SetFillStyle(3005)
     tstack_F.Add(hF)
     hF.Write()
 
