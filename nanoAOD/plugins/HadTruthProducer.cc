@@ -1,11 +1,13 @@
 #include "HadTruthProducer.h"
 //#define debugMode
 
-HadTruthProducer::HadTruthProducer(const edm::ParameterSet & iConfig) : recoRecoToSim_(consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("recoRecoToSim"))), recoSimToReco_(consumes<reco::SimToRecoCollection>(iConfig.getParameter<edm::InputTag>("recoSimToReco"))),
-hadronCands_(consumes<reco::VertexCompositeCandidateCollection>(iConfig.getParameter<edm::InputTag>("hadronCands"))),
-genLabel_(consumes<edm::View<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genLabel"))),
-trackingVertexLabel_(consumes<TrackingVertexCollection>(iConfig.getParameter<edm::InputTag>("trackingVertexLabel"))),
-trackingParticleLabel_(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("trackingParticleLabel")))
+HadTruthProducer::HadTruthProducer(const edm::ParameterSet & iConfig) :
+  recoRecoToSim_(consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("recoRecoToSim"))),
+  recoSimToReco_(consumes<reco::SimToRecoCollection>(iConfig.getParameter<edm::InputTag>("recoSimToReco"))),
+  hadronCands_(consumes<reco::VertexCompositeCandidateCollection>(iConfig.getParameter<edm::InputTag>("hadronCands"))),
+  genLabel_(consumes<edm::View<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genLabel"))),
+  trackingVertexLabel_(consumes<TrackingVertexCollection>(iConfig.getParameter<edm::InputTag>("trackingVertexLabel"))),
+  trackingParticleLabel_(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("trackingParticleLabel")))
 {
   produces<nanoaod::FlatTable>("hadTruth");
   produces<nanoaod::FlatTable>("genHadron");
@@ -35,57 +37,38 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   vector<int> isHadFromTsb;
   vector<uint8_t> isHadFromTop;
   
-  for (reco::VertexCompositeCandidateCollection::const_iterator cand = hadronCands->begin();
-       cand != hadronCands->end(); cand++) {
-
+  for (auto& cand : *hadronCands) {
     int count = 0;
     int hadFromQuark = -99;
     bool hadFromTop = false;
 
     // for dstar and lambdaB, need to match with grand mother
-//    cout <<"################################################# "<<endl;
-//    cout <<"had " << cand->pdgId()<<endl;
-//    cout <<"had pt = "<< cand->pt() << ", eta = "<< cand->eta() << ", pid = "<< cand->pdgId() << ", m = "<< cand->mass() <<endl;
     reco::GenParticleRef trueHad;
     
-    int numberOfDaughters = cand->numberOfDaughters();
+    int numberOfDaughters = cand.numberOfDaughters();
     int nmatched = 0;
-    for (int ndau =0; ndau < numberOfDaughters; ++ndau){
-      auto rcCand = dynamic_cast<const reco::RecoChargedCandidate*>(cand->daughter(ndau));
-//      cout <<" dau pid " << rcCand->pdgId()<<endl;
+    for (int ndau =0; ndau < numberOfDaughters; ++ndau) {
+      auto rcCand = dynamic_cast<const reco::RecoChargedCandidate*>(cand.daughter(ndau));
       RefToBase<reco::Track> track(rcCand->track());
       if (recotosim.find(track) != recotosim.end()) {
 	
 	TrackingParticleRef tpref = recotosim[track].begin()->first;
-//	cout <<" matched dau pid " << tpref->pdgId()<<endl;	
-	if (rcCand->pdgId() == tpref->pdgId()){
+	if (rcCand->pdgId() == tpref->pdgId()) {
 	  auto mother = getMother(tpref);
-	  if (mother.isNull()){
-	    continue;
-	  }
-//	  cout <<"mum pt = "<< mother->pt() << ", eta = "<< mother->eta() << ", pid = "<< mother->pdgId()<<endl;
+	  if (mother.isNull()) { continue; }
 	  
-	  if (trueHad.isNull()){
-	    trueHad = mother;
-	  }
-	  if (mother != trueHad){
-	    continue;
-	  }
-	  if (abs(mother->pdgId()) == cand->pdgId()){	    
-	    nmatched++;
-	  }
+	  if (trueHad.isNull()) { trueHad = mother; }
+	  if (mother != trueHad) { continue; }
+	  if (abs(mother->pdgId()) == cand.pdgId()) { nmatched++; }
 	}
       }
     }
     nmatchedv.push_back(nmatched);
-    if (nmatched){
-//      cout <<"nmatched "<< nmatched<<endl;
-      cout <<"trueHad "<< trueHad->pdgId() <<endl;
+
+    if (nmatched == 2) {
+      isHadFrom(trueHad, 6, count, hadFromQuark, hadFromTop);
     }
-    if (nmatched == 2){
-      cout << "nmatched is 2 ===> mother tracking" << endl;
-      isHadFrom(trueHad,6,count,hadFromQuark,hadFromTop);
-    }
+
     isHadFromTsb.push_back(hadFromQuark);
     isHadFromTop.push_back(hadFromTop);
   }
@@ -97,15 +80,15 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.put(move(hadTruthTable),"hadTruth");
   
   auto candidates = make_unique<std::vector<reco::LeafCandidate>>();
-  vector<int> imother;
   vector<int> isGenHadFromTsb;
-  vector<uint8_t> inVol;
   vector<uint8_t> isGenHadFromTop;
+  vector<uint8_t> inVol;
+  vector<int> dau1_pdgId, dau2_pdgId;
+  vector<float> dau1_pt, dau1_eta, dau1_phi, dau2_pt, dau2_eta, dau2_phi;
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
-
     if (trackVertex.eventId().bunchCrossing() != 0) continue;  // Consider only in-time events
-    if (trackVertex.nDaughterTracks() < 2) continue;  // Keep only V0 vertices
+    if (trackVertex.nDaughterTracks() != 2) continue;  // Keep only V0 vertices
     
     for (TrackingVertex::tp_iterator source = trackVertex.sourceTracks_begin(); source != trackVertex.sourceTracks_end(); ++source) {
       auto decayTrk = source->get();
@@ -115,61 +98,37 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       int GenHadFromQuark = 0;
       bool GenHadFromTop = false;
 
-      if (decayTrk->pdgId() == 310) motherTracking(310, trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop, isGenHadFromTsb, isGenHadFromTop);
-      if (decayTrk->pdgId() == 3122) motherTracking(3122, trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop, isGenHadFromTsb, isGenHadFromTop);
+      motherTracking(decayTrk->pdgId(), trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop);
 
       candidates->push_back(getCandidate(decayTrk));
-      imother.push_back(1);
+      auto dau1 = trackVertex.daughterTracks().at(0).get();
+      auto dau2 = trackVertex.daughterTracks().at(1).get();
       inVol.push_back(trackVertex.inVolume());
-
-      // Check KS-Pion Matching through SimTrk
-      for (unsigned int i = 0; i < trackVertex.nDaughterTracks(); ++i){	
-	auto dau = trackVertex.daughterTracks().at(i).get();
-
-	candidates->push_back(getCandidate(dau));
-	imother.push_back(0);
-	inVol.push_back(trackVertex.inVolume());
-	isGenHadFromTop.push_back(GenHadFromTop);
-	isGenHadFromTsb.push_back(GenHadFromQuark);
-
-//	cout << "ev final ===> PID : " << decayTrk->pdgId() << " GenHadFromTop : " << GenHadFromTop << " GenHadFromQuark : " << GenHadFromQuark << endl;
-//	cout << "ev final size : " << "candidate : " << candidates->size() << " imother : " << imother.size() << " inVol : " << inVol.size() << " isGenHadFromTop : " << isGenHadFromTop.size() << " isGenHadFromTsb : " << isGenHadFromTsb.size() << endl;
-
-
-	//	//cout << " dau = " << " pdg = " << dau->pdgId() << ", pt = " << dau->p4().Pt() << endl;
-      
-      }
+      isGenHadFromTop.push_back(GenHadFromTop);
+      isGenHadFromTsb.push_back(GenHadFromQuark);
+      dau1_pdgId.push_back(dau1->pdgId());
+      dau2_pdgId.push_back(dau2->pdgId());
+      dau1_pt.push_back(dau1->pt());
+      dau2_pt.push_back(dau2->pt());
+      dau1_eta.push_back(dau1->eta());
+      dau2_eta.push_back(dau2->eta());
+      dau1_phi.push_back(dau1->phi());
+      dau2_phi.push_back(dau2->phi());
     }
   }
-  /*
-    Handle<edm::View<reco::GenParticle> > genParticles;
-    iEvent.getByToken(genLabel_,genParticles);
-    int i = 0;
-    for (auto gen : *genParticles){
-    if (gen.pdgId() != 5122) continue;    
-    //cout << " # i = " << i<< " pdg = " << gen.pdgId() << ", pt = " << gen.pt()
-    << ", status = " << gen.status()
-    << ", daus = " << gen.numberOfDaughters()
-    << endl;
-    candidates->push_back(gen);
-    imother.push_back(1);
-    
-    for (size_t j = 0; j < gen.numberOfDaughters(); ++j){
-    auto dau = gen.daughterRefVector().at(j);
-    candidates->push_back(*dau);
-    imother.push_back(1);
-    //cout << " dau = " << i<< " pdg = " << dau->pdgId()
-    << endl;
-    }
-    ++i;
-    }
-  
-  */
+
   auto genHadTable = make_unique<nanoaod::FlatTable>(candidates->size(),"genHadron",false);
-  genHadTable->addColumn<int>("mother",imother,"index of mother",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<int>("isGenHadFromTsb",isGenHadFromTsb,"KS from t->s/b",nanoaod::FlatTable::IntColumn);
-  genHadTable->addColumn<uint8_t>("isGenHadFromTop",isGenHadFromTop,"KS from top",nanoaod::FlatTable::UInt8Column);
-  genHadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column); 
+  genHadTable->addColumn<int>("isGenHadFromTsb",isGenHadFromTsb,"KS/Lam from t->s/b",nanoaod::FlatTable::IntColumn);
+  genHadTable->addColumn<uint8_t>("isGenHadFromTop",isGenHadFromTop,"KS/Lam from top",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<uint8_t>("inVol",inVol,"track in volume",nanoaod::FlatTable::UInt8Column);
+  genHadTable->addColumn<int>("dau1_pdgId", dau1_pdgId,"first daughter PID",nanoaod::FlatTable::IntColumn); 
+  genHadTable->addColumn<int>("dau2_pdgId", dau2_pdgId,"second daughter PID",nanoaod::FlatTable::IntColumn); 
+  genHadTable->addColumn<float>("dau1_pt", dau1_pt,"first daughter PT",nanoaod::FlatTable::FloatColumn); 
+  genHadTable->addColumn<float>("dau2_pt", dau2_pt,"second daughter PT",nanoaod::FlatTable::FloatColumn); 
+  genHadTable->addColumn<float>("dau1_eta", dau1_eta,"first daughter eta",nanoaod::FlatTable::FloatColumn); 
+  genHadTable->addColumn<float>("dau2_eta", dau2_eta,"second daughter eta",nanoaod::FlatTable::FloatColumn); 
+  genHadTable->addColumn<float>("dau1_phi", dau1_phi,"first daughter phi",nanoaod::FlatTable::FloatColumn); 
+  genHadTable->addColumn<float>("dau2_phi", dau2_phi,"second daughter phi",nanoaod::FlatTable::FloatColumn); 
   
   iEvent.put(move(genHadTable),"genHadron");
   iEvent.put(move(candidates));
@@ -177,8 +136,6 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 int HadTruthProducer::trackingVertex_pdgId(const TrackingVertex* tv)
 {
-  cout <<"tv->nSourceTracks() "<< tv->nSourceTracks() <<endl;
-  cout <<"tv->nSourceTracks() "<< tv->nSourceTracks() <<endl;
   for (TrackingVertex::tp_iterator source = tv->sourceTracks_begin(); source != tv->sourceTracks_end(); ++source) {
     return source->get()->pdgId();
   }  
@@ -206,6 +163,72 @@ const reco::GenParticleRef HadTruthProducer::getMother(const TrackingParticleRef
       return *im;
     }
   }
-  cout<<"no match to mother "<<endl;
+
   return reco::GenParticleRef();
+}
+
+
+bool HadTruthProducer::isGenHadFrom(const reco::GenParticle* particle, int pdgId, int count,int & GenHadFromQuark, bool & GenHadFromTop)
+{
+  GenHadFromTop = false;
+  if (abs(particle->pdgId()) == pdgId && particle->status() == 62) {
+    auto dau2 = particle->daughter(1);
+    GenHadFromQuark = dau2->pdgId();
+    GenHadFromTop = true;
+    return true;
+  }
+  
+  const reco::GenParticleRefVector& mothers = particle->motherRefVector(); 
+  count = count + 1;
+  for (reco::GenParticleRefVector::const_iterator im = mothers.begin(); im != mothers.end(); ++im) {
+    const reco::GenParticle& part = **im;
+    return isGenHadFrom( &part, pdgId, count, GenHadFromQuark, GenHadFromTop);
+  }
+  return false;
+}
+
+bool HadTruthProducer::isHadFrom(const reco::GenParticleRef& particle, int pdgId, int count, int & hadFromQuark, bool & hadFromTop)
+{
+  if(abs(particle->pdgId()) == pdgId && particle->status() == 62) {
+    auto dau2 = particle->daughter(1);
+    hadFromQuark = dau2->pdgId();
+    return hadFromTop = true;
+  }
+  count = count + 1;
+  for(unsigned int im = 0; im < particle->numberOfMothers(); ++im) {
+    const reco::GenParticleRef& mothers = particle->motherRef(im);
+    if( isHadFrom( mothers, pdgId, count, hadFromQuark, hadFromTop) ) {
+      return hadFromTop = true;
+    }
+  }
+  return hadFromTop = false;
+}
+
+void HadTruthProducer::motherTracking(int PID, const TrackingVertex trackVertex, const TrackingParticle *decayTrk, int count, int & GenHadFromQuark, bool & GenHadFromTop)
+{
+  if (!decayTrk->genParticles().empty()) {
+    for (TrackingParticle::genp_iterator igen = decayTrk->genParticle_begin(); igen != decayTrk->genParticle_end(); ++igen) {
+      auto gen = igen->get();
+      if (count != 0 || decayTrk->pdgId() == PID) {
+        isGenHadFrom(gen, 6, count, GenHadFromQuark, GenHadFromTop);
+      }
+    }
+  }
+  else {
+    count = count + 1;
+    auto pv = decayTrk->parentVertex().get();
+    for (TrackingVertex::tp_iterator pr = pv->sourceTracks_begin(); pr != pv->sourceTracks_end(); ++pr) {
+      auto decayTrk2 = pr->get();
+      motherTracking(PID, *pv, decayTrk2, count, GenHadFromQuark, GenHadFromTop);
+    }
+  }
+}
+
+void HadTruthProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
+{
+  //The following says we do not know what parameters are allowed so do no validation
+  // Please change this to state exactly what you do use, even if it is no parameters
+  edm::ParameterSetDescription desc;
+  desc.setUnknown();
+  descriptions.addDefault(desc);
 }
