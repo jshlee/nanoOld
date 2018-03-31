@@ -5,7 +5,8 @@ using namespace std;
 
 HadronProducer::HadronProducer(const edm::ParameterSet & iConfig) :
   jetLabel_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jetLabel"))),
-  vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel")))
+  vertexLabel_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexLabel"))),
+  pfCandidates_(consumes<reco::CandidateView>(iConfig.getParameter<edm::InputTag>("pfCandLabel")))
 {
   // cuts on initial track selection
   tkChi2Cut_ = iConfig.getParameter<double>("tkChi2Cut");
@@ -173,18 +174,44 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
   Handle<reco::VertexCollection> recVtxs;
   iEvent.getByToken(vertexLabel_,recVtxs);
   reco::Vertex pv = recVtxs->at(0);
+  math::XYZPoint primaryVertexPoint = pv.position();
 
   Handle<edm::View<pat::Jet> > jetHandle;
   iEvent.getByToken(jetLabel_, jetHandle);
 
-  vector<hadronCandidate> hadronCandidates;
+  Handle<reco::CandidateView> pfCandidates;
+  iEvent.getByToken(pfCandidates_, pfCandidates);
   
-  math::XYZPoint primaryVertexPoint = pv.position();
+  vector<hadronCandidate> hadronCandidates;
+
+  vector<reco::Candidate*> chargedHadrons, leptons;  
+  for (auto & pfcand : *pfCandidates){
+    
+    if ( pfcand.charge() == 0 ) continue;
+    //if ( pfcand.pt() < tkPtCut_ ) continue;
+    if (pfcand.bestTrack() == nullptr) continue;
+    
+    reco::Candidate* recoDau = pfcand.clone();
+    
+    if ( abs(recoDau->pdgId()) == 11  || abs(recoDau->pdgId())==13)
+      leptons.push_back(recoDau);
+    else
+      chargedHadrons.push_back(recoDau);        
+  }
+  // find KShort Cands
+  auto KShortCands = findKShortCands(chargedHadrons, pv, -1);
+  hadronCandidates.insert(hadronCandidates.end(), KShortCands.begin(), KShortCands.end());
+
+  // find Lambda Cands
+  auto LambdaCands = findLambdaCands(chargedHadrons, pv, -1);
+  hadronCandidates.insert(hadronCandidates.end(), LambdaCands.begin(), LambdaCands.end());
+
+  
   int njet = 0;
   for (const pat::Jet & aPatJet : *jetHandle){
     if (aPatJet.pt() < 30 or abs(aPatJet.eta()) > 3 ) continue;
 
-    vector<reco::Candidate*> chargedHadrons, leptons;
+    chargedHadrons.clear(); leptons.clear();
     
     for( unsigned int idx = 0 ; idx < aPatJet.numberOfDaughters() ; ++idx) {
       auto dau = aPatJet.daughter(idx);
@@ -206,9 +233,9 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       cout <<"dau pt = "<< dau->pt() << ", eta = "<< dau->eta() << ", pid = "<< dau->pdgId()<<endl;
 #endif
 
-      reco::Candidate* recoDau = aPatJet.daughter(idx)->clone();
+      reco::Candidate* recoDau = dau->clone();
       
-      if ( abs(dau->pdgId()) == 11  || abs(dau->pdgId())==13)
+      if ( abs(recoDau->pdgId()) == 11  || abs(recoDau->pdgId())==13)
 	leptons.push_back(recoDau);
       else
 	chargedHadrons.push_back(recoDau);
@@ -231,13 +258,6 @@ HadronProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
       auto dStarCands = findDStarCands(d0Cands, chargedHadrons, pv, njet, aPatJet);
       hadronCandidates.insert(hadronCandidates.end(), dStarCands.begin(), dStarCands.end());	
     }
-    // find KShort Cands
-    auto KShortCands = findKShortCands(chargedHadrons, pv, njet, aPatJet);
-    hadronCandidates.insert(hadronCandidates.end(), KShortCands.begin(), KShortCands.end());
-
-    // find Lambda Cands
-    auto LambdaCands = findLambdaCands(chargedHadrons, pv, njet, aPatJet);
-    hadronCandidates.insert(hadronCandidates.end(), LambdaCands.begin(), LambdaCands.end());
     
     // find LambdaB Cands
     auto LambdaBCands = findLambdaBCands(LambdaCands,jpsiCands, pv, njet, aPatJet);
@@ -472,7 +492,8 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findDStarCands(vector<Ha
   return hadrons;
 }
 
-vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<reco::Candidate*> &chargedHads,
+									reco::Vertex& pv, int nJet)
 {
   vector<hadronCandidate> hadrons;
   for (auto pion1 : chargedHads){
@@ -497,7 +518,7 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<r
       if (abs(cand.mass() - kshort_m_) > 0.2) continue;
 
       hc.vcc = cand;
-      hc.jet = aPatJet;
+      hc.jet = pat::Jet();
 
       auto d2 = getDistance(2,cand,pv);
       hc.lxy = d2.first;
@@ -516,7 +537,8 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findKShortCands(vector<r
   return hadrons;
 }
 
-vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet)
+vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaCands(vector<reco::Candidate*> &chargedHads,
+									reco::Vertex& pv, int nJet)
 {
   vector<hadronCandidate> hadrons;
   for (auto proton : chargedHads){
@@ -539,7 +561,7 @@ vector<HadronProducer::hadronCandidate> HadronProducer::findLambdaCands(vector<r
       if (abs(cand.mass() - lambda_m_) > 0.2) continue;
 
       hc.vcc = cand;
-      hc.jet = aPatJet;
+      hc.jet = pat::Jet();
 
       auto d2 = getDistance(2,cand,pv);
       hc.lxy = d2.first;

@@ -33,6 +33,7 @@
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/RecoCandidate/interface/RecoChargedCandidate.h"
 
@@ -80,15 +81,15 @@ private:
   
   vector<hadronCandidate> findJPsiCands(vector<reco::Candidate*> &leptons, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
   vector<hadronCandidate> findD0Cands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  vector<hadronCandidate> findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::Candidate*> &chargedHads,
-					 reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findDStarCands(vector<HadronProducer::hadronCandidate>& d0cands, vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
 
-  vector<hadronCandidate> findKShortCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
-  vector<hadronCandidate> findLambdaCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
+  vector<hadronCandidate> findKShortCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet);
+  vector<hadronCandidate> findLambdaCands(vector<reco::Candidate*> &chargedHads, reco::Vertex& pv, int nJet);
   vector<hadronCandidate> findLambdaBCands(vector<hadronCandidate>& LambdaCands,vector<hadronCandidate>& jpsiCands, reco::Vertex& pv, int nJet, const pat::Jet & aPatJet);
 
   edm::EDGetTokenT<edm::View<pat::Jet> > jetLabel_;
   edm::EDGetTokenT<reco::VertexCollection> vertexLabel_;
+  edm::EDGetTokenT<reco::CandidateView> pfCandidates_;
   edm::ESHandle<TransientTrackBuilder> trackBuilder_;
 
   const int pion_pdgId_ = 211, kaon_pdgId_ = 321, proton_pdgId_ = 2212;
