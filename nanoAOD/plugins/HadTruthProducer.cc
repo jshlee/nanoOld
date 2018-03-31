@@ -89,7 +89,6 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   for (auto const& trackVertex : *trackingVertexs.product()) {
     if (trackVertex.eventId().bunchCrossing() != 0) continue;  // Consider only in-time events
-    if (trackVertex.nDaughterTracks() != 2) continue;  // Keep only V0 vertices
     
     for (TrackingVertex::tp_iterator source = trackVertex.sourceTracks_begin(); source != trackVertex.sourceTracks_end(); ++source) {
       auto decayTrk = source->get();
@@ -101,25 +100,37 @@ HadTruthProducer::produce( edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       motherTracking(decayTrk->pdgId(), trackVertex, decayTrk, count, GenHadFromQuark, GenHadFromTop);
 
+      inVol.push_back(trackVertex.inVolume());
+      isGenHadFromTop.push_back(GenHadFromTop);
+      isGenHadFromTsb.push_back(GenHadFromQuark);
 
       vx.push_back(trackVertex.position().x());
       vy.push_back(trackVertex.position().y());
       vz.push_back(trackVertex.position().z());
 
       candidates->push_back(getCandidate(decayTrk));
-      auto dau1 = trackVertex.daughterTracks().at(0).get();
-      auto dau2 = trackVertex.daughterTracks().at(1).get();
-      inVol.push_back(trackVertex.inVolume());
-      isGenHadFromTop.push_back(GenHadFromTop);
-      isGenHadFromTsb.push_back(GenHadFromQuark);
-      dau1_pdgId.push_back(dau1->pdgId());
-      dau2_pdgId.push_back(dau2->pdgId());
-      dau1_pt.push_back(dau1->pt());
-      dau2_pt.push_back(dau2->pt());
-      dau1_eta.push_back(dau1->eta());
-      dau2_eta.push_back(dau2->eta());
-      dau1_phi.push_back(dau1->phi());
-      dau2_phi.push_back(dau2->phi());
+      if (trackVertex.nDaughterTracks() >= 2) { 
+        auto dau1 = trackVertex.daughterTracks().at(0).get();
+        auto dau2 = trackVertex.daughterTracks().at(1).get();
+        dau1_pdgId.push_back(dau1->pdgId());
+        dau2_pdgId.push_back(dau2->pdgId());
+        dau1_pt.push_back(dau1->pt());
+        dau2_pt.push_back(dau2->pt());
+        dau1_eta.push_back(dau1->eta());
+        dau2_eta.push_back(dau2->eta());
+        dau1_phi.push_back(dau1->phi());
+        dau2_phi.push_back(dau2->phi());
+      }
+      else {
+        dau1_pdgId.push_back(0);
+        dau2_pdgId.push_back(0);
+        dau1_pt.push_back(-99);
+        dau2_pt.push_back(-99);
+        dau1_eta.push_back(-99);
+        dau2_eta.push_back(-99);
+        dau1_phi.push_back(-99);
+        dau2_phi.push_back(-99);
+      }
     }
   }
 
