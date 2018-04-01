@@ -5,6 +5,7 @@ from  PhysicsTools.NanoAOD.common_cff import *
 hadTable = cms.EDProducer("HadronProducer",
   jetLabel = cms.InputTag("slimmedJets"),
   vertexLabel = cms.InputTag("offlineSlimmedPrimaryVertices"),
+  pfCandLabel = cms.InputTag("packedPFCandidates"),
   applySoftLeptonCut = cms.bool(True),
   doFullMCMatching = cms.bool(False),
   # -- cuts on initial track collection --

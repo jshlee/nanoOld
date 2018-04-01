@@ -22,13 +22,13 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(-1)
 )
 #process.maxEvents.input = cms.untracked.int32(1000)
 # Input source
 process.source = cms.Source("PoolSource",
-fileNames = cms.untracked.vstring('/store/user/jlee/tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_reco/reco_234.root'),
-#fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/reco.root'),
+#fileNames = cms.untracked.vstring('/store/user/jlee/tsW_13TeV_PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v4_reco/reco_234.root'),
+fileNames = cms.untracked.vstring('file:/cms/ldap_home/jlee/run2Prod/src/reco.root'),
 secondaryFileNames = cms.untracked.vstring()
 )
 
@@ -68,6 +68,7 @@ process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
 process.load('nano.nanoAOD.hadrons_cff')
 process.hadTable.jetLabel = cms.InputTag("patJets")
 process.hadTable.vertexLabel = cms.InputTag("offlinePrimaryVertices")
+process.hadTable.pfCandLabel = cms.InputTag("particleFlow")
 
 process.load("Validation.RecoTrack.TrackValidation_cff")
 #process.load('SimTracker.TrackerHitAssociation.tpClusterProducer_cfi')
